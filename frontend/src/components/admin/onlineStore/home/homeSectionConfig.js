@@ -1,8 +1,6 @@
-/*
-|--------------------------------------------------------------------------
-| SECTION DESCRIPTIONS
-|--------------------------------------------------------------------------
-*/
+/* ==========================================================================
+   SECTION DESCRIPTIONS
+============================================================================ */
 
 export const sectionDescriptions = {
   hero:
@@ -34,16 +32,16 @@ export const sectionDescriptions = {
 };
 
 
-/*
-|--------------------------------------------------------------------------
-| FEATURED CATEGORIES SETTINGS
-|--------------------------------------------------------------------------
-*/
+/* ==========================================================================
+   FEATURED CATEGORIES SETTINGS
+============================================================================ */
 
 export const getFeaturedCategoriesSettings = (
   section
 ) => {
+
   return {
+
     title:
       section?.title ||
       "Featured Categories",
@@ -58,20 +56,22 @@ export const getFeaturedCategoriesSettings = (
         section?.settings
           ?.max_categories
       ) || 8,
+
   };
+
 };
 
 
-/*
-|--------------------------------------------------------------------------
-| PRODUCTS ON SALE SETTINGS
-|--------------------------------------------------------------------------
-*/
+/* ==========================================================================
+   PRODUCTS ON SALE SETTINGS
+============================================================================ */
 
 export const getProductsOnSaleSettings = (
   section
 ) => {
+
   return {
+
     title:
       section?.title ||
       "Product On Sale",
@@ -97,5 +97,164 @@ export const getProductsOnSaleSettings = (
         section?.settings
           ?.desktop_cards_per_row
       ) || 4,
+
   };
+
+};
+
+
+/* ==========================================================================
+   PROMOTIONS & OFFERS SETTINGS
+============================================================================ */
+
+/* ==========================================================================
+   PROMOTIONS & OFFERS SETTINGS
+============================================================================ */
+
+export const getPromotionsSettings = (
+  section
+) => {
+
+  /*
+  |--------------------------------------------------------------------------
+  | SAVED CARDS
+  |--------------------------------------------------------------------------
+  */
+
+  const savedCards =
+    Array.isArray(
+      section?.settings?.cards
+    )
+      ? section.settings.cards
+      : [];
+
+
+  /*
+  |--------------------------------------------------------------------------
+  | DEFAULT CARDS
+  |--------------------------------------------------------------------------
+  */
+
+  const defaultCards = [
+
+    {
+      layout:
+        "tall_left",
+
+      image_url:
+        "",
+
+      image_alt:
+        "",
+
+      link:
+        "/products",
+    },
+
+    {
+      layout:
+        "tall_middle",
+
+      image_url:
+        "",
+
+      image_alt:
+        "",
+
+      link:
+        "/products",
+    },
+
+    {
+      layout:
+        "square_top_right",
+
+      image_url:
+        "",
+
+      image_alt:
+        "",
+
+      link:
+        "/products",
+    },
+
+    {
+      layout:
+        "square_top_right_arrow",
+
+      image_url:
+        "",
+
+      image_alt:
+        "",
+
+      link:
+        "/products",
+    },
+
+    /*
+    |--------------------------------------------------------------------------
+    | 5TH CARD
+    |--------------------------------------------------------------------------
+    */
+
+    {
+      layout:
+        "wide_bottom_banner",
+
+      image_url:
+        "",
+
+      image_alt:
+        "",
+
+      link:
+        "/products",
+    },
+
+  ];
+
+
+  /*
+  |--------------------------------------------------------------------------
+  | RESPONSE
+  |--------------------------------------------------------------------------
+  */
+
+  return {
+
+    title:
+      section?.title ||
+      "Promotions & Offers",
+
+    cards:
+      defaultCards.map(
+        (
+          defaultCard,
+          index
+        ) => {
+
+          const savedCard =
+            savedCards[index] ||
+            {};
+
+
+          return {
+
+            ...defaultCard,
+
+            ...savedCard,
+
+            saved_image_url:
+              savedCard?.image_url ||
+              "",
+
+          };
+
+        }
+      ),
+
+  };
+
 };

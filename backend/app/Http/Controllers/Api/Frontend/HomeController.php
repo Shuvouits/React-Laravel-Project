@@ -93,16 +93,16 @@ class HomeController extends Controller
 
         $categories =
             $query
-                ->orderBy(
-                    'display_order'
-                )
-                ->orderBy(
-                    'name'
-                )
-                ->limit(
-                    $limit
-                )
-                ->get();
+            ->orderBy(
+                'display_order'
+            )
+            ->orderBy(
+                'name'
+            )
+            ->limit(
+                $limit
+            )
+            ->get();
 
 
         /*
@@ -117,23 +117,23 @@ class HomeController extends Controller
         ) {
             $categories =
                 Category::query()
-                    ->where(
-                        'status',
-                        'active'
-                    )
-                    ->whereNull(
-                        'parent_id'
-                    )
-                    ->orderBy(
-                        'display_order'
-                    )
-                    ->orderBy(
-                        'name'
-                    )
-                    ->limit(
-                        $limit
-                    )
-                    ->get();
+                ->where(
+                    'status',
+                    'active'
+                )
+                ->whereNull(
+                    'parent_id'
+                )
+                ->orderBy(
+                    'display_order'
+                )
+                ->orderBy(
+                    'name'
+                )
+                ->limit(
+                    $limit
+                )
+                ->get();
         }
 
 
@@ -142,53 +142,53 @@ class HomeController extends Controller
 
             'section' => [
                 'title' =>
-                    $section->title
+                $section->title
                     ?: 'Featured Categories',
 
                 'is_active' =>
-                    (bool) $section->is_active,
+                (bool) $section->is_active,
 
                 'settings' => [
                     'category_source' =>
-                        $source,
+                    $source,
 
                     'max_categories' =>
-                        $limit,
+                    $limit,
                 ],
             ],
 
             'categories' =>
-                $categories
-                    ->map(
-                        function ($category) {
-                            return [
-                                'id' =>
-                                    $category->id,
+            $categories
+                ->map(
+                    function ($category) {
+                        return [
+                            'id' =>
+                            $category->id,
 
-                                'name' =>
-                                    $category->name,
+                            'name' =>
+                            $category->name,
 
-                                'slug' =>
-                                    $category->slug,
+                            'slug' =>
+                            $category->slug,
 
-                                'image' =>
-                                    $category->image,
+                            'image' =>
+                            $category->image,
 
-                                'image_url' =>
+                            'image_url' =>
+                            $category->image
+                                ? asset(
                                     $category->image
-                                        ? asset(
-                                            $category->image
-                                        )
-                                        : null,
+                                )
+                                : null,
 
-                                'is_featured' =>
-                                    (bool)
-                                        $category
-                                            ->is_featured,
-                            ];
-                        }
-                    )
-                    ->values(),
+                            'is_featured' =>
+                            (bool)
+                            $category
+                                ->is_featured,
+                        ];
+                    }
+                )
+                ->values(),
         ]);
     }
 
@@ -228,13 +228,13 @@ class HomeController extends Controller
 
                 'section' => [
                     'title' =>
-                        $section->title,
+                    $section->title,
 
                     'is_active' =>
-                        false,
+                    false,
 
                     'settings' =>
-                        $section->settings ?? [],
+                    $section->settings ?? [],
                 ],
 
                 'products' => [],
@@ -411,13 +411,13 @@ class HomeController extends Controller
 
         $products =
             $query
-                ->latest(
-                    'created_at'
-                )
-                ->limit(
-                    $limit
-                )
-                ->get();
+            ->latest(
+                'created_at'
+            )
+            ->limit(
+                $limit
+            )
+            ->get();
 
 
         /*
@@ -432,14 +432,14 @@ class HomeController extends Controller
         ) {
             $fallbackQuery =
                 Product::query()
-                    ->where(
-                        'status',
-                        'active'
-                    )
-                    ->where(
-                        'online_store',
-                        true
-                    );
+                ->where(
+                    'status',
+                    'active'
+                )
+                ->where(
+                    'online_store',
+                    true
+                );
 
 
             if (
@@ -468,13 +468,13 @@ class HomeController extends Controller
 
             $products =
                 $fallbackQuery
-                    ->latest(
-                        'created_at'
-                    )
-                    ->limit(
-                        $limit
-                    )
-                    ->get();
+                ->latest(
+                    'created_at'
+                )
+                ->limit(
+                    $limit
+                )
+                ->get();
         }
 
 
@@ -486,157 +486,151 @@ class HomeController extends Controller
 
         $formattedProducts =
             $products
-                ->map(
-                    function ($product) {
+            ->map(
+                function ($product) {
 
-                        /*
+                    /*
                         |--------------------------------------------------------------------------
                         | PRODUCT MEDIA
                         |--------------------------------------------------------------------------
                         */
 
+                    $productMedia =
+                        collect();
+
+
+                    if (
+                        $product->relationLoaded(
+                            'media'
+                        )
+                    ) {
                         $productMedia =
-                            collect();
+                            $product->media;
+                    }
 
 
-                        if (
-                            $product->relationLoaded(
-                                'media'
-                            )
-                        ) {
-                            $productMedia =
-                                $product->media;
-                        }
-
-
-                        /*
+                    /*
                         |--------------------------------------------------------------------------
                         | VARIANTS
                         |--------------------------------------------------------------------------
                         */
 
+                    $variants =
+                        collect();
+
+
+                    if (
+                        $product->relationLoaded(
+                            'variants'
+                        )
+                    ) {
                         $variants =
-                            collect();
+                            $product->variants;
+                    }
 
 
-                        if (
-                            $product->relationLoaded(
-                                'variants'
-                            )
-                        ) {
-                            $variants =
-                                $product->variants;
-                        }
-
-
-                        /*
+                    /*
                         |--------------------------------------------------------------------------
                         | BASE PRODUCT IMAGE
                         |--------------------------------------------------------------------------
                         */
 
-                        $imageUrl =
-                            $this->resolveProductImage(
-                                $product
-                            );
+                    $imageUrl =
+                        $this->resolveProductImage(
+                            $product
+                        );
 
 
-                        /*
+                    /*
                         |--------------------------------------------------------------------------
                         | FORMAT VARIANTS
                         |--------------------------------------------------------------------------
                         */
 
-                        $formattedVariants =
-                            $variants
-                                ->map(
-                                    function ($variant) use (
-                                        $productMedia,
-                                        $imageUrl
-                                    ) {
+                    $formattedVariants =
+                        $variants
+                        ->map(
+                            function ($variant) use (
+                                $productMedia,
+                                $imageUrl
+                            ) {
 
-                                        /*
+                                /*
                                         |--------------------------------------------------------------------------
                                         | OPTION VALUES
                                         |--------------------------------------------------------------------------
                                         */
 
-                                        $optionValues =
-                                            $variant->relationLoaded(
-                                                'optionValues'
-                                            )
-                                                ? $variant
-                                                    ->optionValues
-                                                : collect();
+                                $optionValues =
+                                    $variant->relationLoaded(
+                                        'optionValues'
+                                    )
+                                    ? $variant
+                                    ->optionValues
+                                    : collect();
 
 
-                                        /*
+                                /*
                                         |--------------------------------------------------------------------------
                                         | OPTIONS
                                         |--------------------------------------------------------------------------
                                         */
 
-                                        $formattedOptions =
-                                            $optionValues
-                                                ->map(
-                                                    function ($optionValue) {
+                                $formattedOptions =
+                                    $optionValues
+                                    ->map(
+                                        function ($optionValue) {
 
-                                                        $optionName =
-                                                            $optionValue
-                                                                ->option
-                                                                ->name
-                                                            ?? null;
-
-
-                                                        return [
-                                                            'id' =>
-                                                                $optionValue
-                                                                    ->id,
-
-                                                            'global_variant_value_id' =>
-                                                                $optionValue
-                                                                    ->global_variant_value_id
-                                                                ?? null,
-
-                                                            'global_variant_name' =>
-                                                                $optionName,
-
-                                                            'name' =>
-                                                                $optionName,
-
-                                                            'option_name' =>
-                                                                $optionName,
-
-                                                            'value' =>
-                                                                $optionValue
-                                                                    ->value
-                                                                ?? null,
-
-                                                            'color_code' =>
-                                                                $optionValue
-                                                                    ->color_code
-                                                                ?? null,
-                                                        ];
-                                                    }
-                                                )
-                                                ->filter(
-                                                    function ($option) {
-                                                        return (
-                                                            ! empty(
-                                                                $option[
-                                                                    'option_name'
-                                                                ]
-                                                            ) &&
-                                                            $option[
-                                                                'value'
-                                                            ] !== null
-                                                        );
-                                                    }
-                                                )
-                                                ->values();
+                                            $optionName =
+                                                $optionValue
+                                                ->option
+                                                ->name
+                                                ?? null;
 
 
-                                        /*
+                                            return [
+                                                'id' =>
+                                                $optionValue
+                                                    ->id,
+
+                                                'global_variant_value_id' =>
+                                                $optionValue
+                                                    ->global_variant_value_id
+                                                    ?? null,
+
+                                                'global_variant_name' =>
+                                                $optionName,
+
+                                                'name' =>
+                                                $optionName,
+
+                                                'option_name' =>
+                                                $optionName,
+
+                                                'value' =>
+                                                $optionValue
+                                                    ->value
+                                                    ?? null,
+
+                                                'color_code' =>
+                                                $optionValue
+                                                    ->color_code
+                                                    ?? null,
+                                            ];
+                                        }
+                                    )
+                                    ->filter(
+                                        function ($option) {
+                                            return (
+                                                ! empty($option['option_name']) &&
+                                                $option['value'] !== null
+                                            );
+                                        }
+                                    )
+                                    ->values();
+
+
+                                /*
                                         |--------------------------------------------------------------------------
                                         | VARIANT IMAGE
                                         |--------------------------------------------------------------------------
@@ -647,288 +641,276 @@ class HomeController extends Controller
                                         |--------------------------------------------------------------------------
                                         */
 
+                                $variantImageUrl =
+                                    null;
+
+
+                                if (
+                                    ! empty($variant
+                                        ->product_media_id)
+                                ) {
+                                    $variantMedia =
+                                        $productMedia
+                                        ->firstWhere(
+                                            'id',
+                                            $variant
+                                                ->product_media_id
+                                        );
+
+
+                                    if ($variantMedia) {
                                         $variantImageUrl =
-                                            null;
+                                            $this
+                                            ->resolveMediaUrl(
+                                                $variantMedia
+                                            );
+                                    }
+                                }
 
 
-                                        if (
-                                            ! empty(
-                                                $variant
-                                                    ->product_media_id
-                                            )
-                                        ) {
-                                            $variantMedia =
-                                                $productMedia
-                                                    ->firstWhere(
-                                                        'id',
-                                                        $variant
-                                                            ->product_media_id
-                                                    );
-
-
-                                            if ($variantMedia) {
-                                                $variantImageUrl =
-                                                    $this
-                                                        ->resolveMediaUrl(
-                                                            $variantMedia
-                                                        );
-                                            }
-                                        }
-
-
-                                        /*
+                                /*
                                         |--------------------------------------------------------------------------
                                         | FALLBACK IMAGE
                                         |--------------------------------------------------------------------------
                                         */
 
-                                        if (
-                                            ! $variantImageUrl
-                                        ) {
-                                            $variantImageUrl =
-                                                $imageUrl;
-                                        }
+                                if (
+                                    ! $variantImageUrl
+                                ) {
+                                    $variantImageUrl =
+                                        $imageUrl;
+                                }
 
 
-                                        /*
+                                /*
                                         |--------------------------------------------------------------------------
                                         | VARIANT RESPONSE
                                         |--------------------------------------------------------------------------
                                         */
 
-                                        return [
-                                            'id' =>
-                                                $variant->id,
+                                return [
+                                    'id' =>
+                                    $variant->id,
 
-                                            'title' =>
-                                                $variant->title
-                                                ?? $variant->name
-                                                ?? null,
+                                    'title' =>
+                                    $variant->title
+                                        ?? $variant->name
+                                        ?? null,
 
-                                            'name' =>
-                                                $variant->name
-                                                ?? $variant->title
-                                                ?? null,
+                                    'name' =>
+                                    $variant->name
+                                        ?? $variant->title
+                                        ?? null,
 
-                                            'combination_key' =>
-                                                $variant
-                                                    ->combination_key
-                                                ?? null,
+                                    'combination_key' =>
+                                    $variant
+                                        ->combination_key
+                                        ?? null,
 
-                                            'product_media_id' =>
-                                                $variant
-                                                    ->product_media_id
-                                                ?? null,
+                                    'product_media_id' =>
+                                    $variant
+                                        ->product_media_id
+                                        ?? null,
 
-                                            'sku' =>
-                                                $variant->sku
-                                                ?? null,
+                                    'sku' =>
+                                    $variant->sku
+                                        ?? null,
 
-                                            'barcode' =>
-                                                $variant->barcode
-                                                ?? null,
+                                    'barcode' =>
+                                    $variant->barcode
+                                        ?? null,
 
-                                            'price' =>
-                                                $variant->price !== null
-                                                    ? (float)
-                                                        $variant
-                                                            ->price
-                                                    : 0,
+                                    'price' =>
+                                    $variant->price !== null
+                                        ? (float)
+                                        $variant
+                                            ->price
+                                        : 0,
 
-                                            'compare_at_price' =>
-                                                $variant
-                                                    ->compare_at_price
-                                                !== null
-                                                    ? (float)
-                                                        $variant
-                                                            ->compare_at_price
-                                                    : 0,
+                                    'compare_at_price' =>
+                                    $variant
+                                        ->compare_at_price
+                                        !== null
+                                        ? (float)
+                                        $variant
+                                            ->compare_at_price
+                                        : 0,
 
-                                            'quantity' =>
-                                                (int) (
-                                                    $variant
-                                                        ->quantity
-                                                    ?? 0
-                                                ),
+                                    'quantity' =>
+                                    (int) (
+                                        $variant
+                                        ->quantity
+                                        ?? 0
+                                    ),
 
-                                            'is_default' =>
-                                                (bool) (
-                                                    $variant
-                                                        ->is_default
-                                                    ?? false
-                                                ),
+                                    'is_default' =>
+                                    (bool) (
+                                        $variant
+                                        ->is_default
+                                        ?? false
+                                    ),
 
-                                            'is_active' =>
-                                                (bool) (
-                                                    $variant
-                                                        ->is_active
-                                                    ?? true
-                                                ),
+                                    'is_active' =>
+                                    (bool) (
+                                        $variant
+                                        ->is_active
+                                        ?? true
+                                    ),
 
-                                            /*
+                                    /*
                                             |--------------------------------------------------------------------------
                                             | IMPORTANT
                                             |--------------------------------------------------------------------------
                                             */
 
-                                            'image_url' =>
-                                                $variantImageUrl,
+                                    'image_url' =>
+                                    $variantImageUrl,
 
-                                            'options' =>
-                                                $formattedOptions,
-                                        ];
-                                    }
-                                )
-                                ->values();
+                                    'options' =>
+                                    $formattedOptions,
+                                ];
+                            }
+                        )
+                        ->values();
 
 
-                        /*
+                    /*
                         |--------------------------------------------------------------------------
                         | PRODUCT DISPLAY PRICE
                         |--------------------------------------------------------------------------
                         */
 
-                        $price =
-                            $product->price;
+                    $price =
+                        $product->price;
 
 
-                        $compareAtPrice =
-                            $product
-                                ->compare_at_price;
+                    $compareAtPrice =
+                        $product
+                        ->compare_at_price;
 
 
-                        /*
+                    /*
                         |--------------------------------------------------------------------------
                         | USE VARIANT PRICE
                         |--------------------------------------------------------------------------
                         */
 
-                        if (
-                            $formattedVariants
-                                ->isNotEmpty()
-                        ) {
-                            /*
+                    if (
+                        $formattedVariants
+                        ->isNotEmpty()
+                    ) {
+                        /*
                             |--------------------------------------------------------------------------
                             | SALE VARIANT FIRST
                             |--------------------------------------------------------------------------
                             */
 
-                            $saleVariant =
-                                $formattedVariants
-                                    ->first(
-                                        function ($variant) {
-                                            return (
-                                                $variant[
-                                                    'price'
-                                                ] > 0 &&
-                                                $variant[
-                                                    'compare_at_price'
-                                                ] >
-                                                $variant[
-                                                    'price'
-                                                ]
-                                            );
-                                        }
+                        $saleVariant =
+                            $formattedVariants
+                            ->first(
+                                function ($variant) {
+                                    return (
+                                        $variant['price'] > 0 &&
+                                        $variant['compare_at_price'] >
+                                        $variant['price']
                                     );
-
-
-                            if ($saleVariant) {
-                                $price =
-                                    $saleVariant[
-                                        'price'
-                                    ];
-
-                                $compareAtPrice =
-                                    $saleVariant[
-                                        'compare_at_price'
-                                    ];
-                            } elseif (
-                                $price === null
-                            ) {
-                                $validPrices =
-                                    $formattedVariants
-                                        ->pluck(
-                                            'price'
-                                        )
-                                        ->filter(
-                                            fn ($value) =>
-                                                $value > 0
-                                        );
-
-
-                                if (
-                                    $validPrices
-                                        ->isNotEmpty()
-                                ) {
-                                    $price =
-                                        $validPrices
-                                            ->min();
                                 }
+                            );
+
+
+                        if ($saleVariant) {
+                            $price =
+                                $saleVariant['price'];
+
+                            $compareAtPrice =
+                                $saleVariant['compare_at_price'];
+                        } elseif (
+                            $price === null
+                        ) {
+                            $validPrices =
+                                $formattedVariants
+                                ->pluck(
+                                    'price'
+                                )
+                                ->filter(
+                                    fn($value) =>
+                                    $value > 0
+                                );
+
+
+                            if (
+                                $validPrices
+                                ->isNotEmpty()
+                            ) {
+                                $price =
+                                    $validPrices
+                                    ->min();
                             }
                         }
+                    }
 
 
-                        /*
+                    /*
                         |--------------------------------------------------------------------------
                         | RESPONSE
                         |--------------------------------------------------------------------------
                         */
 
-                        return [
-                            'id' =>
-                                $product->id,
+                    return [
+                        'id' =>
+                        $product->id,
 
-                            'title' =>
-                                $product->title,
+                        'title' =>
+                        $product->title,
 
-                            'slug' =>
-                                $product->slug,
+                        'slug' =>
+                        $product->slug,
 
-                            'summary' =>
-                                $product->summary,
+                        'summary' =>
+                        $product->summary,
 
-                            'description' =>
-                                $product
-                                    ->description,
+                        'description' =>
+                        $product
+                            ->description,
 
-                            'type' =>
-                                $product->type,
+                        'type' =>
+                        $product->type,
 
-                            'price' =>
-                                $price !== null
-                                    ? (float) $price
-                                    : 0,
+                        'price' =>
+                        $price !== null
+                            ? (float) $price
+                            : 0,
 
-                            'compare_at_price' =>
-                                $compareAtPrice !== null
-                                    ? (float)
-                                        $compareAtPrice
-                                    : 0,
+                        'compare_at_price' =>
+                        $compareAtPrice !== null
+                            ? (float)
+                            $compareAtPrice
+                            : 0,
 
-                            'is_featured' =>
-                                (bool)
-                                    $product
-                                        ->is_featured,
+                        'is_featured' =>
+                        (bool)
+                        $product
+                            ->is_featured,
 
-                            'quantity' =>
-                                (int) (
-                                    $product
-                                        ->quantity
-                                    ?? 0
-                                ),
+                        'quantity' =>
+                        (int) (
+                            $product
+                            ->quantity
+                            ?? 0
+                        ),
 
-                            'image_url' =>
-                                $imageUrl,
+                        'image_url' =>
+                        $imageUrl,
 
-                            'store_name' =>
-                                'Storify',
+                        'store_name' =>
+                        'Storify',
 
-                            'variants' =>
-                                $formattedVariants,
-                        ];
-                    }
-                )
-                ->values();
+                        'variants' =>
+                        $formattedVariants,
+                    ];
+                }
+            )
+            ->values();
 
 
         /*
@@ -942,37 +924,33 @@ class HomeController extends Controller
 
             'section' => [
                 'title' =>
-                    $section->title
+                $section->title
                     ?: 'Product on Sale',
 
                 'is_active' =>
-                    (bool)
-                        $section
-                            ->is_active,
+                (bool)
+                $section
+                    ->is_active,
 
                 'settings' => [
                     'subtitle' =>
-                        $settings[
-                            'subtitle'
-                        ] ?? '',
+                    $settings['subtitle'] ?? '',
 
                     'product_source' =>
-                        $source,
+                    $source,
 
                     'max_products' =>
-                        $limit,
+                    $limit,
 
                     'desktop_cards_per_row' =>
-                        (int) (
-                            $settings[
-                                'desktop_cards_per_row'
-                            ] ?? 4
-                        ),
+                    (int) (
+                        $settings['desktop_cards_per_row'] ?? 4
+                    ),
                 ],
             ],
 
             'products' =>
-                $formattedProducts,
+            $formattedProducts,
         ]);
     }
 
@@ -998,7 +976,7 @@ class HomeController extends Controller
             ) &&
             $product->media &&
             $product->media
-                ->isNotEmpty()
+            ->isNotEmpty()
         ) {
             /*
             |--------------------------------------------------------------------------
@@ -1008,12 +986,12 @@ class HomeController extends Controller
 
             $media =
                 $product->media
-                    ->firstWhere(
-                        'is_cover',
-                        true
-                    )
+                ->firstWhere(
+                    'is_cover',
+                    true
+                )
                 ?? $product->media
-                    ->first();
+                ->first();
 
 
             return
@@ -1030,9 +1008,7 @@ class HomeController extends Controller
         */
 
         if (
-            ! empty(
-                $product->image_url
-            )
+            ! empty($product->image_url)
         ) {
             return
                 $product->image_url;
@@ -1099,5 +1075,59 @@ class HomeController extends Controller
         return asset(
             $path
         );
+    }
+
+
+    // Promotions & Offers
+    public function promotions()
+    {
+        $section = \App\Models\HomeSection::where('section_key', 'promotions')->first();
+
+        if (!$section || !$section->is_active) {
+            return response()->json([
+                'status' => true,
+                'section' => null,
+                'cards' => [],
+            ]);
+        }
+
+        $settings = is_array($section->settings) ? $section->settings : [];
+        $cards = isset($settings['cards']) && is_array($settings['cards']) ? $settings['cards'] : [];
+
+        $layouts = [
+            'tall_left',
+            'tall_middle',
+            'square_top_right',
+            'square_top_right_arrow',
+            'wide_bottom_banner',
+        ];
+
+        $formattedCards = collect($layouts)->map(function ($layout, $index) use ($cards) {
+            $card = $cards[$index] ?? [];
+
+            $image = $card['image'] ?? '';
+            $imageUrl = $card['image_url'] ?? '';
+
+            if (!$imageUrl && $image) {
+                $imageUrl = asset($image);
+            }
+
+            return [
+                'layout' => $card['layout'] ?? $layout,
+                'image' => $image,
+                'image_url' => $imageUrl,
+                'image_alt' => $card['image_alt'] ?? '',
+                'link' => $card['link'] ?? '/products',
+            ];
+        })->values();
+
+        return response()->json([
+            'status' => true,
+            'section' => [
+                'title' => $section->title ?: 'Promotions & Offers',
+                'is_active' => (bool) $section->is_active,
+            ],
+            'cards' => $formattedCards,
+        ]);
     }
 }

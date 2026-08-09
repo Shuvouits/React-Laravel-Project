@@ -35,6 +35,8 @@ Route::get(
     [HomeController::class, 'productsOnSale']
 );
 
+Route::get('/home/promotions', [HomeController::class, 'promotions']);
+
 
 /*
 |--------------------------------------------------------------------------
@@ -158,9 +160,15 @@ Route::prefix('admin')->group(function () {
     ]);
 
     Route::post(
-    '/home-sections/{sectionKey}/update',
-    [HomeSectionController::class, 'update']
-);
+        '/home-sections/{sectionKey}/update',
+        [HomeSectionController::class, 'update']
+    );
+
+
+    Route::post(
+        '/home-sections/promotions/cards/{index}/image',
+        [HomeSectionController::class, 'uploadPromotionImage']
+    );
 
 
 
@@ -684,9 +692,9 @@ Route::prefix('admin')->group(function () {
 
 
     Route::post(
-    '/products/{product}/variants/{variant}/image',
-    [ProductController::class, 'uploadVariantImage']
-);
+        '/products/{product}/variants/{variant}/image',
+        [ProductController::class, 'uploadVariantImage']
+    );
 
 
     /*

@@ -48,6 +48,7 @@ import AdminProducts from "./pages/admin/products/allProducts/AdminProducts";
 import AdminProductEdit from "./pages/admin/products/allProducts/AdminProductEdit";
 import FeaturedCategories from "./components/frontend/FeaturedCategories";
 import ProductsOnSale from "./components/frontend/products/ProductsOnSale";
+import PromotionsOffers from "./components/frontend/PromotionsOffers";
 
 
 /* ==========================================================================
@@ -65,6 +66,8 @@ const Home = () => {
       <FeaturedCategories />
 
       <ProductsOnSale />
+
+      <PromotionsOffers />
 
       {/* Homepage sections পরে এখানে add করব */}
     </>

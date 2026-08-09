@@ -19,9 +19,12 @@ import ProductsOnSaleEditor from "../../../components/admin/onlineStore/home/Pro
 
 import HeroSliderEditor from "../../../components/admin/onlineStore/home/HeroSliderEditor";
 
+import PromotionsOffersEditor from "../../../components/admin/onlineStore/home/PromotionsOffersEditor";
+
 import {
   getFeaturedCategoriesSettings,
   getProductsOnSaleSettings,
+  getPromotionsSettings,
   sectionDescriptions,
 } from "../../../components/admin/onlineStore/home/homeSectionConfig";
 
@@ -73,6 +76,16 @@ const AdminHomePage = () => {
 
 
   /* ==========================================================================
+     SAVE STATE
+  ============================================================================ */
+
+  const [
+    saving,
+    setSaving,
+  ] = useState(false);
+
+
+  /* ==========================================================================
      FEATURED CATEGORIES DRAFT
   ============================================================================ */
 
@@ -121,13 +134,30 @@ const AdminHomePage = () => {
 
 
   /* ==========================================================================
-     SAVE STATE
+     PROMOTIONS & OFFERS DRAFT
   ============================================================================ */
 
   const [
-    saving,
-    setSaving,
-  ] = useState(false);
+    promotionsDraft,
+    setPromotionsDraft,
+  ] = useState({
+
+    title:
+      "Promotions & Offers",
+
+    cards: [],
+
+  });
+
+
+  /* ==========================================================================
+     PROMOTION AI TARGET
+  ============================================================================ */
+
+  const [
+    promotionAiTarget,
+    setPromotionAiTarget,
+  ] = useState(null);
 
 
   /* ==========================================================================
@@ -139,7 +169,9 @@ const AdminHomePage = () => {
 
       try {
 
-        setSectionsLoading(true);
+        setSectionsLoading(
+          true
+        );
 
         setSectionError("");
 
@@ -175,9 +207,12 @@ const AdminHomePage = () => {
                 ...section,
 
                 is_active:
-                  section.is_active === true ||
-                  section.is_active === 1 ||
-                  section.is_active === "1",
+                  section.is_active ===
+                    true ||
+                  section.is_active ===
+                    1 ||
+                  section.is_active ===
+                    "1",
 
                 settings:
                   section.settings ||
@@ -205,14 +240,17 @@ const AdminHomePage = () => {
 
 
         setSectionError(
-          error.response?.data
+          error.response
+            ?.data
             ?.message ||
           "Unable to load homepage sections."
         );
 
       } finally {
 
-        setSectionsLoading(false);
+        setSectionsLoading(
+          false
+        );
 
       }
 
@@ -292,11 +330,14 @@ const AdminHomePage = () => {
 
                   is_active:
                     updatedSection
-                      ?.is_active === true ||
+                      ?.is_active ===
+                      true ||
                     updatedSection
-                      ?.is_active === 1 ||
+                      ?.is_active ===
+                      1 ||
                     updatedSection
-                      ?.is_active === "1",
+                      ?.is_active ===
+                      "1",
 
                   description:
                     item.description,
@@ -316,7 +357,8 @@ const AdminHomePage = () => {
 
 
         setSectionError(
-          error.response?.data
+          error.response
+            ?.data
             ?.message ||
           "Unable to update section visibility."
         );
@@ -336,128 +378,109 @@ const AdminHomePage = () => {
      EDIT SECTION
   ============================================================================ */
 
-  const handleEditSection = (
-    section
-  ) => {
+ const handleEditSection = (section) => {
+  setSuccessMessage("");
+  setSectionError("");
 
-    setSuccessMessage("");
+  /*
+  |--------------------------------------------------------------------------
+  | HERO
+  |--------------------------------------------------------------------------
+  */
+
+  if (section.section_key === "hero") {
+    setActiveEditor("hero");
+    return;
+  }
+
+  /*
+  |--------------------------------------------------------------------------
+  | FEATURED CATEGORIES
+  |--------------------------------------------------------------------------
+  */
+
+  if (section.section_key === "featured_categories") {
+    if (activeEditor === "featured_categories") {
+      setActiveEditor(null);
+      return;
+    }
+
+    setFeaturedDraft(
+      getFeaturedCategoriesSettings(section)
+    );
+
+    setActiveEditor("featured_categories");
+    return;
+  }
+
+  /*
+  |--------------------------------------------------------------------------
+  | PRODUCTS ON SALE
+  |--------------------------------------------------------------------------
+  */
+
+  if (section.section_key === "products_on_sale") {
+    if (activeEditor === "products_on_sale") {
+      setActiveEditor(null);
+      return;
+    }
+
+    setProductsOnSaleDraft(
+      getProductsOnSaleSettings(section)
+    );
+
+    setActiveEditor("products_on_sale");
+    return;
+  }
+
+  /*
+  |--------------------------------------------------------------------------
+  | PROMOTIONS & OFFERS
+  |--------------------------------------------------------------------------
+  */
+
+  if (section.section_key === "promotions") {
+    if (activeEditor === "promotions") {
+      setActiveEditor(null);
+      return;
+    }
+
+    setPromotionsDraft(
+      getPromotionsSettings(section)
+    );
+
+    setActiveEditor("promotions");
+
+    /*
+    |--------------------------------------------------------------------------
+    | IMPORTANT
+    |--------------------------------------------------------------------------
+    */
 
     setSectionError("");
 
+    return;
+  }
 
-    /*
-    |--------------------------------------------------------------------------
-    | HERO SLIDER
-    |--------------------------------------------------------------------------
-    */
+  /*
+  |--------------------------------------------------------------------------
+  | FUTURE SECTIONS
+  |--------------------------------------------------------------------------
+  |
+  | Do not show a global red error just because the editor has not been
+  | implemented yet.
+  |
+  |--------------------------------------------------------------------------
+  */
 
-    if (
-      section.section_key ===
-      "hero"
-    ) {
-
-      setActiveEditor(
-        "hero"
-      );
-
-      return;
-
-    }
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | FEATURED CATEGORIES
-    |--------------------------------------------------------------------------
-    */
-
-    if (
-      section.section_key ===
-      "featured_categories"
-    ) {
-
-      if (
-        activeEditor ===
-        "featured_categories"
-      ) {
-
-        setActiveEditor(null);
-
-        return;
-
-      }
-
-
-      setFeaturedDraft(
-        getFeaturedCategoriesSettings(
-          section
-        )
-      );
-
-
-      setActiveEditor(
-        "featured_categories"
-      );
-
-      return;
-
-    }
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | PRODUCTS ON SALE
-    |--------------------------------------------------------------------------
-    */
-
-    if (
-      section.section_key ===
-      "products_on_sale"
-    ) {
-
-      if (
-        activeEditor ===
-        "products_on_sale"
-      ) {
-
-        setActiveEditor(null);
-
-        return;
-
-      }
-
-
-      setProductsOnSaleDraft(
-        getProductsOnSaleSettings(
-          section
-        )
-      );
-
-
-      setActiveEditor(
-        "products_on_sale"
-      );
-
-      return;
-
-    }
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | OTHER SECTIONS
-    |--------------------------------------------------------------------------
-    */
-
-    console.log(
-      `Editor not added yet: ${section.section_key}`
-    );
-
-  };
+  console.log(
+    `Editor not added yet: ${section.section_key}`
+  );
+};
 
 
   /* ==========================================================================
-     FEATURED CATEGORIES INPUT CHANGE
+     FEATURED CATEGORIES CHANGE
   ============================================================================ */
 
   const handleFeaturedChange = (
@@ -480,7 +503,7 @@ const AdminHomePage = () => {
 
 
   /* ==========================================================================
-     PRODUCTS ON SALE INPUT CHANGE
+     PRODUCTS ON SALE CHANGE
   ============================================================================ */
 
   const handleProductsOnSaleChange = (
@@ -503,7 +526,326 @@ const AdminHomePage = () => {
 
 
   /* ==========================================================================
-     UPDATE LOCAL SECTION AFTER SAVE
+     PROMOTIONS CHANGE
+  ============================================================================ */
+
+  const handlePromotionsChange = (
+    field,
+    value
+  ) => {
+
+    setPromotionsDraft(
+      (previous) => ({
+
+        ...previous,
+
+        [field]:
+          value,
+
+      })
+    );
+
+  };
+
+
+  /* ==========================================================================
+     PROMOTION IMAGE SELECT
+  ============================================================================ */
+
+const handlePromotionImageSelect =
+  async (index, file) => {
+    if (!file) {
+      return;
+    }
+
+    setSectionError("");
+    setSuccessMessage("");
+
+    /*
+    |--------------------------------------------------------------------------
+    | TEMPORARY PREVIEW
+    |--------------------------------------------------------------------------
+    */
+
+    const temporaryPreview =
+      URL.createObjectURL(file);
+
+    setPromotionsDraft((previous) => {
+      const cards = [
+        ...(previous.cards || []),
+      ];
+
+      cards[index] = {
+        ...(cards[index] || {}),
+
+        image_url:
+          temporaryPreview,
+
+        uploading:
+          true,
+      };
+
+      return {
+        ...previous,
+        cards,
+      };
+    });
+
+    try {
+      /*
+      |--------------------------------------------------------------------------
+      | FORM DATA
+      |--------------------------------------------------------------------------
+      */
+
+      const formData =
+        new FormData();
+
+      formData.append(
+        "image",
+        file
+      );
+
+      /*
+      |--------------------------------------------------------------------------
+      | UPLOAD
+      |--------------------------------------------------------------------------
+      */
+
+      const response =
+        await api.post(
+          `/admin/home-sections/promotions/cards/${index}/image`,
+          formData,
+          {
+            headers: {
+              "Content-Type":
+                "multipart/form-data",
+            },
+          }
+        );
+
+      /*
+      |--------------------------------------------------------------------------
+      | SAVED CARD
+      |--------------------------------------------------------------------------
+      */
+
+      const savedCard =
+        response.data?.card || {};
+
+      const savedImageUrl =
+        response.data?.image_url ||
+        savedCard?.image_url ||
+        "";
+
+      /*
+      |--------------------------------------------------------------------------
+      | UPDATE LOCAL CARD
+      |--------------------------------------------------------------------------
+      */
+
+      setPromotionsDraft((previous) => {
+        const cards = [
+          ...(previous.cards || []),
+        ];
+
+        cards[index] = {
+          ...(cards[index] || {}),
+          ...savedCard,
+
+          image_url:
+            savedImageUrl,
+
+          saved_image_url:
+            savedImageUrl,
+
+          image_file:
+            null,
+
+          temporary_preview:
+            false,
+
+          uploading:
+            false,
+        };
+
+        return {
+          ...previous,
+          cards,
+        };
+      });
+
+      /*
+      |--------------------------------------------------------------------------
+      | CLEAR ERROR
+      |--------------------------------------------------------------------------
+      */
+
+      setSectionError("");
+
+      /*
+      |--------------------------------------------------------------------------
+      | SUCCESS
+      |--------------------------------------------------------------------------
+      */
+
+      setSuccessMessage(
+        response.data?.message ||
+        "Promotion image uploaded successfully."
+      );
+    } catch (error) {
+      console.error(
+        "Promotion image upload error:",
+        error
+      );
+
+      /*
+      |--------------------------------------------------------------------------
+      | ERROR
+      |--------------------------------------------------------------------------
+      */
+
+      setSectionError(
+        error.response?.data?.message ||
+          error.response?.data?.errors?.image?.[0] ||
+          "Unable to upload promotion image."
+      );
+
+      /*
+      |--------------------------------------------------------------------------
+      | STOP LOADING
+      |--------------------------------------------------------------------------
+      */
+
+      setPromotionsDraft((previous) => {
+        const cards = [
+          ...(previous.cards || []),
+        ];
+
+        cards[index] = {
+          ...(cards[index] || {}),
+
+          uploading:
+            false,
+
+          image_url:
+            cards[index]
+              ?.saved_image_url ||
+            "",
+        };
+
+        return {
+          ...previous,
+          cards,
+        };
+      });
+    } finally {
+      URL.revokeObjectURL(
+        temporaryPreview
+      );
+    }
+  };
+
+
+  /* ==========================================================================
+     PROMOTION AI STUDIO
+  ============================================================================ */
+
+  const handlePromotionAiOpen = (
+    index
+  ) => {
+
+    setPromotionAiTarget(
+      index
+    );
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | AI IMAGE STUDIO
+    |--------------------------------------------------------------------------
+    |
+    | Existing Brand AI Studio এখানে reuse করা হবে।
+    | promotionAiTarget = কোন promotion card edit হচ্ছে।
+    |
+    |--------------------------------------------------------------------------
+    */
+
+    console.log(
+      "Promotion AI Studio card:",
+      index
+    );
+
+  };
+
+
+  /* ==========================================================================
+     UPDATE PROMOTION FROM AI
+  ============================================================================ */
+
+  const handlePromotionAiImageUpdated = (
+    imageUrl
+  ) => {
+
+    if (
+      promotionAiTarget ===
+        null ||
+      !imageUrl
+    ) {
+
+      return;
+
+    }
+
+
+    setPromotionsDraft(
+      (previous) => {
+
+        const cards =
+          [...previous.cards];
+
+
+        cards[
+          promotionAiTarget
+        ] = {
+
+          ...cards[
+            promotionAiTarget
+          ],
+
+          image_url:
+            imageUrl,
+
+          image_file:
+            null,
+
+          temporary_preview:
+            false,
+
+        };
+
+
+        return {
+
+          ...previous,
+
+          cards,
+
+        };
+
+      }
+    );
+
+
+    setPromotionAiTarget(
+      null
+    );
+
+  };
+
+
+  /* ==========================================================================
+     UPDATE LOCAL SECTION
   ============================================================================ */
 
   const updateLocalSection = (
@@ -559,7 +901,7 @@ const AdminHomePage = () => {
 
       /*
       |--------------------------------------------------------------------------
-      | VALIDATE TITLE
+      | TITLE
       |--------------------------------------------------------------------------
       */
 
@@ -580,7 +922,7 @@ const AdminHomePage = () => {
 
       /*
       |--------------------------------------------------------------------------
-      | VALIDATE MAX CATEGORIES
+      | MAX
       |--------------------------------------------------------------------------
       */
 
@@ -661,7 +1003,7 @@ const AdminHomePage = () => {
 
       /*
       |--------------------------------------------------------------------------
-      | VALIDATE TITLE
+      | TITLE
       |--------------------------------------------------------------------------
       */
 
@@ -790,15 +1132,111 @@ const AdminHomePage = () => {
 
 
   /* ==========================================================================
+     SAVE PROMOTIONS & OFFERS
+  ============================================================================ */
+
+ const savePromotions =
+  async () => {
+
+    if (
+      !promotionsDraft
+        .title
+        .trim()
+    ) {
+      setSectionError(
+        "Section title is required."
+      );
+
+      return;
+    }
+
+
+    const cards =
+      Array.isArray(
+        promotionsDraft.cards
+      )
+        ? promotionsDraft.cards
+        : [];
+
+
+    const formattedCards =
+      cards.map(
+        (card) => ({
+          layout:
+            card.layout || "",
+
+          image_url:
+            card.saved_image_url ||
+            (
+              card.image_url
+                ?.startsWith("blob:")
+                ? ""
+                : card.image_url || ""
+            ),
+
+          image_alt:
+            card.image_alt || "",
+
+          link:
+            card.link || "/products",
+        })
+      );
+
+
+    const response =
+      await api.post(
+        "/admin/home-sections/promotions/update",
+        {
+          title:
+            promotionsDraft
+              .title
+              .trim(),
+
+          settings: {
+            cards:
+              formattedCards,
+          },
+        }
+      );
+
+
+    updateLocalSection(
+      "promotions",
+      response.data?.section
+    );
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | REFRESH DRAFT WITH SAVED DATA
+    |--------------------------------------------------------------------------
+    */
+
+    setPromotionsDraft(
+      getPromotionsSettings(
+        response.data?.section
+      )
+    );
+
+
+    setSectionError("");
+
+
+    setSuccessMessage(
+      response.data?.message ||
+      "Promotions & Offers saved successfully."
+    );
+  };
+
+
+  /* ==========================================================================
      SAVE ACTIVE SECTION
   ============================================================================ */
 
   const handleSave =
     async () => {
 
-      if (
-        saving
-      ) {
+      if (saving) {
         return;
       }
 
@@ -813,7 +1251,9 @@ const AdminHomePage = () => {
         activeEditor ===
         "hero"
       ) {
+
         return;
+
       }
 
 
@@ -826,13 +1266,17 @@ const AdminHomePage = () => {
       if (
         !activeEditor
       ) {
+
         return;
+
       }
 
 
       try {
 
-        setSaving(true);
+        setSaving(
+          true
+        );
 
         setSectionError("");
 
@@ -874,6 +1318,24 @@ const AdminHomePage = () => {
 
         }
 
+
+        /*
+        |--------------------------------------------------------------------------
+        | PROMOTIONS
+        |--------------------------------------------------------------------------
+        */
+
+        if (
+          activeEditor ===
+          "promotions"
+        ) {
+
+          await savePromotions();
+
+          return;
+
+        }
+
       } catch (error) {
 
         console.error(
@@ -884,13 +1346,14 @@ const AdminHomePage = () => {
 
         /*
         |--------------------------------------------------------------------------
-        | VALIDATION ERROR
+        | 422 VALIDATION
         |--------------------------------------------------------------------------
         */
 
         if (
           error.response
-            ?.status === 422
+            ?.status ===
+          422
         ) {
 
           const errors =
@@ -918,7 +1381,15 @@ const AdminHomePage = () => {
             "Please check the section settings."
           );
 
-        } else {
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | GENERAL ERROR
+        |--------------------------------------------------------------------------
+        */
+
+        else {
 
           setSectionError(
             error.response
@@ -931,7 +1402,9 @@ const AdminHomePage = () => {
 
       } finally {
 
-        setSaving(false);
+        setSaving(
+          false
+        );
 
       }
 
@@ -968,7 +1441,9 @@ const AdminHomePage = () => {
       <HeroSliderEditor
         onBack={() => {
 
-          setActiveEditor(null);
+          setActiveEditor(
+            null
+          );
 
           setSuccessMessage("");
 
@@ -990,6 +1465,7 @@ const AdminHomePage = () => {
     [
       "featured_categories",
       "products_on_sale",
+      "promotions",
     ].includes(
       activeEditor
     );
@@ -1015,6 +1491,7 @@ const AdminHomePage = () => {
       <div
         className="
           max-w-[1125px]
+
           mx-auto
         "
       >
@@ -1158,6 +1635,7 @@ const AdminHomePage = () => {
                 rounded-[8px]
 
                 bg-[#2065D1]
+
                 text-white
 
                 flex
@@ -1209,7 +1687,7 @@ const AdminHomePage = () => {
 
 
         {/* =====================================================
-            SUCCESS MESSAGE
+            SUCCESS
         ====================================================== */}
 
         {successMessage && (
@@ -1239,7 +1717,7 @@ const AdminHomePage = () => {
 
 
         {/* =====================================================
-            ERROR MESSAGE
+            ERROR
         ====================================================== */}
 
         {sectionError && (
@@ -1299,6 +1777,7 @@ const AdminHomePage = () => {
 
               className="
                 animate-spin
+
                 text-[#2065D1]
               "
             />
@@ -1368,7 +1847,7 @@ const AdminHomePage = () => {
 
                 /*
                 |--------------------------------------------------------------------------
-                | FEATURED CATEGORIES EDITOR
+                | FEATURED CATEGORIES
                 |--------------------------------------------------------------------------
                 */
 
@@ -1381,7 +1860,7 @@ const AdminHomePage = () => {
 
                 /*
                 |--------------------------------------------------------------------------
-                | PRODUCTS ON SALE EDITOR
+                | PRODUCTS ON SALE
                 |--------------------------------------------------------------------------
                 */
 
@@ -1394,13 +1873,27 @@ const AdminHomePage = () => {
 
                 /*
                 |--------------------------------------------------------------------------
+                | PROMOTIONS
+                |--------------------------------------------------------------------------
+                */
+
+                const isPromotionsEditor =
+                  section.section_key ===
+                    "promotions" &&
+                  activeEditor ===
+                    "promotions";
+
+
+                /*
+                |--------------------------------------------------------------------------
                 | EDITOR OPEN
                 |--------------------------------------------------------------------------
                 */
 
                 const editorOpen =
                   isFeaturedEditor ||
-                  isProductsOnSaleEditor;
+                  isProductsOnSaleEditor ||
+                  isPromotionsEditor;
 
 
                 /*
@@ -1412,6 +1905,12 @@ const AdminHomePage = () => {
                 let editorComponent =
                   null;
 
+
+                /*
+                |--------------------------------------------------------------------------
+                | FEATURED CATEGORIES COMPONENT
+                |--------------------------------------------------------------------------
+                */
 
                 if (
                   isFeaturedEditor
@@ -1434,6 +1933,12 @@ const AdminHomePage = () => {
                 }
 
 
+                /*
+                |--------------------------------------------------------------------------
+                | PRODUCTS ON SALE COMPONENT
+                |--------------------------------------------------------------------------
+                */
+
                 if (
                   isProductsOnSaleEditor
                 ) {
@@ -1454,6 +1959,47 @@ const AdminHomePage = () => {
 
                 }
 
+
+                /*
+                |--------------------------------------------------------------------------
+                | PROMOTIONS COMPONENT
+                |--------------------------------------------------------------------------
+                */
+
+                if (
+                  isPromotionsEditor
+                ) {
+
+                  editorComponent = (
+
+                    <PromotionsOffersEditor
+                      value={
+                        promotionsDraft
+                      }
+
+                      onChange={
+                        handlePromotionsChange
+                      }
+
+                      onImageSelect={
+                        handlePromotionImageSelect
+                      }
+
+                      onOpenAi={
+                        handlePromotionAiOpen
+                      }
+                    />
+
+                  );
+
+                }
+
+
+                /*
+                |--------------------------------------------------------------------------
+                | PAGE BUILDER ITEM
+                |--------------------------------------------------------------------------
+                */
 
                 return (
 
