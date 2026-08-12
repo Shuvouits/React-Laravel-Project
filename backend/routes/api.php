@@ -37,6 +37,9 @@ Route::get(
 
 Route::get('/home/promotions', [HomeController::class, 'promotions']);
 
+// Frontend Home
+Route::get('/home/featured-products', [HomeController::class, 'featuredProducts']);
+
 
 /*
 |--------------------------------------------------------------------------

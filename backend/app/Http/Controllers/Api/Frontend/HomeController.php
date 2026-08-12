@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Category;
 use App\Models\HomeSection;
 use App\Models\Product;
+use Illuminate\Http\Request;
 
 class HomeController extends Controller
 {
@@ -1130,4 +1131,198 @@ class HomeController extends Controller
             'cards' => $formattedCards,
         ]);
     }
+
+
+   // Featured Products
+// Featured Products
+public function featuredProducts(Request $request)
+{
+    $section = HomeSection::where('section_key', 'featured_products')->first();
+
+    if (!$section) {
+        return response()->json([
+            'status' => true,
+            'section' => null,
+            'categories' => [],
+            'products' => [],
+        ]);
+    }
+
+    if (!$section->is_active) {
+        return response()->json([
+            'status' => true,
+            'section' => [
+                'title' => $section->title,
+                'is_active' => false,
+                'settings' => $section->settings ?? [],
+            ],
+            'categories' => [],
+            'products' => [],
+        ]);
+    }
+
+    $settings = is_array($section->settings) ? $section->settings : [];
+    $source = $settings['product_source'] ?? 'all_products';
+    $productIds = is_array($settings['product_ids'] ?? null) ? $settings['product_ids'] : [];
+
+    $query = Product::query()
+        ->where('status', 'active')
+        ->where('online_store', true)
+        ->with([
+            'media',
+            'variants.media',
+            'variants.optionValues.option',
+        ]);
+
+    // Product source
+    if ($source === 'featured') {
+        $query->where('is_featured', true);
+    } elseif ($source === 'latest') {
+        $query->latest('created_at');
+    } elseif ($source === 'on_sale') {
+        $query->where(function ($q) {
+            $q->where(function ($base) {
+                $base->whereNotNull('price')
+                    ->whereNotNull('compare_at_price')
+                    ->whereColumn('compare_at_price', '>', 'price');
+            })->orWhereHas('variants', function ($variant) {
+                $variant->whereNotNull('price')
+                    ->whereNotNull('compare_at_price')
+                    ->whereColumn('compare_at_price', '>', 'price');
+            });
+        });
+    } elseif ($source === 'hand_picked') {
+        if (empty($productIds)) {
+            $query->whereRaw('1 = 0');
+        } else {
+            $query->whereIn('id', $productIds);
+        }
+    }
+
+    // Category filter
+    if ($request->filled('category_id')) {
+        $query->where('category_id', $request->integer('category_id'));
+    }
+
+    // Sorting
+    $sort = $request->input('sort', 'default');
+
+    if ($sort === 'latest') {
+        $query->orderByDesc('created_at');
+    } elseif ($sort === 'price_low') {
+        $query->orderByRaw('price IS NULL, price ASC');
+    } elseif ($sort === 'price_high') {
+        $query->orderByRaw('price IS NULL, price DESC');
+    } elseif ($source === 'hand_picked' && !empty($productIds)) {
+        $ids = implode(',', array_map('intval', $productIds));
+        $query->orderByRaw("FIELD(id, {$ids})");
+    } elseif ($source !== 'latest') {
+        $query->latest('created_at');
+    }
+
+    $products = $query->paginate(12);
+
+    // Format products for reusable ProductCard + Quick View.
+    $products->getCollection()->transform(function ($product) {
+        $variants = $product->variants->values();
+
+        $price = $product->price;
+        if ($price === null && $variants->isNotEmpty()) {
+            $variantPrices = $variants->whereNotNull('price')->pluck('price')->map(fn ($price) => (float) $price);
+            $price = $variantPrices->isNotEmpty() ? $variantPrices->min() : 0;
+        }
+
+        $compareAtPrice = $product->compare_at_price;
+
+        if ((!$compareAtPrice || ((float) $compareAtPrice <= (float) $price)) && $variants->isNotEmpty()) {
+            $saleVariant = $variants->first(function ($variant) {
+                return $variant->price !== null &&
+                    $variant->compare_at_price !== null &&
+                    (float) $variant->compare_at_price > (float) $variant->price;
+            });
+
+            if ($saleVariant) {
+                $price = $saleVariant->price;
+                $compareAtPrice = $saleVariant->compare_at_price;
+            }
+        }
+
+        $formattedVariants = $variants->map(function ($variant) {
+            $variantOptions = $variant->optionValues->map(function ($value) {
+                $optionName = $value->option?->name ?? '';
+
+                return [
+                    'option_id' => $value->product_option_id ?? $value->option_id ?? null,
+                    'global_variant_value_id' => $value->global_variant_value_id ?? null,
+                    'global_variant_name' => $optionName,
+                    'option_name' => $optionName,
+                    'name' => $optionName,
+                    'value' => $value->value ?? '',
+                    'color_code' => $value->color_code ?? null,
+                    'image_path' => $value->image_path ?? null,
+                ];
+            })->filter(fn ($option) => $option['name'] !== '' && $option['value'] !== '')->values();
+
+            $variantImage = $variant->media?->file_path ?? null;
+
+            if ($variantImage && !str_starts_with($variantImage, 'http://') && !str_starts_with($variantImage, 'https://')) {
+                $variantImage = asset($variantImage);
+            }
+
+            return [
+                'id' => $variant->id,
+                'title' => $variant->title ?? '',
+                'sku' => $variant->sku ?? '',
+                'price' => $variant->price !== null ? (float) $variant->price : 0,
+                'compare_at_price' => $variant->compare_at_price !== null ? (float) $variant->compare_at_price : 0,
+                'quantity' => (int) ($variant->quantity ?? 0),
+                'is_default' => (bool) ($variant->is_default ?? false),
+                'is_active' => (bool) ($variant->is_active ?? true),
+                'image_url' => $variantImage,
+                'options' => $variantOptions,
+            ];
+        })->values();
+
+        return [
+            'id' => $product->id,
+            'title' => $product->title,
+            'slug' => $product->slug,
+            'summary' => $product->summary,
+            'type' => $product->type,
+            'price' => $price !== null ? (float) $price : 0,
+            'compare_at_price' => $compareAtPrice !== null ? (float) $compareAtPrice : 0,
+            'is_featured' => (bool) $product->is_featured,
+            'preorder_enabled' => (bool) $product->preorder_enabled,
+            'quantity' => (int) $product->quantity,
+            'image_url' => $this->resolveProductImage($product),
+            'store_name' => 'Storify',
+            'variants' => $formattedVariants,
+        ];
+    });
+
+    $categories = Category::query()
+        ->where('status', 'active')
+        ->whereHas('products', function ($q) {
+            $q->where('status', 'active')->where('online_store', true);
+        })
+        ->orderBy('name')
+        ->get(['id', 'name', 'slug']);
+
+    return response()->json([
+        'status' => true,
+        'section' => [
+            'title' => $section->title ?: 'Featured Products',
+            'is_active' => true,
+            'settings' => [
+                'product_source' => $source,
+                'product_ids' => $productIds,
+            ],
+        ],
+        'categories' => $categories,
+        'products' => $products,
+    ]);
+}
+
+
+
 }

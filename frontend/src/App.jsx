@@ -49,6 +49,7 @@ import AdminProductEdit from "./pages/admin/products/allProducts/AdminProductEdi
 import FeaturedCategories from "./components/frontend/FeaturedCategories";
 import ProductsOnSale from "./components/frontend/products/ProductsOnSale";
 import PromotionsOffers from "./components/frontend/PromotionsOffers";
+import FeaturedProducts from "./components/frontend/products/FeaturedProducts";
 
 
 /* ==========================================================================
@@ -68,6 +69,8 @@ const Home = () => {
       <ProductsOnSale />
 
       <PromotionsOffers />
+
+      <FeaturedProducts />
 
       {/* Homepage sections পরে এখানে add করব */}
     </>
@@ -136,28 +139,28 @@ function App() {
     PRODUCTS
 ===================================================== */}
 
-<Route
-  path="products"
-  element={
-    <AdminProducts />
-  }
-/>
+          <Route
+            path="products"
+            element={
+              <AdminProducts />
+            }
+          />
 
 
-<Route
-  path="products/new"
-  element={
-    <AdminProductCreate />
-  }
-/>
+          <Route
+            path="products/new"
+            element={
+              <AdminProductCreate />
+            }
+          />
 
 
-<Route
-  path="products/:id/edit"
-  element={
-    <AdminProductEdit />
-  }
-/>
+          <Route
+            path="products/:id/edit"
+            element={
+              <AdminProductEdit />
+            }
+          />
 
 
 
@@ -165,28 +168,28 @@ function App() {
     PRODUCTS -> COLLECTIONS
 ==================================================== */}
 
-<Route
-  path="products/collections"
-  element={
-    <AdminCollections />
-  }
-/>
+          <Route
+            path="products/collections"
+            element={
+              <AdminCollections />
+            }
+          />
 
 
-<Route
-  path="products/collections/new"
-  element={
-    <AdminCollectionCreate />
-  }
-/>
+          <Route
+            path="products/collections/new"
+            element={
+              <AdminCollectionCreate />
+            }
+          />
 
 
-<Route
-  path="products/collections/:id/edit"
-  element={
-    <AdminCollectionEdit />
-  }
-/>
+          <Route
+            path="products/collections/:id/edit"
+            element={
+              <AdminCollectionEdit />
+            }
+          />
 
 
 
@@ -196,38 +199,38 @@ function App() {
     PRODUCTS -> GLOBAL VARIANTS
 ==================================================== */}
 
-<Route
-  path="products/global-variants"
-  element={
-    <AdminGlobalVariants />
-  }
-/>
+          <Route
+            path="products/global-variants"
+            element={
+              <AdminGlobalVariants />
+            }
+          />
 
 
           {/*  ---Category--- */}
 
           <Route
-  path="products/categories"
-  element={
-    <AdminCategories />
-  }
-/>
+            path="products/categories"
+            element={
+              <AdminCategories />
+            }
+          />
 
 
-<Route
-  path="products/categories/new"
-  element={
-    <AdminCategoryCreate />
-  }
-/>
+          <Route
+            path="products/categories/new"
+            element={
+              <AdminCategoryCreate />
+            }
+          />
 
 
-<Route
-  path="products/categories/:id/edit"
-  element={
-    <AdminCategoryEdit />
-  }
-/>
+          <Route
+            path="products/categories/:id/edit"
+            element={
+              <AdminCategoryEdit />
+            }
+          />
 
 
 
