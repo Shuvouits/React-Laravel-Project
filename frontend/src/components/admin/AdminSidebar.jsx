@@ -1,835 +1,375 @@
-import {
-  useEffect,
-  useState,
-} from "react";
+import { useEffect, useState } from "react";
+import { NavLink, useLocation } from "react-router-dom";
 
 import {
-  NavLink,
-  useLocation,
-} from "react-router-dom";
-
-import {
-  LayoutGrid,
-  BarChart3,
-  ClipboardList,
-  Box,
-  Sparkles,
-  Bot,
-  Users,
-  Store,
-  UserCog,
-  WalletCards,
-  Percent,
-  FileText,
-  MessageSquare,
-  ShoppingBag,
-  Monitor,
-  Settings,
-  ChevronDown,
-  ChevronRight,
+    LayoutGrid,
+    BarChart3,
+    ClipboardList,
+    Box,
+    Sparkles,
+    Bot,
+    Users,
+    Store,
+    UserCog,
+    WalletCards,
+    Percent,
+    FileText,
+    MessageSquare,
+    ShoppingBag,
+    Monitor,
+    Settings,
+    ChevronDown,
+    ChevronRight,
 } from "lucide-react";
 
+const productItems = [
+    { to: "/admin/products", label: "All Products", end: true },
+    { to: "/admin/products/global-variants", label: "Global Variants" },
+    { to: "/admin/products/collections", label: "Collections" },
+    { to: "/admin/products/categories", label: "Categories" },
+    { to: "/admin/products/brands", label: "Brands" },
+    { to: "/admin/products/inventory", label: "Inventory" },
+    { to: "/admin/products/transfers", label: "Transfers" },
+    { to: "/admin/products/reviews", label: "Reviews" },
+];
+
+const vendorItems = [
+    { to: "/admin/vendors", label: "Vendors", end: true },
+    { to: "/admin/vendors/plans", label: "Vendor Plans" },
+    { to: "/admin/vendors/configuration", label: "Configuration" },
+    { to: "/admin/vendors/onboarding-flow", label: "Onboarding Flow" },
+];
+
+const onlineStoreItems = [
+    { to: "/admin/online-store/themes", label: "Themes" },
+    { to: "/admin/online-store/home-page", label: "Home" },
+    { to: "/admin/online-store/pages", label: "Pages" },
+    { to: "/admin/online-store/menus", label: "Menus" },
+];
 
 const AdminSidebar = () => {
+    const location = useLocation();
 
-  const location = useLocation();
+    // Active routes
+    const isProductsRoute = location.pathname.startsWith("/admin/products");
+    const isVendorsRoute = location.pathname.startsWith("/admin/vendors");
+    const isOnlineStoreRoute = location.pathname.startsWith("/admin/online-store");
 
+    // Menu states
+    const [productsOpen, setProductsOpen] = useState(isProductsRoute);
+    const [vendorsOpen, setVendorsOpen] = useState(isVendorsRoute);
+    const [onlineStoreOpen, setOnlineStoreOpen] = useState(isOnlineStoreRoute);
 
-  /*
-  |--------------------------------------------------------------------------
-  | PRODUCTS TOGGLE
-  |--------------------------------------------------------------------------
-  */
+    // Auto open active menu
+    useEffect(() => {
+        if (isProductsRoute) setProductsOpen(true);
+    }, [isProductsRoute]);
 
-  const isProductsRoute =
-    location.pathname.startsWith(
-      "/admin/products"
-    );
+    useEffect(() => {
+        if (isVendorsRoute) setVendorsOpen(true);
+    }, [isVendorsRoute]);
 
+    useEffect(() => {
+        if (isOnlineStoreRoute) setOnlineStoreOpen(true);
+    }, [isOnlineStoreRoute]);
 
-  const [
-    productsOpen,
-    setProductsOpen,
-  ] = useState(isProductsRoute);
-
-
-  /*
-  |--------------------------------------------------------------------------
-  | ONLINE STORE TOGGLE
-  |--------------------------------------------------------------------------
-  */
-
-  const isOnlineStoreRoute =
-    location.pathname.startsWith(
-      "/admin/online-store"
-    );
-
-
-  const [
-    onlineStoreOpen,
-    setOnlineStoreOpen,
-  ] = useState(isOnlineStoreRoute);
-
-
-  /*
-  |--------------------------------------------------------------------------
-  | AUTO OPEN BASED ON CURRENT ROUTE
-  |--------------------------------------------------------------------------
-  */
-
-  useEffect(() => {
-
-    if (isProductsRoute) {
-      setProductsOpen(true);
-    }
-
-  }, [isProductsRoute]);
-
-
-  useEffect(() => {
-
-    if (isOnlineStoreRoute) {
-      setOnlineStoreOpen(true);
-    }
-
-  }, [isOnlineStoreRoute]);
-
-
-  /*
-  |--------------------------------------------------------------------------
-  | MAIN NAV ITEM CLASS
-  |--------------------------------------------------------------------------
-  */
-
-  const navItemClass = ({
-    isActive,
-  }) => {
-
-    return `
-      min-h-[42px]
-      px-[14px]
-      rounded-[10px]
-      flex
-      items-center
-      gap-[11px]
-
-      text-[14px]
-      font-medium
-
-      transition-all
-      duration-150
-
-      ${
-        isActive
-          ? "bg-[#edf3ff] text-[#2065D1]"
-          : "text-[#4d5562] hover:bg-[#f5f6f8] hover:text-[#111827]"
-      }
-    `;
-
-  };
-
-
-  /*
-  |--------------------------------------------------------------------------
-  | SUB MENU CLASS
-  |--------------------------------------------------------------------------
-  */
-
-  const subMenuClass = ({
-    isActive,
-  }) => {
-
-    return `
-      relative
-      min-h-[35px]
-      px-[12px]
-      rounded-[9px]
-
-      flex
-      items-center
-
-      text-[13px]
-      font-medium
-
-      transition-all
-      duration-150
-
-      ${
-        isActive
-          ? "bg-[#eeeeef] text-[#222]"
-          : "text-[#74777d] hover:bg-[#f5f5f6] hover:text-[#222]"
-      }
-    `;
-
-  };
-
-
-  return (
-    <aside
-      className="
-        w-[230px]
-        min-w-[230px]
-        h-screen
-        sticky
-        top-0
-
-        bg-white
-        border-r
-        border-[#e7e8eb]
-
+    // Main menu class
+    const navItemClass = ({ isActive }) => `
+        min-h-[42px]
+        px-[14px]
+        rounded-[10px]
         flex
-        flex-col
-
-        font-['Inter']
-      "
-    >
-
-      {/* =====================================================
-          LOGO
-      ====================================================== */}
-
-      <div
-        className="
-          h-[74px]
-          px-[20px]
-          flex
-          items-center
-          border-b
-          border-[#eeeeef]
-          shrink-0
-        "
-      >
-
-        <NavLink
-          to="/admin/dashboard"
-          className="
-            flex
-            items-center
-            gap-[9px]
-          "
-        >
-
-          <div
-            className="
-              w-[29px]
-              h-[33px]
-              rounded-[7px]
-              border-2
-              border-[#4d83ed]
-              text-[#2065D1]
-
-              flex
-              items-center
-              justify-center
-
-              text-[17px]
-              font-semibold
-            "
-          >
-            S
-          </div>
-
-
-          <span
-            className="
-              text-[21px]
-              font-bold
-              tracking-[-0.7px]
-              text-[#2065D1]
-            "
-          >
-            Storify
-          </span>
-
-        </NavLink>
-
-      </div>
-
-
-      {/* =====================================================
-          SCROLLABLE MENU
-      ====================================================== */}
-
-      <div
-        className="
-          flex-1
-          overflow-y-auto
-          px-[12px]
-          py-[14px]
-
-          scrollbar-thin
-          scrollbar-thumb-[#b6b7ba]
-          scrollbar-track-transparent
-        "
-      >
-
-        <nav className="space-y-[3px]">
-
-
-          {/* OVERVIEW */}
-
-          <NavLink
-            to="/admin/dashboard"
-            className={navItemClass}
-          >
-
-            <LayoutGrid size={18} />
-
-            <span>Overview</span>
-
-          </NavLink>
-
-
-          {/* ANALYTICS */}
-
-          <NavLink
-            to="/admin/analytics"
-            className={navItemClass}
-          >
-
-            <BarChart3 size={18} />
-
-            <span>Analytics</span>
-
-          </NavLink>
-
-
-          {/* ORDERS */}
-
-          <NavLink
-            to="/admin/orders"
-            className={navItemClass}
-          >
-
-            <ClipboardList size={18} />
-
-            <span className="flex-1">
-              Orders
-            </span>
-
-            <ChevronRight size={16} />
-
-          </NavLink>
-
-
-          {/* =================================================
-              PRODUCTS
-          ================================================== */}
-
-          <div>
-
-            <button
-              type="button"
-              onClick={() =>
-                setProductsOpen(
-                  (prev) => !prev
-                )
-              }
-              className={`
-                w-full
-                min-h-[42px]
-                px-[14px]
-                rounded-[10px]
-
-                flex
-                items-center
-                gap-[11px]
-
-                text-[14px]
-                font-medium
-
-                transition-all
-                duration-150
-
-                ${
-                  isProductsRoute
-                    ? "bg-[#f5f5f5] text-[#111]"
-                    : "text-[#4d5562] hover:bg-[#f5f6f8] hover:text-[#111827]"
-                }
-              `}
-            >
-
-              <Box size={18} />
-
-              <span className="flex-1 text-left">
-                Products
-              </span>
-
-
-              <ChevronDown
-                size={16}
-                className={`
-                  transition-transform
-                  duration-200
-
-                  ${
-                    productsOpen
-                      ? "rotate-0"
-                      : "-rotate-90"
-                  }
-                `}
-              />
-
-            </button>
-
-
-            {/* PRODUCT SUB MENU */}
-
-            <div
-              className={`
-                grid
-                transition-all
-                duration-200
-                ease-in-out
-
-                ${
-                  productsOpen
-                    ? "grid-rows-[1fr] opacity-100"
-                    : "grid-rows-[0fr] opacity-0"
-                }
-              `}
-            >
-
-              <div className="overflow-hidden">
-
-                <div
-                  className="
-                    relative
-                    ml-[31px]
-                    mt-[5px]
-                    pl-[12px]
-                    pb-[4px]
-                    space-y-[1px]
-
-                    border-l
-                    border-[#dedfe2]
-                  "
-                >
-
-                  <ProductSubItem
-                    to="/admin/products"
-                    label="All Products"
-                    end
-                    className={subMenuClass}
-                  />
-
-
-                  <ProductSubItem
-                    to="/admin/products/global-variants"
-                    label="Global Variants"
-                    className={subMenuClass}
-                  />
-
-
-                  <ProductSubItem
-                    to="/admin/products/collections"
-                    label="Collections"
-                    className={subMenuClass}
-                  />
-
-
-                  <ProductSubItem
-                    to="/admin/products/categories"
-                    label="Categories"
-                    className={subMenuClass}
-                  />
-
-
-                  <ProductSubItem
-                    to="/admin/products/brands"
-                    label="Brands"
-                    className={subMenuClass}
-                  />
-
-
-                  <ProductSubItem
-                    to="/admin/products/inventory"
-                    label="Inventory"
-                    className={subMenuClass}
-                  />
-
-
-                  <ProductSubItem
-                    to="/admin/products/transfers"
-                    label="Transfers"
-                    className={subMenuClass}
-                  />
-
-
-                  <ProductSubItem
-                    to="/admin/products/reviews"
-                    label="Reviews"
-                    className={subMenuClass}
-                  />
-
+        items-center
+        gap-[11px]
+        text-[14px]
+        font-medium
+        transition-all
+        duration-150
+        ${
+            isActive
+                ? "bg-[#edf3ff] text-[#2065D1]"
+                : "text-[#4d5562] hover:bg-[#f5f6f8] hover:text-[#111827]"
+        }
+    `;
+
+    // Sub menu class
+    const subMenuClass = ({ isActive }) => `
+        relative
+        min-h-[35px]
+        px-[12px]
+        rounded-[9px]
+        flex
+        items-center
+        text-[13px]
+        font-medium
+        transition-all
+        duration-150
+        ${
+            isActive
+                ? "bg-[#eeeeef] text-[#222]"
+                : "text-[#74777d] hover:bg-[#f5f5f6] hover:text-[#222]"
+        }
+    `;
+
+    return (
+        <aside className="sticky top-0 flex h-screen w-[230px] min-w-[230px] flex-col border-r border-[#e7e8eb] bg-white font-['Inter']">
+
+            {/* Logo */}
+            <SidebarLogo />
+
+            {/* Main menu */}
+            <div className="scrollbar-thin scrollbar-thumb-[#b6b7ba] scrollbar-track-transparent flex-1 overflow-y-auto px-[12px] py-[14px]">
+                <nav className="space-y-[3px]">
+
+                    <SidebarNavItem
+                        to="/admin/dashboard"
+                        icon={LayoutGrid}
+                        label="Overview"
+                        className={navItemClass}
+                    />
+
+                    <SidebarNavItem
+                        to="/admin/analytics"
+                        icon={BarChart3}
+                        label="Analytics"
+                        className={navItemClass}
+                    />
+
+                    <SidebarNavItem
+                        to="/admin/orders"
+                        icon={ClipboardList}
+                        label="Orders"
+                        className={navItemClass}
+                        arrow
+                    />
+
+                    <SidebarDropdown
+                        label="Products"
+                        icon={Box}
+                        open={productsOpen}
+                        active={isProductsRoute}
+                        onToggle={() => setProductsOpen((prev) => !prev)}
+                        items={productItems}
+                        subMenuClass={subMenuClass}
+                        activeClass="bg-[#f5f5f5] text-[#111]"
+                    />
+
+                    <SidebarNavItem
+                        to="/admin/ai-studio"
+                        icon={Sparkles}
+                        label="AI Studio"
+                        className={navItemClass}
+                    />
+
+                    <SidebarNavItem
+                        to="/admin/sales-agent"
+                        icon={Bot}
+                        label="Sales Agent"
+                        className={navItemClass}
+                    />
+
+                    <SidebarNavItem
+                        to="/admin/customers"
+                        icon={Users}
+                        label="Customers"
+                        className={navItemClass}
+                    />
+
+                    <SidebarDropdown
+                        label="Vendors"
+                        icon={Store}
+                        open={vendorsOpen}
+                        active={isVendorsRoute}
+                        onToggle={() => setVendorsOpen((prev) => !prev)}
+                        items={vendorItems}
+                        subMenuClass={subMenuClass}
+                        activeClass="bg-[#eaf1ff] text-[#2065D1]"
+                    />
+
+                    <SidebarNavItem
+                        to="/admin/staff"
+                        icon={UserCog}
+                        label="Staff"
+                        className={navItemClass}
+                    />
+
+                    <SidebarNavItem
+                        to="/admin/payments"
+                        icon={WalletCards}
+                        label="Payments"
+                        className={navItemClass}
+                        arrow
+                    />
+
+                    <SidebarNavItem
+                        to="/admin/discounts"
+                        icon={Percent}
+                        label="Discounts"
+                        className={navItemClass}
+                    />
+
+                    <SidebarNavItem
+                        to="/admin/content"
+                        icon={FileText}
+                        label="Content"
+                        className={navItemClass}
+                        arrow
+                    />
+
+                    <SidebarNavItem
+                        to="/admin/inbox"
+                        icon={MessageSquare}
+                        label="Inbox"
+                        className={navItemClass}
+                    />
+
+                </nav>
+
+                {/* Sales Channels */}
+                <div className="mb-[8px] mt-[28px] px-[10px] text-[10px] font-semibold tracking-[0.12em] text-[#a1a4aa]">
+                    SALES CHANNELS
                 </div>
 
-              </div>
+                <SidebarDropdown
+                    label="Online Store"
+                    icon={ShoppingBag}
+                    open={onlineStoreOpen}
+                    active={isOnlineStoreRoute}
+                    onToggle={() => setOnlineStoreOpen((prev) => !prev)}
+                    items={onlineStoreItems}
+                    subMenuClass={subMenuClass}
+                    activeClass="bg-[#eaf1ff] text-[#2065D1]"
+                />
 
+                <SidebarNavItem
+                    to="/admin/point-of-sale"
+                    icon={Monitor}
+                    label="Point of Sale"
+                    className={navItemClass}
+                />
             </div>
 
-          </div>
-
-
-          {/* AI STUDIO */}
-
-          <NavLink
-            to="/admin/ai-studio"
-            className={navItemClass}
-          >
-
-            <Sparkles size={18} />
-
-            <span>AI Studio</span>
-
-          </NavLink>
-
-
-          {/* SALES AGENT */}
-
-          <NavLink
-            to="/admin/sales-agent"
-            className={navItemClass}
-          >
-
-            <Bot size={18} />
-
-            <span>Sales Agent</span>
-
-          </NavLink>
-
-
-          {/* CUSTOMERS */}
-
-          <NavLink
-            to="/admin/customers"
-            className={navItemClass}
-          >
-
-            <Users size={18} />
-
-            <span>Customers</span>
-
-          </NavLink>
-
-
-          {/* VENDORS */}
-
-          <NavLink
-            to="/admin/vendors"
-            className={navItemClass}
-          >
-
-            <Store size={18} />
-
-            <span className="flex-1">
-              Vendors
-            </span>
-
-            <ChevronRight size={16} />
-
-          </NavLink>
-
-
-          {/* STAFF */}
-
-          <NavLink
-            to="/admin/staff"
-            className={navItemClass}
-          >
-
-            <UserCog size={18} />
-
-            <span>Staff</span>
-
-          </NavLink>
-
-
-          {/* PAYMENTS */}
-
-          <NavLink
-            to="/admin/payments"
-            className={navItemClass}
-          >
-
-            <WalletCards size={18} />
-
-            <span className="flex-1">
-              Payments
-            </span>
-
-            <ChevronRight size={16} />
-
-          </NavLink>
-
-
-          {/* DISCOUNTS */}
-
-          <NavLink
-            to="/admin/discounts"
-            className={navItemClass}
-          >
-
-            <Percent size={18} />
-
-            <span>Discounts</span>
-
-          </NavLink>
-
-
-          {/* CONTENT */}
-
-          <NavLink
-            to="/admin/content"
-            className={navItemClass}
-          >
-
-            <FileText size={18} />
-
-            <span className="flex-1">
-              Content
-            </span>
-
-            <ChevronRight size={16} />
-
-          </NavLink>
-
-
-          {/* INBOX */}
-
-          <NavLink
-            to="/admin/inbox"
-            className={navItemClass}
-          >
-
-            <MessageSquare size={18} />
-
-            <span>Inbox</span>
-
-          </NavLink>
-
-        </nav>
-
-
-        {/* =====================================================
-            SALES CHANNELS
-        ====================================================== */}
-
-        <div
-          className="
-            mt-[28px]
-            mb-[8px]
-            px-[10px]
-
-            text-[10px]
-            font-semibold
-            tracking-[0.12em]
-            text-[#a1a4aa]
-          "
-        >
-          SALES CHANNELS
-        </div>
-
-
-        {/* =====================================================
-            ONLINE STORE
-        ====================================================== */}
-
-        <div>
-
-          <button
-            type="button"
-            onClick={() =>
-              setOnlineStoreOpen(
-                (prev) => !prev
-              )
-            }
-            className={`
-              w-full
-              min-h-[42px]
-              px-[14px]
-              rounded-[10px]
-
-              flex
-              items-center
-              gap-[11px]
-
-              text-[14px]
-              font-medium
-
-              transition-all
-
-              ${
-                isOnlineStoreRoute
-                  ? "bg-[#eaf1ff] text-[#2065D1]"
-                  : "text-[#4d5562] hover:bg-[#f5f6f8]"
-              }
-            `}
-          >
-
-            <ShoppingBag size={18} />
-
-            <span className="flex-1 text-left">
-              Online Store
-            </span>
-
-
-            <ChevronDown
-              size={16}
-              className={`
-                transition-transform
-                duration-200
-
-                ${
-                  onlineStoreOpen
-                    ? "rotate-0"
-                    : "-rotate-90"
-                }
-              `}
-            />
-
-          </button>
-
-
-          <div
-            className={`
-              grid
-              transition-all
-              duration-200
-
-              ${
-                onlineStoreOpen
-                  ? "grid-rows-[1fr] opacity-100"
-                  : "grid-rows-[0fr] opacity-0"
-              }
-            `}
-          >
-
-            <div className="overflow-hidden">
-
-              <div
-                className="
-                  ml-[31px]
-                  mt-[5px]
-                  pl-[12px]
-                  pb-[4px]
-                  border-l
-                  border-[#dedfe2]
-                  space-y-[1px]
-                "
-              >
-
-                <NavLink
-                  to="/admin/online-store/themes"
-                  className={subMenuClass}
-                >
-                  Themes
-                </NavLink>
-
-
-                <NavLink
-                  to="/admin/online-store/home-page"
-                  className={subMenuClass}
-                >
-                  Home
-                </NavLink>
-
-
-                <NavLink
-                  to="/admin/online-store/pages"
-                  className={subMenuClass}
-                >
-                  Pages
-                </NavLink>
-
-
-                <NavLink
-                  to="/admin/online-store/menus"
-                  className={subMenuClass}
-                >
-                  Menus
-                </NavLink>
-
-              </div>
-
+            {/* Settings */}
+            <div className="shrink-0 border-t border-[#eeeeef] bg-white px-[12px] py-[12px]">
+                <SidebarNavItem
+                    to="/admin/settings"
+                    icon={Settings}
+                    label="Settings"
+                    className={navItemClass}
+                />
             </div>
 
-          </div>
-
-        </div>
-
-
-        {/* POINT OF SALE */}
-
-        <NavLink
-          to="/admin/point-of-sale"
-          className={navItemClass}
-        >
-
-          <Monitor size={18} />
-
-          <span>Point of Sale</span>
-
-        </NavLink>
-
-      </div>
-
-
-      {/* =====================================================
-          SETTINGS
-      ====================================================== */}
-
-      <div
-        className="
-          shrink-0
-          px-[12px]
-          py-[12px]
-          border-t
-          border-[#eeeeef]
-          bg-white
-        "
-      >
-
-        <NavLink
-          to="/admin/settings"
-          className={navItemClass}
-        >
-
-          <Settings size={18} />
-
-          <span>Settings</span>
-
-        </NavLink>
-
-      </div>
-
-    </aside>
-  );
+        </aside>
+    );
 };
 
+// Sidebar logo
+const SidebarLogo = () => {
+    return (
+        <div className="flex h-[74px] shrink-0 items-center border-b border-[#eeeeef] px-[20px]">
+            <NavLink to="/admin/dashboard" className="flex items-center gap-[9px]">
+                <div className="flex h-[33px] w-[29px] items-center justify-center rounded-[7px] border-2 border-[#4d83ed] text-[17px] font-semibold text-[#2065D1]">
+                    S
+                </div>
 
-/* ==========================================================================
-   PRODUCT SUB ITEM
-============================================================================ */
+                <span className="text-[21px] font-bold tracking-[-0.7px] text-[#2065D1]">
+                    Storify
+                </span>
+            </NavLink>
+        </div>
+    );
+};
 
-const ProductSubItem = ({
-  to,
-  label,
-  className,
-  end = false,
+// Main sidebar item
+const SidebarNavItem = ({
+    to,
+    icon: Icon,
+    label,
+    className,
+    arrow = false,
 }) => {
-
-  return (
-    <NavLink
-      to={to}
-      end={end}
-      className={className}
-    >
-      {label}
-    </NavLink>
-  );
-
+    return (
+        <NavLink to={to} className={className}>
+            <Icon size={18} />
+            <span className="flex-1">{label}</span>
+            {arrow && <ChevronRight size={16} />}
+        </NavLink>
+    );
 };
 
+// Collapsible sidebar menu
+const SidebarDropdown = ({
+    label,
+    icon: Icon,
+    open,
+    active,
+    onToggle,
+    items,
+    subMenuClass,
+    activeClass,
+}) => {
+    return (
+        <div>
+            <button
+                type="button"
+                onClick={onToggle}
+                className={`flex min-h-[42px] w-full items-center gap-[11px] rounded-[10px] px-[14px] text-[14px] font-medium transition-all duration-150 ${
+                    active
+                        ? activeClass
+                        : "text-[#4d5562] hover:bg-[#f5f6f8] hover:text-[#111827]"
+                }`}
+            >
+                <Icon size={18} />
+
+                <span className="flex-1 text-left">
+                    {label}
+                </span>
+
+                <ChevronDown
+                    size={16}
+                    className={`transition-transform duration-200 ${
+                        open ? "rotate-0" : "-rotate-90"
+                    }`}
+                />
+            </button>
+
+            <div
+                className={`grid transition-all duration-200 ease-in-out ${
+                    open
+                        ? "grid-rows-[1fr] opacity-100"
+                        : "grid-rows-[0fr] opacity-0"
+                }`}
+            >
+                <div className="overflow-hidden">
+                    <div className="relative ml-[31px] mt-[5px] space-y-[1px] border-l border-[#dedfe2] pb-[4px] pl-[12px]">
+                        {items.map((item) => (
+                            <SidebarSubItem
+                                key={item.to}
+                                to={item.to}
+                                label={item.label}
+                                end={item.end}
+                                className={subMenuClass}
+                            />
+                        ))}
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+// Sidebar sub menu item
+const SidebarSubItem = ({
+    to,
+    label,
+    className,
+    end = false,
+}) => {
+    return (
+        <NavLink to={to} end={end} className={className}>
+            {label}
+        </NavLink>
+    );
+};
 
 export default AdminSidebar;

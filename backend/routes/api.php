@@ -11,776 +11,215 @@ use App\Http\Controllers\Api\Admin\HeroSlideController;
 use App\Http\Controllers\Api\Admin\HomeSectionController;
 use App\Http\Controllers\Api\Admin\ProductAIController;
 use App\Http\Controllers\Api\Admin\ProductController;
+use App\Http\Controllers\Api\Admin\VendorConfigurationController;
+use App\Http\Controllers\Api\Admin\VendorController;
+use App\Http\Controllers\Api\Admin\VendorPlanController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\Frontend\HomeController;
+use App\Http\Controllers\Api\Frontend\VendorRegistrationController;
+use App\Http\Controllers\Api\Frontend\VendorActivationController;
+use App\Http\Controllers\Api\Frontend\TopVendorController;
 use Illuminate\Support\Facades\Route;
 
 
-
-
-/*
-|--------------------------------------------------------------------------
-| STOREFRONT HOME
-|--------------------------------------------------------------------------
-*/
-
-Route::get(
-    '/home/featured-categories',
-    [HomeController::class, 'featuredCategories']
-);
-
-
-Route::get(
-    '/home/products-on-sale',
-    [HomeController::class, 'productsOnSale']
-);
-
+// Storefront Home
+Route::get('/home/featured-categories', [HomeController::class, 'featuredCategories']);
+Route::get('/home/products-on-sale', [HomeController::class, 'productsOnSale']);
 Route::get('/home/promotions', [HomeController::class, 'promotions']);
-
-// Frontend Home
 Route::get('/home/featured-products', [HomeController::class, 'featuredProducts']);
+// Top Vendors
+Route::get('/top-vendors', [TopVendorController::class, 'index']);
 
 
-/*
-|--------------------------------------------------------------------------
-| Public Authentication Routes
-|--------------------------------------------------------------------------
-*/
+// Vendor Registration
+Route::prefix('vendor-registration')->group(function () {
+    Route::post('/start', [VendorRegistrationController::class, 'start']);
+    Route::get('/plans', [VendorRegistrationController::class, 'plans']);
 
-Route::prefix('auth')->group(function () {
-
-    Route::post('/register', [
-        AuthController::class,
-        'register'
-    ]);
-
-    Route::post('/vendor/register', [
-        AuthController::class,
-        'vendorRegister'
-    ]);
-
-    Route::post('/login', [
-        AuthController::class,
-        'login'
-    ]);
+    Route::middleware('auth:sanctum')->group(function () {
+        Route::get('/application', [VendorRegistrationController::class, 'application']);
+        Route::put('/store', [VendorRegistrationController::class, 'saveStore']);
+        Route::put('/plan', [VendorRegistrationController::class, 'selectPlan']);
+        Route::post('/submit', [VendorRegistrationController::class, 'submit']);
+    });
 });
 
 
-/*
-|--------------------------------------------------------------------------
-| Protected Authentication Routes
-|--------------------------------------------------------------------------
-*/
+// Public Authentication Routes
+Route::prefix('auth')->group(function () {
+    Route::post('/register', [AuthController::class, 'register']);
+    Route::post('/vendor/register', [AuthController::class, 'vendorRegister']);
+    Route::post('/login', [AuthController::class, 'login']);
+});
 
 
-
-Route::middleware('auth:sanctum')
-    ->prefix('auth')
-    ->group(function () {
-
-        Route::get('/me', [
-            AuthController::class,
-            'me'
-        ]);
-
-        Route::post('/logout', [
-            AuthController::class,
-            'logout'
-        ]);
-
-        Route::post('/logout-all', [
-            AuthController::class,
-            'logoutAll'
-        ]);
-    });
+// Protected Authentication Routes
+Route::middleware('auth:sanctum')->prefix('auth')->group(function () {
+    Route::get('/me', [AuthController::class, 'me']);
+    Route::post('/logout', [AuthController::class, 'logout']);
+    Route::post('/logout-all', [AuthController::class, 'logoutAll']);
+});
 
 
+// Admin Routes
 Route::prefix('admin')->group(function () {
 
-    /*
-    |--------------------------------------------------------------------------
-    | HERO SLIDER
-    |--------------------------------------------------------------------------
-    */
+    // Hero Slider
+    Route::get('/hero-slides', [HeroSlideController::class, 'index']);
+    Route::post('/hero-slides', [HeroSlideController::class, 'store']);
+    Route::post('/hero-slides/reorder', [HeroSlideController::class, 'reorder']);
+    Route::get('/hero-slides/{id}', [HeroSlideController::class, 'show']);
+    Route::post('/hero-slides/{id}/update', [HeroSlideController::class, 'update']);
+    Route::post('/hero-slides/{id}/toggle', [HeroSlideController::class, 'toggle']);
+    Route::delete('/hero-slides/{id}', [HeroSlideController::class, 'destroy']);
 
-    Route::get('/hero-slides', [
-        HeroSlideController::class,
-        'index'
-    ]);
 
+    // Home Page Sections
+    Route::get('/home-sections', [HomeSectionController::class, 'index']);
+    Route::post('/home-sections/{section_key}/toggle', [HomeSectionController::class, 'toggle']);
+    Route::post('/home-sections/{sectionKey}/update', [HomeSectionController::class, 'update']);
+    Route::post('/home-sections/promotions/cards/{index}/image', [HomeSectionController::class, 'uploadPromotionImage']);
 
-    Route::post('/hero-slides', [
-        HeroSlideController::class,
-        'store'
-    ]);
 
+    // Brands
+    Route::get('/brands', [BrandController::class, 'index']);
+    Route::post('/brands', [BrandController::class, 'store']);
+    Route::post('/brands/{id}/toggle-featured', [BrandController::class, 'toggleFeatured']);
+    Route::post('/brands/{id}/archive', [BrandController::class, 'archive']);
+    Route::get('/brands/{id}', [BrandController::class, 'show']);
+    Route::post('/brands/{id}/update', [BrandController::class, 'update']);
+    Route::delete('/brands/{id}', [BrandController::class, 'destroy']);
 
-    Route::post('/hero-slides/reorder', [
-        HeroSlideController::class,
-        'reorder'
-    ]);
 
+    // Brand AI
+    Route::post('/ai/brand-content', [BrandAIController::class, 'generate']);
+    Route::post('/brands/{id}/toggle-featured', [BrandController::class, 'toggleFeatured']);
 
-    Route::get('/hero-slides/{id}', [
-        HeroSlideController::class,
-        'show'
-    ]);
 
+    // Category Management
+    Route::get('/categories', [CategoryController::class, 'index']);
 
-    Route::post('/hero-slides/{id}/update', [
-        HeroSlideController::class,
-        'update'
-    ]);
+    // Parent Categories - must stay before /categories/{id}
+    Route::get('/categories/parents', [CategoryController::class, 'parents']);
 
+    // Create Category
+    Route::post('/categories', [CategoryController::class, 'store']);
 
-    Route::post('/hero-slides/{id}/toggle', [
-        HeroSlideController::class,
-        'toggle'
-    ]);
+    // Show Category
+    Route::get('/categories/{id}', [CategoryController::class, 'show']);
 
+    // Update Category - POST used for FormData and image upload
+    Route::post('/categories/{id}/update', [CategoryController::class, 'update']);
 
-    Route::delete('/hero-slides/{id}', [
-        HeroSlideController::class,
-        'destroy'
-    ]);
+    // Toggle Featured
+    Route::post('/categories/{id}/toggle-featured', [CategoryController::class, 'toggleFeatured']);
 
+    // Delete Category
+    Route::delete('/categories/{id}', [CategoryController::class, 'destroy']);
 
-    /*
-    |--------------------------------------------------------------------------
-    | HOME PAGE SECTIONS
-    |--------------------------------------------------------------------------
-    */
+    // Category AI
+    Route::post('/ai/category-content', [CategoryAIController::class, 'generate']);
 
-    Route::get('/home-sections', [
-        HomeSectionController::class,
-        'index'
-    ]);
 
+    // Global Variants
+    Route::get('/global-variants', [GlobalVariantController::class, 'index']);
+    Route::post('/global-variants', [GlobalVariantController::class, 'store']);
 
-    Route::post('/home-sections/{section_key}/toggle', [
-        HomeSectionController::class,
-        'toggle'
-    ]);
+    // Reorder - must stay before /global-variants/{id}
+    Route::post('/global-variants/reorder', [GlobalVariantController::class, 'reorder']);
 
-    Route::post(
-        '/home-sections/{sectionKey}/update',
-        [HomeSectionController::class, 'update']
-    );
+    Route::get('/global-variants/{id}', [GlobalVariantController::class, 'show']);
+    Route::post('/global-variants/{id}/update', [GlobalVariantController::class, 'update']);
+    Route::delete('/global-variants/{id}', [GlobalVariantController::class, 'destroy']);
 
 
-    Route::post(
-        '/home-sections/promotions/cards/{index}/image',
-        [HomeSectionController::class, 'uploadPromotionImage']
-    );
+    // Collections
+    Route::get('/collections', [CollectionController::class, 'index']);
 
+    // Collection Product Search
+    Route::get('/collections/products/search', [CollectionController::class, 'searchProducts']);
 
+    // Create Collection
+    Route::post('/collections', [CollectionController::class, 'store']);
 
-    /*
-|--------------------------------------------------------------------------
-| BRANDS
-|--------------------------------------------------------------------------
-*/
+    // Show Collection
+    Route::get('/collections/{id}', [CollectionController::class, 'show']);
 
-    Route::get('/brands', [
-        BrandController::class,
-        'index'
-    ]);
+    // Update Collection - POST used for FormData and image upload
+    Route::post('/collections/{id}/update', [CollectionController::class, 'update']);
 
-    Route::post('/brands', [
-        BrandController::class,
-        'store'
-    ]);
+    // Reorder Collection Products
+    Route::post('/collections/{id}/products/reorder', [CollectionController::class, 'reorderProducts']);
 
-    Route::post('/brands/{id}/toggle-featured', [
-        BrandController::class,
-        'toggleFeatured'
-    ]);
+    // Delete Collection
+    Route::delete('/collections/{id}', [CollectionController::class, 'destroy']);
 
-    Route::post('/brands/{id}/archive', [
-        BrandController::class,
-        'archive'
-    ]);
-
-    Route::get('/brands/{id}', [
-        BrandController::class,
-        'show'
-    ]);
-
-    Route::post('/brands/{id}/update', [
-        BrandController::class,
-        'update'
-    ]);
-
-    Route::delete('/brands/{id}', [
-        BrandController::class,
-        'destroy'
-    ]);
-
-
-    /*
-|--------------------------------------------------------------------------
-| BRAND AI
-|--------------------------------------------------------------------------
-*/
-
-    Route::post(
-        '/ai/brand-content',
-        [
-            BrandAIController::class,
-            'generate'
-        ]
-    );
-
-
-    Route::post(
-        '/brands/{id}/toggle-featured',
-        [BrandController::class, 'toggleFeatured']
-    );
-
-
-
-
-    /*
-|--------------------------------------------------------------------------
-| CATEGORY MANAGEMENT
-|--------------------------------------------------------------------------
-*/
+    // Collection AI
+    Route::post('/ai/collection-content', [CollectionAIController::class, 'generate']);
 
-    Route::get(
-        '/categories',
-        [CategoryController::class, 'index']
-    );
-
-
-    /*
-|--------------------------------------------------------------------------
-| PARENT CATEGORIES
-|--------------------------------------------------------------------------
-|
-| IMPORTANT:
-| এই route অবশ্যই /categories/{id} route-এর আগে থাকবে।
-|
-*/
-
-    Route::get(
-        '/categories/parents',
-        [CategoryController::class, 'parents']
-    );
-
-
-    /*
-|--------------------------------------------------------------------------
-| CREATE CATEGORY
-|--------------------------------------------------------------------------
-*/
-
-    Route::post(
-        '/categories',
-        [CategoryController::class, 'store']
-    );
-
-
-    /*
-|--------------------------------------------------------------------------
-| SHOW CATEGORY
-|--------------------------------------------------------------------------
-*/
-
-    Route::get(
-        '/categories/{id}',
-        [CategoryController::class, 'show']
-    );
-
-
-    /*
-|--------------------------------------------------------------------------
-| UPDATE CATEGORY
-|--------------------------------------------------------------------------
-|
-| FormData + image upload সহজ রাখতে POST update ব্যবহার করছি।
-|
-*/
-
-    Route::post(
-        '/categories/{id}/update',
-        [CategoryController::class, 'update']
-    );
-
-
-    /*
-|--------------------------------------------------------------------------
-| TOGGLE FEATURED
-|--------------------------------------------------------------------------
-*/
-
-    Route::post(
-        '/categories/{id}/toggle-featured',
-        [CategoryController::class, 'toggleFeatured']
-    );
-
-
-    /*
-|--------------------------------------------------------------------------
-| DELETE CATEGORY
-|--------------------------------------------------------------------------
-*/
-
-    Route::delete(
-        '/categories/{id}',
-        [CategoryController::class, 'destroy']
-    );
-
-
-    /*
-|--------------------------------------------------------------------------
-| CATEGORY AI
-|--------------------------------------------------------------------------
-*/
-
-    Route::post(
-        '/ai/category-content',
-        [CategoryAIController::class, 'generate']
-    );
-
-
-
-    /*
-|--------------------------------------------------------------------------
-| GLOBAL VARIANTS
-|--------------------------------------------------------------------------
-*/
-
-    /*
-|--------------------------------------------------------------------------
-| LIST
-|--------------------------------------------------------------------------
-*/
-
-    Route::get(
-        '/global-variants',
-        [GlobalVariantController::class, 'index']
-    );
-
-
-    /*
-|--------------------------------------------------------------------------
-| CREATE
-|--------------------------------------------------------------------------
-*/
-
-    Route::post(
-        '/global-variants',
-        [GlobalVariantController::class, 'store']
-    );
-
-
-    /*
-|--------------------------------------------------------------------------
-| REORDER
-|--------------------------------------------------------------------------
-|
-| IMPORTANT:
-| /{id} route-এর আগে থাকবে।
-|
-*/
-
-    Route::post(
-        '/global-variants/reorder',
-        [GlobalVariantController::class, 'reorder']
-    );
-
-
-    /*
-|--------------------------------------------------------------------------
-| SHOW
-|--------------------------------------------------------------------------
-*/
-
-    Route::get(
-        '/global-variants/{id}',
-        [GlobalVariantController::class, 'show']
-    );
-
-
-    /*
-|--------------------------------------------------------------------------
-| UPDATE
-|--------------------------------------------------------------------------
-*/
-
-    Route::post(
-        '/global-variants/{id}/update',
-        [GlobalVariantController::class, 'update']
-    );
-
-
-    /*
-|--------------------------------------------------------------------------
-| DELETE
-|--------------------------------------------------------------------------
-*/
-
-    Route::delete(
-        '/global-variants/{id}',
-        [GlobalVariantController::class, 'destroy']
-    );
-
-
-    /*
-|--------------------------------------------------------------------------
-| COLLECTIONS
-|--------------------------------------------------------------------------
-*/
-
-    /*
-|--------------------------------------------------------------------------
-| LIST
-|--------------------------------------------------------------------------
-|
-| GET /api/admin/collections
-|
-| Supports:
-|
-| ?tab=all
-| ?tab=active
-| ?tab=inactive
-| ?tab=manual
-| ?tab=automated
-| ?search=kids
-| ?page=1
-|
-*/
-
-    Route::get(
-        '/collections',
-        [CollectionController::class, 'index']
-    );
-
-
-    /*
-|--------------------------------------------------------------------------
-| SEARCH PRODUCTS FOR COLLECTION
-|--------------------------------------------------------------------------
-|
-| GET /api/admin/collections/products/search
-|
-| Example:
-| ?search=iphone
-|
-| Collection Create/Edit page-এর product search field এটি use করবে।
-|
-*/
-
-    Route::get(
-        '/collections/products/search',
-        [CollectionController::class, 'searchProducts']
-    );
-
-
-    /*
-|--------------------------------------------------------------------------
-| CREATE COLLECTION
-|--------------------------------------------------------------------------
-|
-| POST /api/admin/collections
-|
-*/
-
-    Route::post(
-        '/collections',
-        [CollectionController::class, 'store']
-    );
-
-
-    /*
-|--------------------------------------------------------------------------
-| SHOW COLLECTION
-|--------------------------------------------------------------------------
-|
-| GET /api/admin/collections/{id}
-|
-*/
-
-    Route::get(
-        '/collections/{id}',
-        [CollectionController::class, 'show']
-    );
-
-
-    /*
-|--------------------------------------------------------------------------
-| UPDATE COLLECTION
-|--------------------------------------------------------------------------
-|
-| POST ব্যবহার করছি কারণ image upload + FormData থাকবে।
-|
-| POST /api/admin/collections/{id}/update
-|
-*/
-
-    Route::post(
-        '/collections/{id}/update',
-        [CollectionController::class, 'update']
-    );
-
-
-    /*
-|--------------------------------------------------------------------------
-| REORDER PRODUCTS INSIDE COLLECTION
-|--------------------------------------------------------------------------
-|
-| POST /api/admin/collections/{id}/products/reorder
-|
-*/
-
-    Route::post(
-        '/collections/{id}/products/reorder',
-        [CollectionController::class, 'reorderProducts']
-    );
-
-
-    /*
-|--------------------------------------------------------------------------
-| DELETE COLLECTION
-|--------------------------------------------------------------------------
-|
-| DELETE /api/admin/collections/{id}
-|
-*/
-
-    Route::delete(
-        '/collections/{id}',
-        [CollectionController::class, 'destroy']
-    );
-
-
-    /*
-|--------------------------------------------------------------------------
-| COLLECTION AI
-|--------------------------------------------------------------------------
-|
-| POST /api/admin/ai/collection-content
-|
-| target:
-|
-| description
-| seo
-| all
-|
-*/
-
-    Route::post(
-        '/ai/collection-content',
-        [CollectionAIController::class, 'generate']
-    );
-
-
-
-    /*
-|--------------------------------------------------------------------------
-| PRODUCTS
-|--------------------------------------------------------------------------
-*/
-
-    /*
-|--------------------------------------------------------------------------
-| PRODUCT LIST
-|--------------------------------------------------------------------------
-|
-| GET /api/admin/products
-|
-| Supports:
-|
-| ?tab=all
-| ?tab=active
-| ?tab=draft
-| ?tab=archived
-| ?search=nike
-| ?category_id=1
-| ?brand_id=1
-| ?source=admin
-|
-*/
-
-    Route::get(
-        '/products',
-        [ProductController::class, 'index']
-    );
-
-
-    /*
-|--------------------------------------------------------------------------
-| PRODUCT FORM OPTIONS
-|--------------------------------------------------------------------------
-|
-| GET /api/admin/products/form-options
-|
-| Returns:
-| - categories
-| - brands
-| - collections
-| - global variants
-|
-| IMPORTANT:
-| This route MUST stay before /products/{id}
-|
-*/
-
-    Route::get(
-        '/products/form-options',
-        [ProductController::class, 'formOptions']
-    );
-
-
-    /*
-|--------------------------------------------------------------------------
-| CREATE PRODUCT
-|--------------------------------------------------------------------------
-|
-| POST /api/admin/products
-|
-| FormData supported for media upload.
-|
-*/
-
-    Route::post(
-        '/products',
-        [ProductController::class, 'store']
-    );
-
-
-    /*
-|--------------------------------------------------------------------------
-| PRODUCT MEDIA REORDER
-|--------------------------------------------------------------------------
-|
-| POST /api/admin/products/{id}/media/reorder
-|
-*/
-
-    Route::post(
-        '/products/{id}/media/reorder',
-        [ProductController::class, 'reorderMedia']
-    );
-
-
-    /*
-|--------------------------------------------------------------------------
-| SET PRODUCT COVER IMAGE
-|--------------------------------------------------------------------------
-|
-| POST /api/admin/products/{productId}/media/{mediaId}/cover
-|
-*/
-
-    Route::post(
-        '/products/{productId}/media/{mediaId}/cover',
-        [ProductController::class, 'setCover']
-    );
-
-
-    /*
-|--------------------------------------------------------------------------
-| DELETE SINGLE PRODUCT MEDIA
-|--------------------------------------------------------------------------
-|
-| DELETE /api/admin/products/{productId}/media/{mediaId}
-|
-*/
-
-    Route::delete(
-        '/products/{productId}/media/{mediaId}',
-        [ProductController::class, 'destroyMedia']
-    );
-
-
-    Route::post(
-        '/products/{product}/variants/{variant}/image',
-        [ProductController::class, 'uploadVariantImage']
-    );
-
-
-    /*
-|--------------------------------------------------------------------------
-| TOGGLE FEATURED
-|--------------------------------------------------------------------------
-|
-| POST /api/admin/products/{id}/toggle-featured
-|
-*/
-
-    Route::post(
-        '/products/{id}/toggle-featured',
-        [ProductController::class, 'toggleFeatured']
-    );
-
-
-    /*
-|--------------------------------------------------------------------------
-| SHOW PRODUCT
-|--------------------------------------------------------------------------
-|
-| GET /api/admin/products/{id}
-|
-*/
-
-    Route::get(
-        '/products/{id}',
-        [ProductController::class, 'show']
-    );
-
-
-    /*
-|--------------------------------------------------------------------------
-| UPDATE PRODUCT
-|--------------------------------------------------------------------------
-|
-| POST /api/admin/products/{id}/update
-|
-| POST intentionally used because product edit uses FormData + media files.
-|
-*/
-
-    Route::post(
-        '/products/{id}/update',
-        [ProductController::class, 'update']
-    );
-
-
-    /*
-|--------------------------------------------------------------------------
-| DELETE PRODUCT
-|--------------------------------------------------------------------------
-|
-| DELETE /api/admin/products/{id}
-|
-*/
-
-    Route::delete(
-        '/products/{id}',
-        [ProductController::class, 'destroy']
-    );
-
-
-    /*
-|--------------------------------------------------------------------------
-| PRODUCT AI
-|--------------------------------------------------------------------------
-|
-| POST /api/admin/ai/product-content
-|
-| target:
-|
-| summary
-| description
-| specifications
-| seo
-| all
-|
-*/
-
-    Route::post(
-        '/ai/product-content',
-        [ProductAIController::class, 'generate']
-    );
+
+    // Products
+    Route::get('/products', [ProductController::class, 'index']);
+
+    // Product Form Options - must stay before /products/{id}
+    Route::get('/products/form-options', [ProductController::class, 'formOptions']);
+
+    // Create Product
+    Route::post('/products', [ProductController::class, 'store']);
+
+    // Product Media Reorder
+    Route::post('/products/{id}/media/reorder', [ProductController::class, 'reorderMedia']);
+
+    // Set Product Cover
+    Route::post('/products/{productId}/media/{mediaId}/cover', [ProductController::class, 'setCover']);
+
+    // Delete Product Media
+    Route::delete('/products/{productId}/media/{mediaId}', [ProductController::class, 'destroyMedia']);
+
+    // Product Variant Image
+    Route::post('/products/{product}/variants/{variant}/image', [ProductController::class, 'uploadVariantImage']);
+
+    // Toggle Product Featured
+    Route::post('/products/{id}/toggle-featured', [ProductController::class, 'toggleFeatured']);
+
+    // Show Product
+    Route::get('/products/{id}', [ProductController::class, 'show']);
+
+    // Update Product - POST used for FormData and media files
+    Route::post('/products/{id}/update', [ProductController::class, 'update']);
+
+    // Delete Product
+    Route::delete('/products/{id}', [ProductController::class, 'destroy']);
+
+    // Product AI
+    Route::post('/ai/product-content', [ProductAIController::class, 'generate']);
+
+    // Admin Vendors
+    Route::get('/vendors', [VendorController::class, 'index']);
+    Route::post('/vendors', [VendorController::class, 'store']);
+    Route::get('/vendors/{id}', [VendorController::class, 'show']);
+    Route::post('/vendors/{id}/update', [VendorController::class, 'update']);
+    Route::post('/vendors/{id}/suspend', [VendorController::class, 'suspend']);
+    Route::post('/vendors/{id}/restore', [VendorController::class, 'restore']);
+    Route::delete('/vendors/{id}', [VendorController::class, 'destroy']);
+
+    // Admin Vendor Applications
+    Route::post('/vendor-applications/{applicationId}/approve', [VendorController::class, 'approve']);
+    Route::post('/vendor-applications/{applicationId}/reject', [VendorController::class, 'reject']);
+
+    // Vendor Account Activation
+    Route::get('/vendor/activate/{user}', [VendorActivationController::class, 'activate'])
+        ->middleware('signed')
+        ->name('vendor.activate');
+
+    // Vendor Plans
+    Route::get('/vendor-plans', [VendorPlanController::class, 'index']);
+    Route::post('/vendor-plans', [VendorPlanController::class, 'store']);
+    Route::get('/vendor-plans/{id}', [VendorPlanController::class, 'show']);
+    Route::post('/vendor-plans/{id}/update', [VendorPlanController::class, 'update']);
+    Route::delete('/vendor-plans/{id}', [VendorPlanController::class, 'destroy']);
+
+    // Vendor Configuration
+Route::get('/vendor-configuration', [VendorConfigurationController::class, 'show']);
+Route::post('/vendor-configuration', [VendorConfigurationController::class, 'update']);
 });

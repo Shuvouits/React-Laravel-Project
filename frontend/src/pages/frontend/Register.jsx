@@ -550,44 +550,22 @@ const Register = () => {
                 VENDOR
             ============================ */}
 
-            <Link
-              to="/vendor/register"
-              className="
-                mt-[18px]
-                w-full
-                min-h-[38px]
-                px-[12px]
-                rounded-full
-                border
-                border-[#d5e2fa]
-                bg-[#f7faff]
-                flex
-                items-center
-                justify-center
-                gap-[7px]
-                text-[12px]
-                sm:text-[13px]
-                text-[#666666]
-                hover:border-[#2065D1]
-                transition-all
-              "
-            >
+           {/* Vendor */}
+<Link
+  to="/become-vendor"
+  className="mt-[18px] w-full min-h-[38px] px-[12px] rounded-full border border-[#d5e2fa] bg-[#f7faff] flex items-center justify-center gap-[7px] text-[12px] sm:text-[13px] text-[#666666] hover:border-[#2065D1] transition-all"
+>
+  <span className="text-[#2065D1] shrink-0">
+    <StoreIcon />
+  </span>
 
-              <span className="text-[#2065D1] shrink-0">
-                <StoreIcon />
-              </span>
-
-              <span>
-
-                Want to sell on our marketplace?{" "}
-
-                <span className="text-[#2065D1] font-medium">
-                  Become a Vendor
-                </span>
-
-              </span>
-
-            </Link>
+  <span>
+    Want to sell on our marketplace?{" "}
+    <span className="text-[#2065D1] font-medium">
+      Become a Vendor
+    </span>
+  </span>
+</Link>
 
 
             {/* ============================
