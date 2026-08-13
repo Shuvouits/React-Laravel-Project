@@ -160,6 +160,8 @@ return new class extends Migration
                 'parent_id',
                 'display_order',
             ]);
+
+            // $table->string('mega_menu_image')->nullable()->after('image');
         });
     }
 

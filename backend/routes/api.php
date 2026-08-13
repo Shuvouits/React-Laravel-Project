@@ -19,6 +19,7 @@ use App\Http\Controllers\Api\Frontend\HomeController;
 use App\Http\Controllers\Api\Frontend\VendorRegistrationController;
 use App\Http\Controllers\Api\Frontend\VendorActivationController;
 use App\Http\Controllers\Api\Frontend\TopVendorController;
+use App\Http\Controllers\Api\Frontend\CategoryMegaMenuController;
 use Illuminate\Support\Facades\Route;
 
 
@@ -29,6 +30,8 @@ Route::get('/home/promotions', [HomeController::class, 'promotions']);
 Route::get('/home/featured-products', [HomeController::class, 'featuredProducts']);
 // Top Vendors
 Route::get('/top-vendors', [TopVendorController::class, 'index']);
+// Category Mega Menu
+Route::get('/category-mega-menu', [CategoryMegaMenuController::class, 'index']);
 
 
 // Vendor Registration
@@ -119,6 +122,9 @@ Route::prefix('admin')->group(function () {
 
     // Category AI
     Route::post('/ai/category-content', [CategoryAIController::class, 'generate']);
+
+    // Category Mega Menu Image
+Route::post('/categories/{id}/mega-menu-image', [CategoryMegaMenuController::class, 'updateImage']);
 
 
     // Global Variants

@@ -26,6 +26,7 @@ class Category extends Model
         'seo_title',
         'seo_description',
         'tags',
+        'mega_menu_image',
     ];
 
 
