@@ -2,7 +2,10 @@ import { useEffect, useRef, useState } from "react";
 import { Link, NavLink, useNavigate } from "react-router-dom";
 import { ChevronRight, Pencil } from "lucide-react";
 
+import { useCart } from "../../context/CartContext";
+
 import api from "../../api/axios";
+import CollectionsMegaMenu from "./navbar/CollectionsMegaMenu";
 
 const Navbar = () => {
     const navigate = useNavigate();
@@ -117,7 +120,7 @@ const Navbar = () => {
         }
 
         if (user.role === "customer") {
-            return "/customer/dashboard";
+            return "/account";
         }
 
         return "/";
@@ -241,13 +244,10 @@ const Navbar = () => {
                             </button>
                         </div>
 
-                        <NavLink
-                            to="/collections"
-                            className={collectionMenuClass}
-                        >
-                            Collections
-                            <ChevronDownSmall />
-                        </NavLink>
+                        {/* Collections */}
+                        <CollectionsMegaMenu
+                            onOpen={() => setCategoryOpen(false)}
+                        />
 
                         <NavLink to="/brands" className={menuClass}>
                             Brands
@@ -925,20 +925,37 @@ const StorifyLogo = () => {
     );
 };
 
+
+
+
+// Cart button
+
 // Cart button
 const CartButton = () => {
+    const {
+        itemCount,
+        openCart,
+    } = useCart();
+
+    const displayCount = itemCount > 99
+        ? "99+"
+        : itemCount;
+
     return (
-        <Link
-            to="/cart"
-            aria-label="Shopping cart"
+        <button
+            type="button"
+            onClick={openCart}
+            aria-label={`Shopping cart with ${itemCount} items`}
             className="relative text-[#111111] transition-colors duration-200 hover:text-[#2065D1]"
         >
             <CartIcon />
 
-            <span className="absolute -right-[9px] -top-[10px] flex h-[19px] min-w-[19px] items-center justify-center rounded-full bg-[#2065D1] px-[4px] text-[10px] font-semibold text-white">
-                8
-            </span>
-        </Link>
+            {itemCount > 0 && (
+                <span className="absolute -right-[9px] -top-[10px] flex h-[19px] min-w-[19px] items-center justify-center rounded-full bg-[#2065D1] px-[4px] text-[10px] font-semibold leading-none text-white">
+                    {displayCount}
+                </span>
+            )}
+        </button>
     );
 };
 

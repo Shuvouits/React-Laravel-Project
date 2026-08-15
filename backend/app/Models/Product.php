@@ -11,6 +11,7 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 class Product extends Model
 {
     protected $fillable = [
+        'store_id',
         'title',
         'slug',
         'summary',
@@ -63,91 +64,100 @@ class Product extends Model
         ];
     }
 
-    // Category
+    public function store(): BelongsTo
+    {
+        return $this->belongsTo(Store::class);
+    }
+
     public function category(): BelongsTo
     {
         return $this->belongsTo(Category::class);
     }
 
-    // Brand
     public function brand(): BelongsTo
     {
         return $this->belongsTo(Brand::class);
     }
 
-    // Product creator
     public function creator(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by');
     }
 
-    // Product media
     public function media(): HasMany
     {
-        return $this->hasMany(ProductMedia::class)->orderBy('sort_order')->orderBy('id');
+        return $this->hasMany(ProductMedia::class)
+            ->orderBy('sort_order')
+            ->orderBy('id');
     }
 
-    // Product cover image
     public function cover(): HasOne
     {
-        return $this->hasOne(ProductMedia::class)->where('is_cover', true);
+        return $this->hasOne(ProductMedia::class)
+            ->where('is_cover', true);
     }
 
-    // Product options
     public function options(): HasMany
     {
-        return $this->hasMany(ProductOption::class)->orderBy('sort_order');
+        return $this->hasMany(ProductOption::class)
+            ->orderBy('sort_order');
     }
 
-    // Product variants
     public function variants(): HasMany
     {
-        return $this->hasMany(ProductVariant::class)->orderBy('sort_order');
+        return $this->hasMany(ProductVariant::class)
+            ->orderBy('sort_order');
     }
 
-    // Product collections
     public function collections(): BelongsToMany
     {
-        return $this->belongsToMany(Collection::class, 'collection_product')
+        return $this->belongsToMany(
+            Collection::class,
+            'collection_product'
+        )
             ->withPivot('sort_order')
             ->withTimestamps();
     }
 
-    // Active products
+    public function wishlists(): HasMany
+    {
+        return $this->hasMany(Wishlist::class);
+    }
+
     public function scopeActive($query)
     {
         return $query->where('status', 'active');
     }
 
-    // Draft products
     public function scopeDraft($query)
     {
         return $query->where('status', 'draft');
     }
 
-    // Archived products
     public function scopeArchived($query)
     {
         return $query->where('status', 'archived');
     }
 
-    // Featured products
     public function scopeFeatured($query)
     {
         return $query->where('is_featured', true);
     }
 
-    // Products published to online store
     public function scopeOnlineStore($query)
     {
         return $query->where('online_store', true);
     }
 
-    // Products currently on sale
     public function scopeOnSale($query)
     {
-        return $query->whereNotNull('price')
+        return $query
+            ->whereNotNull('price')
             ->whereNotNull('compare_at_price')
-            ->whereColumn('compare_at_price', '>', 'price');
+            ->whereColumn(
+                'compare_at_price',
+                '>',
+                'price'
+            );
     }
 }

@@ -90,22 +90,21 @@ class ProductController extends Controller
                         'like',
                         "%{$search}%"
                     )
-                    ->orWhere(
-                        'slug',
-                        'like',
-                        "%{$search}%"
-                    )
-                    ->orWhere(
-                        'sku',
-                        'like',
-                        "%{$search}%"
-                    )
-                    ->orWhere(
-                        'barcode',
-                        'like',
-                        "%{$search}%"
-                    );
-
+                        ->orWhere(
+                            'slug',
+                            'like',
+                            "%{$search}%"
+                        )
+                        ->orWhere(
+                            'sku',
+                            'like',
+                            "%{$search}%"
+                        )
+                        ->orWhere(
+                            'barcode',
+                            'like',
+                            "%{$search}%"
+                        );
                 }
             );
         }
@@ -223,10 +222,10 @@ class ProductController extends Controller
         $products
             ->getCollection()
             ->transform(
-                fn ($product) =>
-                    $this->productListData(
-                        $product
-                    )
+                fn($product) =>
+                $this->productListData(
+                    $product
+                )
             );
 
 
@@ -238,12 +237,12 @@ class ProductController extends Controller
 
         $baseInventory =
             Product::doesntHave('variants')
-                ->where(
-                    'quantity',
-                    '>',
-                    0
-                )
-                ->sum('quantity');
+            ->where(
+                'quantity',
+                '>',
+                0
+            )
+            ->sum('quantity');
 
 
         $variantInventory =
@@ -272,16 +271,15 @@ class ProductController extends Controller
                                 $q->doesntHave(
                                     'variants'
                                 )
-                                ->where(
-                                    'track_quantity',
-                                    true
-                                )
-                                ->where(
-                                    'quantity',
-                                    '<=',
-                                    0
-                                );
-
+                                    ->where(
+                                        'track_quantity',
+                                        true
+                                    )
+                                    ->where(
+                                        'quantity',
+                                        '<=',
+                                        0
+                                    );
                             }
                         )
 
@@ -297,27 +295,24 @@ class ProductController extends Controller
                                 $q->whereHas(
                                     'variants'
                                 )
-                                ->whereDoesntHave(
-                                    'variants',
-                                    function ($variantQuery) {
+                                    ->whereDoesntHave(
+                                        'variants',
+                                        function ($variantQuery) {
 
-                                        $variantQuery
-                                            ->where(
-                                                'quantity',
-                                                '>',
-                                                0
-                                            )
-                                            ->where(
-                                                'is_active',
-                                                true
-                                            );
-
-                                    }
-                                );
-
+                                            $variantQuery
+                                                ->where(
+                                                    'quantity',
+                                                    '>',
+                                                    0
+                                                )
+                                                ->where(
+                                                    'is_active',
+                                                    true
+                                                );
+                                        }
+                                    );
                             }
                         );
-
                 }
             )
             ->count();
@@ -326,35 +321,35 @@ class ProductController extends Controller
         $stats = [
 
             'total' =>
-                Product::count(),
+            Product::count(),
 
             'active' =>
-                Product::where(
-                    'status',
-                    'active'
-                )->count(),
+            Product::where(
+                'status',
+                'active'
+            )->count(),
 
             'draft' =>
-                Product::where(
-                    'status',
-                    'draft'
-                )->count(),
+            Product::where(
+                'status',
+                'draft'
+            )->count(),
 
             'archived' =>
-                Product::where(
-                    'status',
-                    'archived'
-                )->count(),
+            Product::where(
+                'status',
+                'archived'
+            )->count(),
 
             'out_of_stock' =>
-                $outOfStock,
+            $outOfStock,
 
             'inventory_units' =>
-                (int)
-                (
-                    $baseInventory +
-                    $variantInventory
-                ),
+            (int)
+            (
+                $baseInventory +
+                $variantInventory
+            ),
 
         ];
 
@@ -364,10 +359,10 @@ class ProductController extends Controller
             'status' => true,
 
             'products' =>
-                $products,
+            $products,
 
             'stats' =>
-                $stats,
+            $stats,
 
         ]);
     }
@@ -394,15 +389,15 @@ class ProductController extends Controller
 
         $categories =
             Category::query()
-                ->where(
-                    'status',
-                    'active'
-                )
-                ->orderBy('name')
-                ->get([
-                    'id',
-                    'name',
-                ]);
+            ->where(
+                'status',
+                'active'
+            )
+            ->orderBy('name')
+            ->get([
+                'id',
+                'name',
+            ]);
 
 
         /*
@@ -413,15 +408,15 @@ class ProductController extends Controller
 
         $brands =
             Brand::query()
-                ->where(
-                    'status',
-                    'active'
-                )
-                ->orderBy('name')
-                ->get([
-                    'id',
-                    'name',
-                ]);
+            ->where(
+                'status',
+                'active'
+            )
+            ->orderBy('name')
+            ->get([
+                'id',
+                'name',
+            ]);
 
 
         /*
@@ -432,19 +427,19 @@ class ProductController extends Controller
 
         $collections =
             Collection::query()
-                ->where(
-                    'status',
-                    'active'
-                )
-                ->orderBy(
-                    'display_position'
-                )
-                ->orderBy('title')
-                ->get([
-                    'id',
-                    'title',
-                    'slug',
-                ]);
+            ->where(
+                'status',
+                'active'
+            )
+            ->orderBy(
+                'display_position'
+            )
+            ->orderBy('title')
+            ->get([
+                'id',
+                'title',
+                'slug',
+            ]);
 
 
         /*
@@ -465,52 +460,52 @@ class ProductController extends Controller
                     return [
 
                         'id' =>
-                            $variant->id,
+                        $variant->id,
 
                         'name' =>
-                            $variant->name,
+                        $variant->name,
 
                         'visual_type' =>
-                            $variant->visual_type,
+                        $variant->visual_type,
 
                         'is_color' =>
-                            in_array(
-                                strtolower(
-                                    trim(
-                                        $variant->name
-                                    )
-                                ),
-                                [
-                                    'color',
-                                    'colour',
-                                ],
-                                true
+                        in_array(
+                            strtolower(
+                                trim(
+                                    $variant->name
+                                )
                             ),
+                            [
+                                'color',
+                                'colour',
+                            ],
+                            true
+                        ),
 
                         'values' =>
-                            $variant
-                                ->values
-                                ->map(
-                                    fn ($value) => [
+                        $variant
+                            ->values
+                            ->map(
+                                fn($value) => [
 
-                                        'id' =>
-                                            $value->id,
+                                    'id' =>
+                                    $value->id,
 
-                                        'value' =>
-                                            $value->value,
+                                    'value' =>
+                                    $value->value,
 
-                                        'color_code' =>
-                                            $value
-                                                ->color_code,
+                                    'color_code' =>
+                                    $value
+                                        ->color_code,
 
-                                        'sort_order' =>
-                                            (int)
-                                            $value
-                                                ->sort_order,
+                                    'sort_order' =>
+                                    (int)
+                                    $value
+                                        ->sort_order,
 
-                                    ]
-                                )
-                                ->values(),
+                                ]
+                            )
+                            ->values(),
 
                     ];
                 }
@@ -523,16 +518,16 @@ class ProductController extends Controller
             'status' => true,
 
             'categories' =>
-                $categories,
+            $categories,
 
             'brands' =>
-                $brands,
+            $brands,
 
             'collections' =>
-                $collections,
+            $collections,
 
             'global_variants' =>
-                $globalVariants,
+            $globalVariants,
 
         ]);
     }
@@ -581,15 +576,15 @@ class ProductController extends Controller
         $slug =
             $request->filled('slug')
 
-                ? Str::slug(
-                    $request->input(
-                        'slug'
-                    )
+            ? Str::slug(
+                $request->input(
+                    'slug'
                 )
+            )
 
-                : Str::slug(
-                    $validated['title']
-                );
+            : Str::slug(
+                $validated['title']
+            );
 
 
         $slug =
@@ -621,17 +616,13 @@ class ProductController extends Controller
                         $product =
                             Product::create(
                                 $this->productPayload(
-                                    request:
-                                        $request,
+                                    request: $request,
 
-                                    validated:
-                                        $validated,
+                                    validated: $validated,
 
-                                    slug:
-                                        $slug,
+                                    slug: $slug,
 
-                                    product:
-                                        null
+                                    product: null
                                 )
                             );
 
@@ -644,13 +635,9 @@ class ProductController extends Controller
 
                         $this->syncCollections(
 
-                            product:
-                                $product,
+                            product: $product,
 
-                            collectionIds:
-                                $validated[
-                                    'collection_ids'
-                                ]
+                            collectionIds: $validated['collection_ids']
                                 ?? []
 
                         );
@@ -665,19 +652,15 @@ class ProductController extends Controller
                         $mediaResult =
                             $this->uploadNewMedia(
 
-                                product:
-                                    $product,
+                                product: $product,
 
-                                request:
-                                    $request
+                                request: $request
 
                             );
 
 
                         $uploadedPaths =
-                            $mediaResult[
-                                'uploaded_paths'
-                            ];
+                            $mediaResult['uploaded_paths'];
 
 
                         /*
@@ -689,13 +672,9 @@ class ProductController extends Controller
                         $optionMap =
                             $this->syncProductOptions(
 
-                                product:
-                                    $product,
+                                product: $product,
 
-                                options:
-                                    $validated[
-                                        'options'
-                                    ]
+                                options: $validated['options']
                                     ?? []
 
                             );
@@ -708,9 +687,7 @@ class ProductController extends Controller
                         */
 
                         $variants =
-                            $validated[
-                                'variants'
-                            ]
+                            $validated['variants']
                             ?? [];
 
 
@@ -722,52 +699,36 @@ class ProductController extends Controller
 
                         if (
                             empty($variants) &&
-                            ! empty(
-                                $validated[
-                                    'options'
-                                ]
-                                ?? []
-                            )
+                            ! empty($validated['options']
+                                ?? [])
                         ) {
 
                             $variants =
                                 $this
-                                    ->buildAutoVariantPayload(
+                                ->buildAutoVariantPayload(
 
-                                        options:
-                                            $validated[
-                                                'options'
-                                            ],
+                                    options: $validated['options'],
 
-                                        product:
-                                            $product
+                                    product: $product
 
-                                    );
-
+                                );
                         }
 
 
                         $this->syncVariants(
 
-                            product:
-                                $product,
+                            product: $product,
 
-                            variants:
-                                $variants,
+                            variants: $variants,
 
-                            optionMap:
-                                $optionMap,
+                            optionMap: $optionMap,
 
-                            newMediaMap:
-                                $mediaResult[
-                                    'new_media_map'
-                                ]
+                            newMediaMap: $mediaResult['new_media_map']
 
                         );
 
 
                         return $product;
-
                     }
                 );
 
@@ -783,38 +744,35 @@ class ProductController extends Controller
                 'status' => true,
 
                 'message' =>
-                    'Product created successfully.',
+                'Product created successfully.',
 
                 'product' =>
-                    $this->loadProductData(
-                        $product->id
-                    ),
+                $this->loadProductData(
+                    $product->id
+                ),
 
             ], 201);
-
         } catch (\Throwable $error) {
 
-             foreach ($uploadedPaths as $path) {
-        $this->deleteFile($path);
-    }
+            foreach ($uploadedPaths as $path) {
+                $this->deleteFile($path);
+            }
 
-    if ($error instanceof ValidationException) {
-        throw $error;
-    }
+            if ($error instanceof ValidationException) {
+                throw $error;
+            }
 
-    report($error);
+            report($error);
 
-    return response()->json([
-        'status' => false,
-        'message' => 'Unable to create product.',
+            return response()->json([
+                'status' => false,
+                'message' => 'Unable to create product.',
 
-        // TEMP DEBUG
-        'error' => $error->getMessage(),
-        'file' => $error->getFile(),
-        'line' => $error->getLine(),
-    ], 500);
-
-
+                // TEMP DEBUG
+                'error' => $error->getMessage(),
+                'file' => $error->getFile(),
+                'line' => $error->getLine(),
+            ], 500);
         }
     }
 
@@ -835,158 +793,363 @@ class ProductController extends Controller
             'status' => true,
 
             'product' =>
-                $this->loadProductData(
-                    $id
-                ),
+            $this->loadProductData(
+                $id
+            ),
 
         ]);
     }
 
 
     public function uploadVariantImage(
-    Request $request,
-    Product $product,
-    $variantId
-) {
-    $request->validate([
-        'image' => [
-            'required',
-            'image',
-            'mimes:jpg,jpeg,png,webp',
-            'max:5120',
-        ],
-    ]);
+        Request $request,
+        Product $product,
+        $variantId
+    ) {
+        $request->validate([
+            'image' => [
+                'required',
+                'image',
+                'mimes:jpg,jpeg,png,webp',
+                'max:5120',
+            ],
+        ]);
 
 
-    /*
+        /*
     |--------------------------------------------------------------------------
     | FIND VARIANT
     |--------------------------------------------------------------------------
     */
 
-    $variant = $product
-        ->variants()
-        ->where('id', $variantId)
-        ->firstOrFail();
+        $variant = $product
+            ->variants()
+            ->where('id', $variantId)
+            ->firstOrFail();
 
 
-    /*
+        /*
     |--------------------------------------------------------------------------
     | UPLOAD DIRECTORY
     |--------------------------------------------------------------------------
     */
 
-    $uploadPath =
-        public_path(
-            'uploads/products/' .
-            $product->id .
-            '/variants'
-        );
+        $uploadPath =
+            public_path(
+                'uploads/products/' .
+                    $product->id .
+                    '/variants'
+            );
 
 
-    if (! file_exists($uploadPath)) {
-        mkdir(
-            $uploadPath,
-            0755,
-            true
-        );
-    }
+        if (! file_exists($uploadPath)) {
+            mkdir(
+                $uploadPath,
+                0755,
+                true
+            );
+        }
 
 
-    /*
+        /*
     |--------------------------------------------------------------------------
     | SAVE FILE
     |--------------------------------------------------------------------------
     */
 
-    $image =
-        $request->file('image');
+        $image =
+            $request->file('image');
 
 
-    $fileName =
-        time() .
-        '-' .
-        uniqid() .
-        '.' .
-        $image->getClientOriginalExtension();
+        $fileName =
+            time() .
+            '-' .
+            uniqid() .
+            '.' .
+            $image->getClientOriginalExtension();
 
 
-    $image->move(
-        $uploadPath,
-        $fileName
-    );
+        $image->move(
+            $uploadPath,
+            $fileName
+        );
 
 
-    $relativePath =
-        'uploads/products/' .
-        $product->id .
-        '/variants/' .
-        $fileName;
+        $relativePath =
+            'uploads/products/' .
+            $product->id .
+            '/variants/' .
+            $fileName;
 
 
-    /*
+        /*
     |--------------------------------------------------------------------------
     | CREATE PRODUCT MEDIA
     |--------------------------------------------------------------------------
     */
 
-    $media = $product
-        ->media()
-        ->create([
-            'file_path' =>
+        $media = $product
+            ->media()
+            ->create([
+                'file_path' =>
                 $relativePath,
 
-            'media_type' =>
+                'media_type' =>
                 'image',
 
-            'is_cover' =>
+                'is_cover' =>
                 false,
 
-            'sort_order' =>
+                'sort_order' =>
                 999,
-        ]);
+            ]);
 
 
-    /*
+        /*
     |--------------------------------------------------------------------------
     | ASSIGN MEDIA TO VARIANT
     |--------------------------------------------------------------------------
     */
 
-    $variant->product_media_id =
-        $media->id;
+        $variant->product_media_id =
+            $media->id;
 
 
-    $variant->save();
+        $variant->save();
 
 
-    /*
+        /*
     |--------------------------------------------------------------------------
     | RESPONSE
     |--------------------------------------------------------------------------
     */
 
-    return response()->json([
-        'status' => true,
+        return response()->json([
+            'status' => true,
 
-        'message' =>
+            'message' =>
             'Variant image updated successfully.',
 
-        'variant' => [
-            'id' =>
+            'variant' => [
+                'id' =>
                 $variant->id,
 
-            'product_media_id' =>
+                'product_media_id' =>
                 $variant->product_media_id,
 
-            'image_url' =>
+                'image_url' =>
                 asset(
                     $relativePath
                 ),
+            ],
+        ]);
+    }
+
+
+
+   // Single product
+public function showBySlug($slug)
+{
+    $product = Product::query()
+        ->where('slug', $slug)
+        ->where('status', 'active')
+        ->where('online_store', true)
+        ->with([
+            'category',
+            'brand',
+            'media',
+            'variants.optionValues.option',
+        ])
+        ->firstOrFail();
+
+    $productMedia = $product->media ?? collect();
+    $variants = $product->variants ?? collect();
+
+    $imageUrl = $this->resolveProductImage($product);
+
+    // Format variants
+    $formattedVariants = $variants->map(function ($variant) use ($productMedia, $imageUrl) {
+        $optionValues = $variant->relationLoaded('optionValues')
+            ? $variant->optionValues
+            : collect();
+
+        $formattedOptions = $optionValues->map(function ($optionValue) {
+            $optionName = $optionValue->option?->name ?? null;
+
+            return [
+                'id' => $optionValue->id,
+                'global_variant_value_id' => $optionValue->global_variant_value_id ?? null,
+                'global_variant_name' => $optionName,
+                'name' => $optionName,
+                'option_name' => $optionName,
+                'value' => $optionValue->value ?? null,
+                'color_code' => $optionValue->color_code ?? null,
+                'image_path' => $optionValue->image_path ?? null,
+            ];
+        })->filter(function ($option) {
+            return (
+                ! empty($option['option_name']) &&
+                $option['value'] !== null
+            );
+        })->values();
+
+        // Variant image
+        $variantImageUrl = null;
+
+        if (! empty($variant->product_media_id)) {
+            $variantMedia = $productMedia->firstWhere(
+                'id',
+                $variant->product_media_id
+            );
+
+            if ($variantMedia) {
+                $variantImageUrl = $this->resolveMediaUrl($variantMedia);
+            }
+        }
+
+        // Product image fallback
+        if (! $variantImageUrl) {
+            $variantImageUrl = $imageUrl;
+        }
+
+        return [
+            'id' => $variant->id,
+            'title' => $variant->title ?? $variant->name ?? null,
+            'name' => $variant->name ?? $variant->title ?? null,
+            'combination_key' => $variant->combination_key ?? null,
+            'product_media_id' => $variant->product_media_id ?? null,
+            'sku' => $variant->sku ?? null,
+            'barcode' => $variant->barcode ?? null,
+            'price' => $variant->price !== null
+                ? (float) $variant->price
+                : 0,
+            'compare_at_price' => $variant->compare_at_price !== null
+                ? (float) $variant->compare_at_price
+                : 0,
+            'quantity' => (int) ($variant->quantity ?? 0),
+            'is_default' => (bool) ($variant->is_default ?? false),
+            'is_active' => (bool) ($variant->is_active ?? true),
+            'image_url' => $variantImageUrl,
+            'options' => $formattedOptions,
+        ];
+    })->values();
+
+    // Product gallery
+    $media = $productMedia->map(function ($media) {
+        return [
+            'id' => $media->id,
+            'image_url' => $this->resolveMediaUrl($media),
+            'is_cover' => (bool) ($media->is_cover ?? false),
+        ];
+    })->filter(function ($media) {
+        return ! empty($media['image_url']);
+    })->values();
+
+    return response()->json([
+        'status' => true,
+
+        'product' => [
+            'id' => $product->id,
+            'title' => $product->title,
+            'slug' => $product->slug,
+
+            'summary' => $product->summary,
+            'description' => $product->description,
+            'specifications' => $product->specifications,
+
+            'type' => $product->type,
+            'product_type' => $product->type,
+
+            'price' => $product->price !== null
+                ? (float) $product->price
+                : 0,
+
+            'compare_at_price' => $product->compare_at_price !== null
+                ? (float) $product->compare_at_price
+                : 0,
+
+            'quantity' => (int) ($product->quantity ?? 0),
+            'track_quantity' => (bool) ($product->track_quantity ?? false),
+
+            'is_featured' => (bool) ($product->is_featured ?? false),
+            'preorder_enabled' => (bool) ($product->preorder_enabled ?? false),
+
+            'has_variants' => $formattedVariants->isNotEmpty(),
+
+            'image_url' => $imageUrl,
+            'media' => $media,
+
+            'category' => $product->category
+                ? [
+                    'id' => $product->category->id,
+                    'name' => $product->category->name,
+                    'slug' => $product->category->slug,
+                ]
+                : null,
+
+            'brand' => $product->brand
+                ? [
+                    'id' => $product->brand->id,
+                    'name' => $product->brand->name,
+                    'slug' => $product->brand->slug,
+                ]
+                : null,
+
+            'store_name' => 'Storify',
+            'variants' => $formattedVariants,
         ],
     ]);
 }
 
+
+
+// Resolve product image
+private function resolveProductImage($product)
+{
+    if (
+        $product->relationLoaded('media') &&
+        $product->media &&
+        $product->media->isNotEmpty()
+    ) {
+        $media = $product->media->firstWhere('is_cover', true)
+            ?? $product->media->first();
+
+        return $this->resolveMediaUrl($media);
+    }
+
+    if (! empty($product->image_url)) {
+        return $product->image_url;
+    }
+
+    return null;
+}
+
+// Resolve media URL
+private function resolveMediaUrl($media)
+{
+    if (! $media) {
+        return null;
+    }
+
+    $path = $media->file_path
+        ?? $media->image
+        ?? $media->path
+        ?? $media->url
+        ?? null;
+
+    if (! $path) {
+        return null;
+    }
+
+    if (
+        str_starts_with($path, 'http://') ||
+        str_starts_with($path, 'https://')
+    ) {
+        return $path;
+    }
+
+    return asset($path);
+}
 
     /*
     |--------------------------------------------------------------------------
@@ -1040,15 +1203,15 @@ class ProductController extends Controller
         $slug =
             $request->filled('slug')
 
-                ? Str::slug(
-                    $request->input(
-                        'slug'
-                    )
+            ? Str::slug(
+                $request->input(
+                    'slug'
                 )
+            )
 
-                : Str::slug(
-                    $validated['title']
-                );
+            : Str::slug(
+                $validated['title']
+            );
 
 
         $slug =
@@ -1081,17 +1244,13 @@ class ProductController extends Controller
                     $product->update(
                         $this->productPayload(
 
-                            request:
-                                $request,
+                            request: $request,
 
-                            validated:
-                                $validated,
+                            validated: $validated,
 
-                            slug:
-                                $slug,
+                            slug: $slug,
 
-                            product:
-                                $product
+                            product: $product
 
                         )
                     );
@@ -1105,13 +1264,9 @@ class ProductController extends Controller
 
                     $this->syncCollections(
 
-                        product:
-                            $product,
+                        product: $product,
 
-                        collectionIds:
-                            $validated[
-                                'collection_ids'
-                            ]
+                        collectionIds: $validated['collection_ids']
                             ?? []
 
                     );
@@ -1125,13 +1280,9 @@ class ProductController extends Controller
 
                     $this->deleteSelectedMedia(
 
-                        product:
-                            $product,
+                        product: $product,
 
-                        mediaIds:
-                            $validated[
-                                'deleted_media_ids'
-                            ]
+                        mediaIds: $validated['deleted_media_ids']
                             ?? []
 
                     );
@@ -1146,19 +1297,15 @@ class ProductController extends Controller
                     $mediaResult =
                         $this->uploadNewMedia(
 
-                            product:
-                                $product,
+                            product: $product,
 
-                            request:
-                                $request
+                            request: $request
 
                         );
 
 
                     $uploadedPaths =
-                        $mediaResult[
-                            'uploaded_paths'
-                        ];
+                        $mediaResult['uploaded_paths'];
 
 
                     /*
@@ -1175,16 +1322,13 @@ class ProductController extends Controller
 
                         $this->setCoverMedia(
 
-                            product:
-                                $product,
+                            product: $product,
 
-                            mediaId:
-                                $request->input(
-                                    'cover_media_id'
-                                )
+                            mediaId: $request->input(
+                                'cover_media_id'
+                            )
 
                         );
-
                     }
 
 
@@ -1197,13 +1341,9 @@ class ProductController extends Controller
                     $optionMap =
                         $this->syncProductOptions(
 
-                            product:
-                                $product,
+                            product: $product,
 
-                            options:
-                                $validated[
-                                    'options'
-                                ]
+                            options: $validated['options']
                                 ?? []
 
                         );
@@ -1227,27 +1367,17 @@ class ProductController extends Controller
 
                         $this->syncVariants(
 
-                            product:
-                                $product,
+                            product: $product,
 
-                            variants:
-                                $validated[
-                                    'variants'
-                                ]
+                            variants: $validated['variants']
                                 ?? [],
 
-                            optionMap:
-                                $optionMap,
+                            optionMap: $optionMap,
 
-                            newMediaMap:
-                                $mediaResult[
-                                    'new_media_map'
-                                ]
+                            newMediaMap: $mediaResult['new_media_map']
 
                         );
-
                     }
-
                 }
             );
 
@@ -1257,15 +1387,14 @@ class ProductController extends Controller
                 'status' => true,
 
                 'message' =>
-                    'Product updated successfully.',
+                'Product updated successfully.',
 
                 'product' =>
-                    $this->loadProductData(
-                        $product->id
-                    ),
+                $this->loadProductData(
+                    $product->id
+                ),
 
             ]);
-
         } catch (\Throwable $error) {
 
             foreach (
@@ -1276,7 +1405,6 @@ class ProductController extends Controller
                 $this->deleteFile(
                     $path
                 );
-
             }
 
 
@@ -1297,7 +1425,7 @@ class ProductController extends Controller
                 'status' => false,
 
                 'message' =>
-                    'Unable to update product.',
+                'Unable to update product.',
 
             ], 500);
         }
@@ -1326,13 +1454,13 @@ class ProductController extends Controller
 
         $files =
             $product
-                ->media
-                ->pluck(
-                    'file_path'
-                )
-                ->filter()
-                ->values()
-                ->all();
+            ->media
+            ->pluck(
+                'file_path'
+            )
+            ->filter()
+            ->values()
+            ->all();
 
 
         try {
@@ -1354,7 +1482,6 @@ class ProductController extends Controller
                 $this->deleteFile(
                     $file
                 );
-
             }
 
 
@@ -1367,7 +1494,7 @@ class ProductController extends Controller
             $directory =
                 public_path(
                     'uploads/products/'
-                    . $product->id
+                        . $product->id
                 );
 
 
@@ -1380,7 +1507,6 @@ class ProductController extends Controller
                 File::deleteDirectory(
                     $directory
                 );
-
             }
 
 
@@ -1389,10 +1515,9 @@ class ProductController extends Controller
                 'status' => true,
 
                 'message' =>
-                    'Product deleted successfully.',
+                'Product deleted successfully.',
 
             ]);
-
         } catch (\Throwable $error) {
 
             report($error);
@@ -1403,7 +1528,7 @@ class ProductController extends Controller
                 'status' => false,
 
                 'message' =>
-                    'Unable to delete product.',
+                'Unable to delete product.',
 
             ], 500);
         }
@@ -1439,15 +1564,15 @@ class ProductController extends Controller
             'status' => true,
 
             'message' =>
-                $product->is_featured
+            $product->is_featured
 
-                    ? 'Product marked as featured.'
+                ? 'Product marked as featured.'
 
-                    : 'Product removed from featured products.',
+                : 'Product removed from featured products.',
 
             'is_featured' =>
-                (bool)
-                $product->is_featured,
+            (bool)
+            $product->is_featured,
 
         ]);
     }
@@ -1483,7 +1608,7 @@ class ProductController extends Controller
             'status' => true,
 
             'message' =>
-                'Product cover updated successfully.',
+            'Product cover updated successfully.',
 
         ]);
     }
@@ -1510,12 +1635,12 @@ class ProductController extends Controller
 
         $media =
             $product
-                ->media()
-                ->where(
-                    'id',
-                    $mediaId
-                )
-                ->firstOrFail();
+            ->media()
+            ->where(
+                'id',
+                $mediaId
+            )
+            ->firstOrFail();
 
 
         $wasCover =
@@ -1545,22 +1670,20 @@ class ProductController extends Controller
 
             $next =
                 $product
-                    ->media()
-                    ->orderBy(
-                        'sort_order'
-                    )
-                    ->first();
+                ->media()
+                ->orderBy(
+                    'sort_order'
+                )
+                ->first();
 
 
             if ($next) {
 
                 $next->update([
                     'is_cover' =>
-                        true,
+                    true,
                 ]);
-
             }
-
         }
 
 
@@ -1569,7 +1692,7 @@ class ProductController extends Controller
             'status' => true,
 
             'message' =>
-                'Product media deleted successfully.',
+            'Product media deleted successfully.',
 
         ]);
     }
@@ -1636,14 +1759,10 @@ class ProductController extends Controller
                         ->update([
 
                             'sort_order' =>
-                                $item[
-                                    'sort_order'
-                                ],
+                            $item['sort_order'],
 
                         ]);
-
                 }
-
             }
         );
 
@@ -1653,7 +1772,7 @@ class ProductController extends Controller
             'status' => true,
 
             'message' =>
-                'Product media reordered successfully.',
+            'Product media reordered successfully.',
 
         ]);
     }
@@ -1852,9 +1971,9 @@ class ProductController extends Controller
                     'products',
                     'sku'
                 )
-                ->ignore(
-                    $productId
-                ),
+                    ->ignore(
+                        $productId
+                    ),
             ],
 
             'barcode' => [
@@ -2147,23 +2266,23 @@ class ProductController extends Controller
         return [
 
             'title' =>
-                trim(
-                    $validated['title']
-                ),
+            trim(
+                $validated['title']
+            ),
 
             'slug' =>
-                $slug,
+            $slug,
 
             'summary' =>
-                $validated['summary']
+            $validated['summary']
                 ?? null,
 
             'description' =>
-                $validated['description']
+            $validated['description']
                 ?? null,
 
             'specifications' =>
-                $validated['specifications']
+            $validated['specifications']
                 ?? null,
 
 
@@ -2174,15 +2293,15 @@ class ProductController extends Controller
             */
 
             'status' =>
-                $validated['status'],
+            $validated['status'],
 
             'is_featured' =>
-                $this->toBoolean(
-                    $request->input(
-                        'is_featured',
-                        false
-                    )
-                ),
+            $this->toBoolean(
+                $request->input(
+                    'is_featured',
+                    false
+                )
+            ),
 
 
             /*
@@ -2192,20 +2311,20 @@ class ProductController extends Controller
             */
 
             'online_store' =>
-                $this->toBoolean(
-                    $request->input(
-                        'online_store',
-                        true
-                    )
-                ),
+            $this->toBoolean(
+                $request->input(
+                    'online_store',
+                    true
+                )
+            ),
 
             'point_of_sale' =>
-                $this->toBoolean(
-                    $request->input(
-                        'point_of_sale',
-                        true
-                    )
-                ),
+            $this->toBoolean(
+                $request->input(
+                    'point_of_sale',
+                    true
+                )
+            ),
 
 
             /*
@@ -2215,22 +2334,18 @@ class ProductController extends Controller
             */
 
             'category_id' =>
-                $validated[
-                    'category_id'
-                ],
+            $validated['category_id'],
 
             'brand_id' =>
-                $validated[
-                    'brand_id'
-                ]
+            $validated['brand_id']
                 ?? null,
 
             'type' =>
-                $validated['type']
+            $validated['type']
                 ?? null,
 
             'tags' =>
-                $validated['tags']
+            $validated['tags']
                 ?? [],
 
 
@@ -2241,16 +2356,16 @@ class ProductController extends Controller
             */
 
             'source' =>
-                $product
-                    ? $product->source
-                    : 'admin',
+            $product
+                ? $product->source
+                : 'admin',
 
             'created_by' =>
-                $product
-                    ? $product->created_by
-                    : optional(
-                        $request->user()
-                    )->id,
+            $product
+                ? $product->created_by
+                : optional(
+                    $request->user()
+                )->id,
 
 
             /*
@@ -2260,9 +2375,7 @@ class ProductController extends Controller
             */
 
             'product_format' =>
-                $validated[
-                    'product_format'
-                ]
+            $validated['product_format']
                 ?? 'physical',
 
 
@@ -2273,12 +2386,12 @@ class ProductController extends Controller
             */
 
             'preorder_enabled' =>
-                $this->toBoolean(
-                    $request->input(
-                        'preorder_enabled',
-                        false
-                    )
-                ),
+            $this->toBoolean(
+                $request->input(
+                    'preorder_enabled',
+                    false
+                )
+            ),
 
 
             /*
@@ -2288,19 +2401,15 @@ class ProductController extends Controller
             */
 
             'price' =>
-                $validated['price']
+            $validated['price']
                 ?? null,
 
             'compare_at_price' =>
-                $validated[
-                    'compare_at_price'
-                ]
+            $validated['compare_at_price']
                 ?? null,
 
             'cost_per_item' =>
-                $validated[
-                    'cost_per_item'
-                ]
+            $validated['cost_per_item']
                 ?? null,
 
 
@@ -2311,32 +2420,32 @@ class ProductController extends Controller
             */
 
             'sku' =>
-                $validated['sku']
+            $validated['sku']
                 ?? null,
 
             'barcode' =>
-                $validated['barcode']
+            $validated['barcode']
                 ?? null,
 
             'quantity' =>
-                $validated['quantity']
+            $validated['quantity']
                 ?? 0,
 
             'track_quantity' =>
-                $this->toBoolean(
-                    $request->input(
-                        'track_quantity',
-                        true
-                    )
-                ),
+            $this->toBoolean(
+                $request->input(
+                    'track_quantity',
+                    true
+                )
+            ),
 
             'continue_selling_when_out_of_stock' =>
-                $this->toBoolean(
-                    $request->input(
-                        'continue_selling_when_out_of_stock',
-                        false
-                    )
-                ),
+            $this->toBoolean(
+                $request->input(
+                    'continue_selling_when_out_of_stock',
+                    false
+                )
+            ),
 
 
             /*
@@ -2346,29 +2455,23 @@ class ProductController extends Controller
             */
 
             'weight' =>
-                $validated['weight']
+            $validated['weight']
                 ?? 0,
 
             'weight_unit' =>
-                $validated[
-                    'weight_unit'
-                ]
+            $validated['weight_unit']
                 ?? 'kg',
 
             'country_of_origin' =>
-                $validated[
-                    'country_of_origin'
-                ]
+            $validated['country_of_origin']
                 ?? null,
 
             'hs_code' =>
-                $validated['hs_code']
+            $validated['hs_code']
                 ?? null,
 
             'customs_description' =>
-                $validated[
-                    'customs_description'
-                ]
+            $validated['customs_description']
                 ?? null,
 
 
@@ -2379,15 +2482,11 @@ class ProductController extends Controller
             */
 
             'seo_title' =>
-                $validated[
-                    'seo_title'
-                ]
+            $validated['seo_title']
                 ?? null,
 
             'seo_description' =>
-                $validated[
-                    'seo_description'
-                ]
+            $validated['seo_description']
                 ?? null,
 
         ];
@@ -2470,13 +2569,10 @@ class ProductController extends Controller
 
                     $request->merge([
                         $field =>
-                            $decoded,
+                        $decoded,
                     ]);
-
                 }
-
             }
-
         }
     }
 
@@ -2497,8 +2593,8 @@ class ProductController extends Controller
                 $collectionIds
             )
             ->map(
-                fn ($id) =>
-                    (int) $id
+                fn($id) =>
+                (int) $id
             )
             ->unique()
             ->values();
@@ -2528,19 +2624,14 @@ class ProductController extends Controller
 
             if (
                 isset(
-                    $existing[
-                        $collectionId
-                    ]
+                    $existing[$collectionId]
                 )
             ) {
 
                 $sortOrder =
                     (int)
-                    $existing[
-                        $collectionId
-                    ]
-                    ->sort_order;
-
+                    $existing[$collectionId]
+                        ->sort_order;
             } else {
 
                 $sortOrder =
@@ -2549,27 +2640,23 @@ class ProductController extends Controller
                         DB::table(
                             'collection_product'
                         )
-                        ->where(
-                            'collection_id',
-                            $collectionId
-                        )
-                        ->max(
-                            'sort_order'
-                        )
+                            ->where(
+                                'collection_id',
+                                $collectionId
+                            )
+                            ->max(
+                                'sort_order'
+                            )
                     ) + 1;
-
             }
 
 
-            $syncData[
-                $collectionId
-            ] = [
+            $syncData[$collectionId] = [
 
                 'sort_order' =>
-                    $sortOrder,
+                $sortOrder,
 
             ];
-
         }
 
 
@@ -2605,12 +2692,12 @@ class ProductController extends Controller
 
         $existingOptions =
             $product
-                ->options()
-                ->with('values')
-                ->get()
-                ->keyBy(
-                    'global_variant_id'
-                );
+            ->options()
+            ->with('values')
+            ->get()
+            ->keyBy(
+                'global_variant_id'
+            );
 
 
         $keepOptionIds = [];
@@ -2628,9 +2715,7 @@ class ProductController extends Controller
                     'values'
                 )
                 ->findOrFail(
-                    $item[
-                        'global_variant_id'
-                    ]
+                    $item['global_variant_id']
                 );
 
 
@@ -2650,40 +2735,34 @@ class ProductController extends Controller
 
                 $productOption =
                     $product
-                        ->options()
-                        ->create([
+                    ->options()
+                    ->create([
 
-                            'global_variant_id' =>
-                                $globalVariant
-                                    ->id,
+                        'global_variant_id' =>
+                        $globalVariant
+                            ->id,
 
-                            'name' =>
-                                $globalVariant
-                                    ->name,
+                        'name' =>
+                        $globalVariant
+                            ->name,
 
-                            'sort_order' =>
-                                $item[
-                                    'sort_order'
-                                ]
-                                ?? $optionIndex,
+                        'sort_order' =>
+                        $item['sort_order']
+                            ?? $optionIndex,
 
-                        ]);
-
+                    ]);
             } else {
 
                 $productOption->update([
 
                     'name' =>
-                        $globalVariant->name,
+                    $globalVariant->name,
 
                     'sort_order' =>
-                        $item[
-                            'sort_order'
-                        ]
+                    $item['sort_order']
                         ?? $optionIndex,
 
                 ]);
-
             }
 
 
@@ -2699,11 +2778,11 @@ class ProductController extends Controller
 
             $existingValues =
                 $productOption
-                    ->values()
-                    ->get()
-                    ->keyBy(
-                        'global_variant_value_id'
-                    );
+                ->values()
+                ->get()
+                ->keyBy(
+                    'global_variant_value_id'
+                );
 
 
             $keepValueIds = [];
@@ -2717,9 +2796,7 @@ class ProductController extends Controller
                 $globalValue =
                     GlobalVariantValue::where(
                         'id',
-                        $valueItem[
-                            'global_variant_value_id'
-                        ]
+                        $valueItem['global_variant_value_id']
                     )
                     ->where(
                         'global_variant_id',
@@ -2737,7 +2814,6 @@ class ProductController extends Controller
                         ],
 
                     ]);
-
                 }
 
 
@@ -2751,49 +2827,43 @@ class ProductController extends Controller
 
                     $productValue =
                         $productOption
-                            ->values()
-                            ->create([
+                        ->values()
+                        ->create([
 
-                                'global_variant_value_id' =>
-                                    $globalValue
-                                        ->id,
+                            'global_variant_value_id' =>
+                            $globalValue
+                                ->id,
 
-                                'value' =>
-                                    $globalValue
-                                        ->value,
+                            'value' =>
+                            $globalValue
+                                ->value,
 
-                                'color_code' =>
-                                    $globalValue
-                                        ->color_code,
+                            'color_code' =>
+                            $globalValue
+                                ->color_code,
 
-                                'sort_order' =>
-                                    $valueItem[
-                                        'sort_order'
-                                    ]
-                                    ?? $valueIndex,
+                            'sort_order' =>
+                            $valueItem['sort_order']
+                                ?? $valueIndex,
 
-                            ]);
-
+                        ]);
                 } else {
 
                     $productValue->update([
 
                         'value' =>
-                            $globalValue
-                                ->value,
+                        $globalValue
+                            ->value,
 
                         'color_code' =>
-                            $globalValue
-                                ->color_code,
+                        $globalValue
+                            ->color_code,
 
                         'sort_order' =>
-                            $valueItem[
-                                'sort_order'
-                            ]
+                        $valueItem['sort_order']
                             ?? $valueIndex,
 
                     ]);
-
                 }
 
 
@@ -2801,28 +2871,25 @@ class ProductController extends Controller
                     $productValue->id;
 
 
-                $optionMap[
-                    $globalValue->id
-                ] = [
+                $optionMap[$globalValue->id] = [
 
                     'product_option_value_id' =>
-                        $productValue
-                            ->id,
+                    $productValue
+                        ->id,
 
                     'value' =>
-                        $productValue
-                            ->value,
+                    $productValue
+                        ->value,
 
                     'option_sort' =>
-                        $productOption
-                            ->sort_order,
+                    $productOption
+                        ->sort_order,
 
                     'value_sort' =>
-                        $productValue
-                            ->sort_order,
+                    $productValue
+                        ->sort_order,
 
                 ];
-
             }
 
 
@@ -2839,7 +2906,6 @@ class ProductController extends Controller
                     $keepValueIds ?: [0]
                 )
                 ->delete();
-
         }
 
 
@@ -2883,17 +2949,15 @@ class ProductController extends Controller
 
             $ids =
                 collect(
-                    $option[
-                        'values'
-                    ]
-                    ?? []
+                    $option['values']
+                        ?? []
                 )
                 ->pluck(
                     'global_variant_value_id'
                 )
                 ->map(
-                    fn ($id) =>
-                        (int) $id
+                    fn($id) =>
+                    (int) $id
                 )
                 ->filter()
                 ->values()
@@ -2904,9 +2968,7 @@ class ProductController extends Controller
 
                 $groups[] =
                     $ids;
-
             }
-
         }
 
 
@@ -2943,9 +3005,7 @@ class ProductController extends Controller
                         ...$combination,
                         $valueId,
                     ];
-
                 }
-
             }
 
 
@@ -2972,54 +3032,51 @@ class ProductController extends Controller
                     ],
 
                 ]);
-
             }
-
         }
 
 
         return collect(
             $combinations
         )
-        ->map(
-            function (
-                $combination,
-                $index
-            ) use (
-                $product
-            ) {
+            ->map(
+                function (
+                    $combination,
+                    $index
+                ) use (
+                    $product
+                ) {
 
-                return [
+                    return [
 
-                    'global_variant_value_ids' =>
+                        'global_variant_value_ids' =>
                         $combination,
 
-                    'price' =>
+                        'price' =>
                         $product->price,
 
-                    'compare_at_price' =>
+                        'compare_at_price' =>
                         $product
                             ->compare_at_price,
 
-                    'cost_per_item' =>
+                        'cost_per_item' =>
                         $product
                             ->cost_per_item,
 
-                    'quantity' =>
+                        'quantity' =>
                         $product->quantity,
 
-                    'is_active' =>
+                        'is_active' =>
                         true,
 
-                    'sort_order' =>
+                        'sort_order' =>
                         $index,
 
-                ];
-
-            }
-        )
-        ->values()
-        ->all();
+                    ];
+                }
+            )
+            ->values()
+            ->all();
     }
 
 
@@ -3055,12 +3112,12 @@ class ProductController extends Controller
 
         $existingVariants =
             $product
-                ->variants()
-                ->with(
-                    'optionValues'
-                )
-                ->get()
-                ->keyBy('id');
+            ->variants()
+            ->with(
+                'optionValues'
+            )
+            ->get()
+            ->keyBy('id');
 
 
         $keepVariantIds = [];
@@ -3073,14 +3130,12 @@ class ProductController extends Controller
 
             $globalValueIds =
                 collect(
-                    $item[
-                        'global_variant_value_ids'
-                    ]
-                    ?? []
+                    $item['global_variant_value_ids']
+                        ?? []
                 )
                 ->map(
-                    fn ($id) =>
-                        (int) $id
+                    fn($id) =>
+                    (int) $id
                 )
                 ->unique()
                 ->values();
@@ -3102,9 +3157,7 @@ class ProductController extends Controller
 
                 if (
                     ! isset(
-                        $optionMap[
-                            $globalValueId
-                        ]
+                        $optionMap[$globalValueId]
                     )
                 ) {
 
@@ -3115,15 +3168,11 @@ class ProductController extends Controller
                         ],
 
                     ]);
-
                 }
 
 
                 $selected[] =
-                    $optionMap[
-                        $globalValueId
-                    ];
-
+                    $optionMap[$globalValueId];
             }
 
 
@@ -3147,7 +3196,6 @@ class ProductController extends Controller
                             $a['value_sort']
                             <=>
                             $b['value_sort'];
-
                     }
 
 
@@ -3155,7 +3203,6 @@ class ProductController extends Controller
                         $a['option_sort']
                         <=>
                         $b['option_sort'];
-
                 }
             );
 
@@ -3168,8 +3215,8 @@ class ProductController extends Controller
                     'product_option_value_id'
                 )
                 ->map(
-                    fn ($id) =>
-                        (int) $id
+                    fn($id) =>
+                    (int) $id
                 )
                 ->all();
 
@@ -3206,7 +3253,7 @@ class ProductController extends Controller
             $title =
                 trim(
                     $item['title']
-                    ?? ''
+                        ?? ''
                 );
 
 
@@ -3218,7 +3265,6 @@ class ProductController extends Controller
                     )
                     ->pluck('value')
                     ->implode(' / ');
-
             }
 
 
@@ -3231,14 +3277,11 @@ class ProductController extends Controller
             $mediaId =
                 $this->resolveVariantMediaId(
 
-                    product:
-                        $product,
+                    product: $product,
 
-                    item:
-                        $item,
+                    item: $item,
 
-                    newMediaMap:
-                        $newMediaMap
+                    newMediaMap: $newMediaMap
 
                 );
 
@@ -3253,9 +3296,7 @@ class ProductController extends Controller
 
 
             if (
-                ! empty(
-                    $item['id']
-                )
+                ! empty($item['id'])
             ) {
 
                 $variant =
@@ -3263,7 +3304,6 @@ class ProductController extends Controller
                         (int)
                         $item['id']
                     );
-
             }
 
 
@@ -3277,77 +3317,64 @@ class ProductController extends Controller
 
                 $variant =
                     $product
-                        ->variants()
-                        ->where(
-                            'combination_key',
-                            $combinationKey
-                        )
-                        ->first();
-
+                    ->variants()
+                    ->where(
+                        'combination_key',
+                        $combinationKey
+                    )
+                    ->first();
             }
 
 
             $payload = [
 
                 'title' =>
-                    $title,
+                $title,
 
                 'combination_key' =>
-                    $combinationKey,
+                $combinationKey,
 
                 'product_media_id' =>
-                    $mediaId,
+                $mediaId,
 
                 'price' =>
-                    $item['price']
+                $item['price']
                     ?? null,
 
                 'compare_at_price' =>
-                    $item[
-                        'compare_at_price'
-                    ]
+                $item['compare_at_price']
                     ?? null,
 
                 'cost_per_item' =>
-                    $item[
-                        'cost_per_item'
-                    ]
+                $item['cost_per_item']
                     ?? null,
 
                 'sku' =>
-                    ! empty(
+                ! empty($item['sku'])
+                    ? trim(
                         $item['sku']
                     )
-                        ? trim(
-                            $item['sku']
-                        )
-                        : null,
+                    : null,
 
                 'barcode' =>
-                    ! empty(
+                ! empty($item['barcode'])
+                    ? trim(
                         $item['barcode']
                     )
-                        ? trim(
-                            $item['barcode']
-                        )
-                        : null,
+                    : null,
 
                 'quantity' =>
-                    $item['quantity']
+                $item['quantity']
                     ?? 0,
 
                 'is_active' =>
-                    $this->toBoolean(
-                        $item[
-                            'is_active'
-                        ]
+                $this->toBoolean(
+                    $item['is_active']
                         ?? true
-                    ),
+                ),
 
                 'sort_order' =>
-                    $item[
-                        'sort_order'
-                    ]
+                $item['sort_order']
                     ?? $index,
 
             ];
@@ -3358,16 +3385,14 @@ class ProductController extends Controller
                 $variant->update(
                     $payload
                 );
-
             } else {
 
                 $variant =
                     $product
-                        ->variants()
-                        ->create(
-                            $payload
-                        );
-
+                    ->variants()
+                    ->create(
+                        $payload
+                    );
             }
 
 
@@ -3386,7 +3411,6 @@ class ProductController extends Controller
 
             $keepVariantIds[] =
                 $variant->id;
-
         }
 
 
@@ -3425,30 +3449,23 @@ class ProductController extends Controller
         */
 
         if (
-            ! empty(
-                $item[
-                    'product_media_id'
-                ]
-            )
+            ! empty($item['product_media_id'])
         ) {
 
             $media =
                 $product
-                    ->media()
-                    ->where(
-                        'id',
-                        $item[
-                            'product_media_id'
-                        ]
-                    )
-                    ->first();
+                ->media()
+                ->where(
+                    'id',
+                    $item['product_media_id']
+                )
+                ->first();
 
 
             return
                 $media
-                    ? $media->id
-                    : null;
-
+                ? $media->id
+                : null;
         }
 
 
@@ -3460,25 +3477,18 @@ class ProductController extends Controller
 
         if (
             isset(
-                $item[
-                    'media_index'
-                ]
+                $item['media_index']
             )
         ) {
 
             $index =
                 (int)
-                $item[
-                    'media_index'
-                ];
+                $item['media_index'];
 
 
             return
-                $newMediaMap[
-                    $index
-                ]
+                $newMediaMap[$index]
                 ?? null;
-
         }
 
 
@@ -3523,11 +3533,11 @@ class ProductController extends Controller
             $request->filled(
                 'cover_media_index'
             )
-                ? (int)
-                $request->input(
-                    'cover_media_index'
-                )
-                : null;
+            ? (int)
+            $request->input(
+                'cover_media_index'
+            )
+            : null;
 
 
         $currentMax =
@@ -3541,12 +3551,12 @@ class ProductController extends Controller
 
         $hasCover =
             $product
-                ->media()
-                ->where(
-                    'is_cover',
-                    true
-                )
-                ->exists();
+            ->media()
+            ->where(
+                'is_cover',
+                true
+            )
+            ->exists();
 
 
         $uploadedPaths = [];
@@ -3561,7 +3571,7 @@ class ProductController extends Controller
 
             if (
                 ! $file instanceof
-                UploadedFile
+                    UploadedFile
             ) {
 
                 continue;
@@ -3571,19 +3581,15 @@ class ProductController extends Controller
             $stored =
                 $this->storeProductFile(
 
-                    product:
-                        $product,
+                    product: $product,
 
-                    file:
-                        $file
+                    file: $file
 
                 );
 
 
             $uploadedPaths[] =
-                $stored[
-                    'path'
-                ];
+                $stored['path'];
 
 
             /*
@@ -3595,13 +3601,13 @@ class ProductController extends Controller
             $isCover =
                 $coverIndex !== null
 
-                    ? $index ===
-                      $coverIndex
+                ? $index ===
+                $coverIndex
 
-                    : (
-                        ! $hasCover &&
-                        $index === 0
-                    );
+                : (
+                    ! $hasCover &&
+                    $index === 0
+                );
 
 
             if ($isCover) {
@@ -3610,60 +3616,50 @@ class ProductController extends Controller
                     ->media()
                     ->update([
                         'is_cover' =>
-                            false,
+                        false,
                     ]);
 
                 $hasCover = true;
-
             }
 
 
             $media =
                 $product
-                    ->media()
-                    ->create([
+                ->media()
+                ->create([
 
-                        'file_path' =>
-                            $stored[
-                                'path'
-                            ],
+                    'file_path' =>
+                    $stored['path'],
 
-                        'media_type' =>
-                            $stored[
-                                'type'
-                            ],
+                    'media_type' =>
+                    $stored['type'],
 
-                        'alt_text' =>
-                            $altTexts[
-                                $index
-                            ]
-                            ?? null,
+                    'alt_text' =>
+                    $altTexts[$index]
+                        ?? null,
 
-                        'is_cover' =>
-                            $isCover,
+                    'is_cover' =>
+                    $isCover,
 
-                        'sort_order' =>
-                            $currentMax +
-                            $index +
-                            1,
+                    'sort_order' =>
+                    $currentMax +
+                        $index +
+                        1,
 
-                    ]);
+                ]);
 
 
-            $newMediaMap[
-                $index
-            ] = $media->id;
-
+            $newMediaMap[$index] = $media->id;
         }
 
 
         return [
 
             'uploaded_paths' =>
-                $uploadedPaths,
+            $uploadedPaths,
 
             'new_media_map' =>
-                $newMediaMap,
+            $newMediaMap,
 
         ];
     }
@@ -3683,7 +3679,7 @@ class ProductController extends Controller
         $directory =
             public_path(
                 'uploads/products/'
-                . $product->id
+                    . $product->id
             );
 
 
@@ -3698,7 +3694,6 @@ class ProductController extends Controller
                 0755,
                 true
             );
-
         }
 
 
@@ -3727,7 +3722,7 @@ class ProductController extends Controller
             strtolower(
                 $file
                     ->getClientMimeType()
-                ?? ''
+                    ?? ''
             );
 
 
@@ -3736,20 +3731,20 @@ class ProductController extends Controller
                 $mime,
                 'video/'
             )
-                ? 'video'
-                : 'image';
+            ? 'video'
+            : 'image';
 
 
         return [
 
             'path' =>
-                'uploads/products/'
+            'uploads/products/'
                 . $product->id
                 . '/'
                 . $fileName,
 
             'type' =>
-                $type,
+            $type,
 
         ];
     }
@@ -3774,12 +3769,12 @@ class ProductController extends Controller
 
         $mediaItems =
             $product
-                ->media()
-                ->whereIn(
-                    'id',
-                    $mediaIds
-                )
-                ->get();
+            ->media()
+            ->whereIn(
+                'id',
+                $mediaIds
+            )
+            ->get();
 
 
         foreach (
@@ -3808,24 +3803,21 @@ class ProductController extends Controller
 
                 $next =
                     $product
-                        ->media()
-                        ->orderBy(
-                            'sort_order'
-                        )
-                        ->first();
+                    ->media()
+                    ->orderBy(
+                        'sort_order'
+                    )
+                    ->first();
 
 
                 if ($next) {
 
                     $next->update([
                         'is_cover' =>
-                            true,
+                        true,
                     ]);
-
                 }
-
             }
-
         }
     }
 
@@ -3843,25 +3835,25 @@ class ProductController extends Controller
 
         $media =
             $product
-                ->media()
-                ->where(
-                    'id',
-                    $mediaId
-                )
-                ->firstOrFail();
+            ->media()
+            ->where(
+                'id',
+                $mediaId
+            )
+            ->firstOrFail();
 
 
         $product
             ->media()
             ->update([
                 'is_cover' =>
-                    false,
+                false,
             ]);
 
 
         $media->update([
             'is_cover' =>
-                true,
+            true,
         ]);
     }
 
@@ -3878,22 +3870,22 @@ class ProductController extends Controller
 
         $cover =
             $product
-                ->media
-                ->firstWhere(
-                    'is_cover',
-                    true
-                )
+            ->media
+            ->firstWhere(
+                'is_cover',
+                true
+            )
             ??
             $product
-                ->media
-                ->first();
+            ->media
+            ->first();
 
 
         $hasVariants =
             (int)
             (
                 $product
-                    ->variants_count
+                ->variants_count
                 ?? 0
             ) > 0;
 
@@ -3901,155 +3893,155 @@ class ProductController extends Controller
         $price =
             $hasVariants
 
-                ? (
-                    $product
-                        ->variant_min_price
-                    !== null
+            ? (
+                $product
+                ->variant_min_price
+                !== null
 
-                        ? (float)
-                        $product
-                            ->variant_min_price
+                ? (float)
+                $product
+                    ->variant_min_price
 
-                        : null
-                )
+                : null
+            )
 
-                : (
-                    $product->price
-                    !== null
+            : (
+                $product->price
+                !== null
 
-                        ? (float)
-                        $product->price
+                ? (float)
+                $product->price
 
-                        : null
-                );
+                : null
+            );
 
 
         $inventory =
             $hasVariants
 
-                ? (int)
-                (
-                    $product
-                        ->variant_inventory
-                    ?? 0
-                )
+            ? (int)
+            (
+                $product
+                ->variant_inventory
+                ?? 0
+            )
 
-                : (int)
-                $product->quantity;
+            : (int)
+            $product->quantity;
 
 
         return [
 
             'id' =>
-                $product->id,
+            $product->id,
 
             'title' =>
-                $product->title,
+            $product->title,
 
             'slug' =>
-                $product->slug,
+            $product->slug,
 
             'image_url' =>
-                $cover
+            $cover
 
-                    ? asset(
-                        $cover->file_path
-                    )
+                ? asset(
+                    $cover->file_path
+                )
 
-                    : null,
+                : null,
 
             'category' =>
-                $product->category
-                    ? [
-                        'id' =>
-                            $product
-                                ->category
-                                ->id,
+            $product->category
+                ? [
+                    'id' =>
+                    $product
+                        ->category
+                        ->id,
 
-                        'name' =>
-                            $product
-                                ->category
-                                ->name,
-                    ]
-                    : null,
+                    'name' =>
+                    $product
+                        ->category
+                        ->name,
+                ]
+                : null,
 
             'brand' =>
-                $product->brand
-                    ? [
-                        'id' =>
-                            $product
-                                ->brand
-                                ->id,
+            $product->brand
+                ? [
+                    'id' =>
+                    $product
+                        ->brand
+                        ->id,
 
-                        'name' =>
-                            $product
-                                ->brand
-                                ->name,
-                    ]
-                    : null,
+                    'name' =>
+                    $product
+                        ->brand
+                        ->name,
+                ]
+                : null,
 
             'source' =>
-                $product->source,
+            $product->source,
 
             'store_name' =>
-                $product->source
+            $product->source
                 ===
                 'vendor'
 
-                    ? (
-                        $product
-                            ->creator
-                            ->name
-                        ?? 'Vendor'
-                    )
-
-                    : config(
-                        'app.name',
-                        'Storify'
-                    ),
-
-            'status' =>
-                $product->status,
-
-            'is_featured' =>
-                (bool)
-                $product
-                    ->is_featured,
-
-            'inventory' =>
-                $inventory,
-
-            'price' =>
-                $price,
-
-            'formatted_price' =>
-                $price !== null
-
-                    ? '$'
-                      . number_format(
-                          $price,
-                          2
-                      )
-
-                    : null,
-
-            'variants_count' =>
-                (int)
-                (
+                ? (
                     $product
-                        ->variants_count
-                    ?? 0
+                    ->creator
+                    ->name
+                    ?? 'Vendor'
+                )
+
+                : config(
+                    'app.name',
+                    'Storify'
                 ),
 
-            'online_store' =>
-                (bool)
+            'status' =>
+            $product->status,
+
+            'is_featured' =>
+            (bool)
+            $product
+                ->is_featured,
+
+            'inventory' =>
+            $inventory,
+
+            'price' =>
+            $price,
+
+            'formatted_price' =>
+            $price !== null
+
+                ? '$'
+                . number_format(
+                    $price,
+                    2
+                )
+
+                : null,
+
+            'variants_count' =>
+            (int)
+            (
                 $product
-                    ->online_store,
+                ->variants_count
+                ?? 0
+            ),
+
+            'online_store' =>
+            (bool)
+            $product
+                ->online_store,
 
             'point_of_sale' =>
-                (bool)
-                $product
-                    ->point_of_sale,
+            (bool)
+            $product
+                ->point_of_sale,
 
         ];
     }
@@ -4101,23 +4093,23 @@ class ProductController extends Controller
             */
 
             'id' =>
-                $product->id,
+            $product->id,
 
             'title' =>
-                $product->title,
+            $product->title,
 
             'slug' =>
-                $product->slug,
+            $product->slug,
 
             'summary' =>
-                $product->summary,
+            $product->summary,
 
             'description' =>
-                $product->description,
+            $product->description,
 
             'specifications' =>
-                $product
-                    ->specifications,
+            $product
+                ->specifications,
 
 
             /*
@@ -4127,12 +4119,12 @@ class ProductController extends Controller
             */
 
             'status' =>
-                $product->status,
+            $product->status,
 
             'is_featured' =>
-                (bool)
-                $product
-                    ->is_featured,
+            (bool)
+            $product
+                ->is_featured,
 
 
             /*
@@ -4142,14 +4134,14 @@ class ProductController extends Controller
             */
 
             'online_store' =>
-                (bool)
-                $product
-                    ->online_store,
+            (bool)
+            $product
+                ->online_store,
 
             'point_of_sale' =>
-                (bool)
-                $product
-                    ->point_of_sale,
+            (bool)
+            $product
+                ->point_of_sale,
 
 
             /*
@@ -4159,24 +4151,24 @@ class ProductController extends Controller
             */
 
             'category_id' =>
-                $product
-                    ->category_id,
+            $product
+                ->category_id,
 
             'category' =>
-                $product->category,
+            $product->category,
 
             'brand_id' =>
-                $product
-                    ->brand_id,
+            $product
+                ->brand_id,
 
             'brand' =>
-                $product->brand,
+            $product->brand,
 
             'type' =>
-                $product->type,
+            $product->type,
 
             'tags' =>
-                $product->tags
+            $product->tags
                 ?? [],
 
 
@@ -4187,33 +4179,33 @@ class ProductController extends Controller
             */
 
             'collection_ids' =>
-                $product
-                    ->collections
-                    ->pluck('id')
-                    ->map(
-                        fn ($id) =>
-                            (int) $id
-                    )
-                    ->values(),
+            $product
+                ->collections
+                ->pluck('id')
+                ->map(
+                    fn($id) =>
+                    (int) $id
+                )
+                ->values(),
 
             'collections' =>
-                $product
-                    ->collections
-                    ->map(
-                        fn ($collection) => [
+            $product
+                ->collections
+                ->map(
+                    fn($collection) => [
 
-                            'id' =>
-                                $collection->id,
+                        'id' =>
+                        $collection->id,
 
-                            'title' =>
-                                $collection->title,
+                        'title' =>
+                        $collection->title,
 
-                            'slug' =>
-                                $collection->slug,
+                        'slug' =>
+                        $collection->slug,
 
-                        ]
-                    )
-                    ->values(),
+                    ]
+                )
+                ->values(),
 
 
             /*
@@ -4223,11 +4215,11 @@ class ProductController extends Controller
             */
 
             'source' =>
-                $product->source,
+            $product->source,
 
             'created_by' =>
-                $product
-                    ->created_by,
+            $product
+                ->created_by,
 
 
             /*
@@ -4237,8 +4229,8 @@ class ProductController extends Controller
             */
 
             'product_format' =>
-                $product
-                    ->product_format,
+            $product
+                ->product_format,
 
 
             /*
@@ -4248,9 +4240,9 @@ class ProductController extends Controller
             */
 
             'preorder_enabled' =>
-                (bool)
-                $product
-                    ->preorder_enabled,
+            (bool)
+            $product
+                ->preorder_enabled,
 
 
             /*
@@ -4260,15 +4252,15 @@ class ProductController extends Controller
             */
 
             'price' =>
-                $product->price,
+            $product->price,
 
             'compare_at_price' =>
-                $product
-                    ->compare_at_price,
+            $product
+                ->compare_at_price,
 
             'cost_per_item' =>
-                $product
-                    ->cost_per_item,
+            $product
+                ->cost_per_item,
 
 
             /*
@@ -4278,24 +4270,24 @@ class ProductController extends Controller
             */
 
             'sku' =>
-                $product->sku,
+            $product->sku,
 
             'barcode' =>
-                $product->barcode,
+            $product->barcode,
 
             'quantity' =>
-                (int)
-                $product->quantity,
+            (int)
+            $product->quantity,
 
             'track_quantity' =>
-                (bool)
-                $product
-                    ->track_quantity,
+            (bool)
+            $product
+                ->track_quantity,
 
             'continue_selling_when_out_of_stock' =>
-                (bool)
-                $product
-                    ->continue_selling_when_out_of_stock,
+            (bool)
+            $product
+                ->continue_selling_when_out_of_stock,
 
 
             /*
@@ -4305,23 +4297,23 @@ class ProductController extends Controller
             */
 
             'weight' =>
-                $product->weight,
+            $product->weight,
 
             'weight_unit' =>
-                $product
-                    ->weight_unit,
+            $product
+                ->weight_unit,
 
             'country_of_origin' =>
-                $product
-                    ->country_of_origin,
+            $product
+                ->country_of_origin,
 
             'hs_code' =>
-                $product
-                    ->hs_code,
+            $product
+                ->hs_code,
 
             'customs_description' =>
-                $product
-                    ->customs_description,
+            $product
+                ->customs_description,
 
 
             /*
@@ -4331,12 +4323,12 @@ class ProductController extends Controller
             */
 
             'seo_title' =>
-                $product
-                    ->seo_title,
+            $product
+                ->seo_title,
 
             'seo_description' =>
-                $product
-                    ->seo_description,
+            $product
+                ->seo_description,
 
 
             /*
@@ -4346,45 +4338,45 @@ class ProductController extends Controller
             */
 
             'media' =>
-                $product
-                    ->media
-                    ->map(
-                        fn ($media) => [
+            $product
+                ->media
+                ->map(
+                    fn($media) => [
 
-                            'id' =>
-                                $media->id,
+                        'id' =>
+                        $media->id,
 
-                            'file_path' =>
-                                $media
-                                    ->file_path,
+                        'file_path' =>
+                        $media
+                            ->file_path,
 
-                            'url' =>
-                                asset(
-                                    $media
-                                        ->file_path
-                                ),
+                        'url' =>
+                        asset(
+                            $media
+                                ->file_path
+                        ),
 
-                            'media_type' =>
-                                $media
-                                    ->media_type,
+                        'media_type' =>
+                        $media
+                            ->media_type,
 
-                            'alt_text' =>
-                                $media
-                                    ->alt_text,
+                        'alt_text' =>
+                        $media
+                            ->alt_text,
 
-                            'is_cover' =>
-                                (bool)
-                                $media
-                                    ->is_cover,
+                        'is_cover' =>
+                        (bool)
+                        $media
+                            ->is_cover,
 
-                            'sort_order' =>
-                                (int)
-                                $media
-                                    ->sort_order,
+                        'sort_order' =>
+                        (int)
+                        $media
+                            ->sort_order,
 
-                        ]
-                    )
-                    ->values(),
+                    ]
+                )
+                ->values(),
 
 
             /*
@@ -4394,66 +4386,66 @@ class ProductController extends Controller
             */
 
             'options' =>
-                $product
-                    ->options
-                    ->map(
-                        fn ($option) => [
+            $product
+                ->options
+                ->map(
+                    fn($option) => [
 
-                            'id' =>
-                                $option->id,
+                        'id' =>
+                        $option->id,
 
-                            'global_variant_id' =>
-                                $option
-                                    ->global_variant_id,
+                        'global_variant_id' =>
+                        $option
+                            ->global_variant_id,
 
-                            'name' =>
-                                $option->name,
+                        'name' =>
+                        $option->name,
 
-                            'sort_order' =>
-                                (int)
-                                $option
-                                    ->sort_order,
+                        'sort_order' =>
+                        (int)
+                        $option
+                            ->sort_order,
 
-                            'visual_type' =>
-                                $option
-                                    ->globalVariant
-                                    ->visual_type
-                                ?? 'rectangle',
+                        'visual_type' =>
+                        $option
+                            ->globalVariant
+                            ->visual_type
+                            ?? 'rectangle',
 
-                            'values' =>
-                                $option
-                                    ->values
-                                    ->map(
-                                        fn ($value) => [
+                        'values' =>
+                        $option
+                            ->values
+                            ->map(
+                                fn($value) => [
 
-                                            'id' =>
-                                                $value
-                                                    ->id,
+                                    'id' =>
+                                    $value
+                                        ->id,
 
-                                            'global_variant_value_id' =>
-                                                $value
-                                                    ->global_variant_value_id,
+                                    'global_variant_value_id' =>
+                                    $value
+                                        ->global_variant_value_id,
 
-                                            'value' =>
-                                                $value
-                                                    ->value,
+                                    'value' =>
+                                    $value
+                                        ->value,
 
-                                            'color_code' =>
-                                                $value
-                                                    ->color_code,
+                                    'color_code' =>
+                                    $value
+                                        ->color_code,
 
-                                            'sort_order' =>
-                                                (int)
-                                                $value
-                                                    ->sort_order,
+                                    'sort_order' =>
+                                    (int)
+                                    $value
+                                        ->sort_order,
 
-                                        ]
-                                    )
-                                    ->values(),
+                                ]
+                            )
+                            ->values(),
 
-                        ]
-                    )
-                    ->values(),
+                    ]
+                )
+                ->values(),
 
 
             /*
@@ -4463,133 +4455,132 @@ class ProductController extends Controller
             */
 
             'variants' =>
-                $product
-                    ->variants
-                    ->map(
-                        function ($variant) {
+            $product
+                ->variants
+                ->map(
+                    function ($variant) {
 
-                            return [
+                        return [
 
-                                'id' =>
-                                    $variant->id,
+                            'id' =>
+                            $variant->id,
 
-                                'title' =>
-                                    $variant->title,
+                            'title' =>
+                            $variant->title,
 
-                                'combination_key' =>
+                            'combination_key' =>
+                            $variant
+                                ->combination_key,
+
+                            'product_media_id' =>
+                            $variant
+                                ->product_media_id,
+
+                            'image_url' =>
+                            $variant->media
+
+                                ? asset(
                                     $variant
-                                        ->combination_key,
+                                        ->media
+                                        ->file_path
+                                )
 
-                                'product_media_id' =>
-                                    $variant
-                                        ->product_media_id,
+                                : null,
 
-                                'image_url' =>
-                                    $variant->media
+                            'price' =>
+                            $variant->price,
 
-                                        ? asset(
-                                            $variant
-                                                ->media
-                                                ->file_path
-                                        )
+                            'compare_at_price' =>
+                            $variant
+                                ->compare_at_price,
 
-                                        : null,
+                            'cost_per_item' =>
+                            $variant
+                                ->cost_per_item,
 
-                                'price' =>
-                                    $variant->price,
+                            'sku' =>
+                            $variant->sku,
 
-                                'compare_at_price' =>
-                                    $variant
-                                        ->compare_at_price,
+                            'barcode' =>
+                            $variant
+                                ->barcode,
 
-                                'cost_per_item' =>
-                                    $variant
-                                        ->cost_per_item,
+                            'quantity' =>
+                            (int)
+                            $variant
+                                ->quantity,
 
-                                'sku' =>
-                                    $variant->sku,
+                            'is_active' =>
+                            (bool)
+                            $variant
+                                ->is_active,
 
-                                'barcode' =>
-                                    $variant
-                                        ->barcode,
+                            'sort_order' =>
+                            (int)
+                            $variant
+                                ->sort_order,
 
-                                'quantity' =>
-                                    (int)
-                                    $variant
-                                        ->quantity,
-
-                                'is_active' =>
-                                    (bool)
-                                    $variant
-                                        ->is_active,
-
-                                'sort_order' =>
-                                    (int)
-                                    $variant
-                                        ->sort_order,
-
-                                /*
+                            /*
                                 |--------------------------------------------------------------------------
                                 | FRONTEND USES GLOBAL IDS
                                 |--------------------------------------------------------------------------
                                 */
 
-                                'global_variant_value_ids' =>
-                                    $variant
-                                        ->optionValues
-                                        ->pluck(
-                                            'global_variant_value_id'
-                                        )
-                                        ->filter()
-                                        ->map(
-                                            fn ($id) =>
-                                                (int) $id
-                                        )
-                                        ->values(),
+                            'global_variant_value_ids' =>
+                            $variant
+                                ->optionValues
+                                ->pluck(
+                                    'global_variant_value_id'
+                                )
+                                ->filter()
+                                ->map(
+                                    fn($id) =>
+                                    (int) $id
+                                )
+                                ->values(),
 
-                                'option_values' =>
-                                    $variant
-                                        ->optionValues
-                                        ->map(
-                                            fn ($value) => [
+                            'option_values' =>
+                            $variant
+                                ->optionValues
+                                ->map(
+                                    fn($value) => [
 
-                                                'id' =>
-                                                    $value
-                                                        ->id,
+                                        'id' =>
+                                        $value
+                                            ->id,
 
-                                                'global_variant_value_id' =>
-                                                    $value
-                                                        ->global_variant_value_id,
+                                        'global_variant_value_id' =>
+                                        $value
+                                            ->global_variant_value_id,
 
-                                                'value' =>
-                                                    $value
-                                                        ->value,
+                                        'value' =>
+                                        $value
+                                            ->value,
 
-                                                'color_code' =>
-                                                    $value
-                                                        ->color_code,
+                                        'color_code' =>
+                                        $value
+                                            ->color_code,
 
-                                                'option_name' =>
-                                                    $value
-                                                        ->option
-                                                        ->name
-                                                    ?? null,
+                                        'option_name' =>
+                                        $value
+                                            ->option
+                                            ->name
+                                            ?? null,
 
-                                            ]
-                                        )
-                                        ->values(),
+                                    ]
+                                )
+                                ->values(),
 
-                            ];
-
-                        }
-                    )
-                    ->values(),
+                        ];
+                    }
+                )
+                ->values(),
 
             'created_at' =>
-                $product->created_at,
+            $product->created_at,
 
             'updated_at' =>
-                $product->updated_at,
+            $product->updated_at,
 
         ];
     }
@@ -4612,7 +4603,6 @@ class ProductController extends Controller
 
             $slug =
                 'product';
-
         }
 
 
@@ -4640,7 +4630,6 @@ class ProductController extends Controller
                     '!=',
                     $ignoreId
                 );
-
             }
 
 
@@ -4649,7 +4638,6 @@ class ProductController extends Controller
             ) {
 
                 break;
-
             }
 
 
@@ -4660,7 +4648,6 @@ class ProductController extends Controller
 
 
             $counter++;
-
         }
 
 
@@ -4698,7 +4685,6 @@ class ProductController extends Controller
             File::delete(
                 $fullPath
             );
-
         }
     }
 

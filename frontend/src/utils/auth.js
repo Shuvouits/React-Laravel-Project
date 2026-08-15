@@ -7,7 +7,7 @@ export const getDashboardPath = (role) => {
       return "/vendor/dashboard";
 
     case "customer":
-      return "/customer/dashboard";
+      return "/auth";
 
     default:
       return "/";

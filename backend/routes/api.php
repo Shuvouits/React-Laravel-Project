@@ -1,5 +1,8 @@
 <?php
 
+use App\Http\Controllers\Api\Account\PreferenceController;
+use App\Http\Controllers\Api\Account\ProfileController;
+use App\Http\Controllers\Api\Account\WishlistController;
 use App\Http\Controllers\Api\Admin\BrandAIController;
 use App\Http\Controllers\Api\Admin\BrandController;
 use App\Http\Controllers\Api\Admin\CategoryAIController;
@@ -15,11 +18,18 @@ use App\Http\Controllers\Api\Admin\VendorConfigurationController;
 use App\Http\Controllers\Api\Admin\VendorController;
 use App\Http\Controllers\Api\Admin\VendorPlanController;
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\Frontend\CartController;
 use App\Http\Controllers\Api\Frontend\HomeController;
 use App\Http\Controllers\Api\Frontend\VendorRegistrationController;
 use App\Http\Controllers\Api\Frontend\VendorActivationController;
 use App\Http\Controllers\Api\Frontend\TopVendorController;
 use App\Http\Controllers\Api\Frontend\CategoryMegaMenuController;
+use App\Http\Controllers\Api\Frontend\CollectionMenuController;
+use App\Http\Controllers\Api\Frontend\CustomerAddressController;
+use App\Http\Controllers\Api\Frontend\CustomerSecurityController;
+use App\Http\Controllers\Api\Admin\PaymentSettingController;
+use App\Http\Controllers\Api\Customer\OrderController;
+use App\Http\Controllers\Api\Admin\AdminOrderController;
 use Illuminate\Support\Facades\Route;
 
 
@@ -32,6 +42,72 @@ Route::get('/home/featured-products', [HomeController::class, 'featuredProducts'
 Route::get('/top-vendors', [TopVendorController::class, 'index']);
 // Category Mega Menu
 Route::get('/category-mega-menu', [CategoryMegaMenuController::class, 'index']);
+
+// Collection Menu
+Route::get('/collection-menu', [CollectionMenuController::class, 'index']);
+
+// Single Product
+Route::get('/products/{slug}', [ProductController::class, 'showBySlug']);
+
+// Cart
+Route::post('/cart/summary', [CartController::class, 'summary']);
+
+
+
+
+// Customer
+Route::prefix('customer')->middleware(['auth:sanctum', 'customer'])->group(function () {
+
+    // Customer Addresses
+    Route::get('/addresses', [CustomerAddressController::class, 'index']);
+    Route::post('/addresses', [CustomerAddressController::class, 'store']);
+    Route::put('/addresses/{id}', [CustomerAddressController::class, 'update']);
+    Route::delete('/addresses/{id}', [CustomerAddressController::class, 'destroy']);
+    Route::post('/addresses/{id}/default', [CustomerAddressController::class, 'setDefault']);
+
+     // Customer Security
+    Route::get('/security', [CustomerSecurityController::class, 'index']);
+
+    // Password
+    Route::post('/security/password', [CustomerSecurityController::class, 'updatePassword']);
+
+    // Two-Factor Authentication
+    Route::post('/security/two-factor/setup', [CustomerSecurityController::class, 'setupTwoFactor']);
+    Route::post('/security/two-factor/confirm', [CustomerSecurityController::class, 'confirmTwoFactor']);
+    Route::post('/security/two-factor/disable', [CustomerSecurityController::class, 'disableTwoFactor']);
+    Route::post('/security/two-factor/recovery-codes', [CustomerSecurityController::class, 'regenerateRecoveryCodes']);
+
+    // Active Sessions
+    Route::post('/security/sessions/logout-others', [CustomerSecurityController::class, 'logoutOtherSessions']);
+
+     // Orders
+        Route::get('/orders', [OrderController::class, 'index']);
+        Route::post('/orders', [OrderController::class, 'store']);
+        Route::get('/orders/{order}', [OrderController::class, 'show']);
+
+
+});
+
+Route::middleware(['auth:sanctum', 'customer'])->prefix('account')->group(function () {
+
+        Route::get('/preferences',[PreferenceController::class, 'show']);
+
+        Route::put('/preferences',[PreferenceController::class, 'update']);
+
+        Route::get('/profile', [ProfileController::class, 'show']);
+        Route::put('/profile', [ProfileController::class, 'update']);
+
+         Route::get('/wishlist', [WishlistController::class, 'index']);
+
+    Route::post('/wishlist/{product}', [WishlistController::class, 'store']);
+
+    Route::delete('/wishlist/{product}', [WishlistController::class, 'destroy']);
+
+    Route::get('/wishlist/{product}/check', [WishlistController::class, 'check']);
+
+
+
+});
 
 
 // Vendor Registration
@@ -48,11 +124,20 @@ Route::prefix('vendor-registration')->group(function () {
 });
 
 
-// Public Authentication Routes
+
+
+// Authentication
 Route::prefix('auth')->group(function () {
+
     Route::post('/register', [AuthController::class, 'register']);
     Route::post('/vendor/register', [AuthController::class, 'vendorRegister']);
-    Route::post('/login', [AuthController::class, 'login']);
+
+    Route::post('/login', [AuthController::class, 'login'])
+        ->middleware('throttle:10,1');
+
+    Route::post('/two-factor/challenge', [AuthController::class, 'twoFactorChallenge'])
+        ->middleware('throttle:6,1');
+
 });
 
 
@@ -65,9 +150,9 @@ Route::middleware('auth:sanctum')->prefix('auth')->group(function () {
 
 
 // Admin Routes
-Route::prefix('admin')->group(function () {
+Route::prefix('admin')->middleware(['auth:sanctum', 'admin'])->group(function () {
 
-    // Hero Slider
+ // Hero Slider
     Route::get('/hero-slides', [HeroSlideController::class, 'index']);
     Route::post('/hero-slides', [HeroSlideController::class, 'store']);
     Route::post('/hero-slides/reorder', [HeroSlideController::class, 'reorder']);
@@ -124,7 +209,7 @@ Route::prefix('admin')->group(function () {
     Route::post('/ai/category-content', [CategoryAIController::class, 'generate']);
 
     // Category Mega Menu Image
-Route::post('/categories/{id}/mega-menu-image', [CategoryMegaMenuController::class, 'updateImage']);
+    Route::post('/categories/{id}/mega-menu-image', [CategoryMegaMenuController::class, 'updateImage']);
 
 
     // Global Variants
@@ -226,6 +311,26 @@ Route::post('/categories/{id}/mega-menu-image', [CategoryMegaMenuController::cla
     Route::delete('/vendor-plans/{id}', [VendorPlanController::class, 'destroy']);
 
     // Vendor Configuration
-Route::get('/vendor-configuration', [VendorConfigurationController::class, 'show']);
-Route::post('/vendor-configuration', [VendorConfigurationController::class, 'update']);
+    Route::get('/vendor-configuration', [VendorConfigurationController::class, 'show']);
+    Route::post('/vendor-configuration', [VendorConfigurationController::class, 'update']);
+
+     Route::get('/settings/payments', [PaymentSettingController::class, 'index']);
+
+     Route::put('/settings/payments/{gateway}', [PaymentSettingController::class, 'update']);
+
+
+     // Orders
+Route::get('/orders', [AdminOrderController::class, 'index']);
+Route::get('/orders/{order}', [AdminOrderController::class, 'show']);
+
+Route::post('/orders/{order}/mark-shipped', [ AdminOrderController::class, 'markShipped',]);
+
+Route::post('/orders/{order}/cancel', [ AdminOrderController::class, 'cancel']);
+
+Route::delete('/orders/{order}', [AdminOrderController::class,'destroy']);
+
+
 });
+
+
+

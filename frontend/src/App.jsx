@@ -1,20 +1,49 @@
-import {BrowserRouter,Routes,Route,Navigate,} from "react-router-dom";
+import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 
-// Frontend
-import Navbar from "./components/frontend/Navbar";
+// Frontend Layout
+import FrontendLayout from "./layouts/frontend/FrontendLayout";
+
+// Frontend Home
 import Hero from "./components/frontend/Hero";
 import FeaturedCategories from "./components/frontend/FeaturedCategories";
 import ProductsOnSale from "./components/frontend/products/ProductsOnSale";
 import PromotionsOffers from "./components/frontend/PromotionsOffers";
 import FeaturedProducts from "./components/frontend/products/FeaturedProducts";
+import TopVendors from "./components/frontend/TopVendors";
 
+// Frontend Pages
 import Login from "./pages/frontend/Login";
 import Register from "./pages/frontend/Register";
 import BecomeVendor from "./pages/frontend/BecomeVendor";
+import ProductDetails from "./pages/frontend/ProductDetails";
+import Cart from "./pages/frontend/Cart";
+import Checkout from "./pages/frontend/Checkout";
 
-// Admin
+// Customer Account
+import CustomerDashboard from "./pages/frontend/account/CustomerDashboard";
+import CustomerProfile from "./pages/frontend/account/CustomerProfile";
+import CustomerAddresses from "./pages/frontend/account/CustomerAddresses";
+import CustomerSecurity from "./pages/frontend/account/CustomerSecurity";
+import CustomerPreferences from "./pages/frontend/account/Preferences";
+import CustomerWishlist from "./pages/frontend/account/CustomerWishlist";
+
+// Auth
+import TwoFactorChallenge from "./pages/auth/TwoFactorChallenge";
+import RoleRoute from "./components/auth/RoleRoute";
+
+// Context
+import { CartProvider } from "./context/CartContext";
+
+// Admin Layout
 import AdminLayout from "./layouts/admin/AdminLayout";
+
+// Admin Settings Layout
+import AdminSettingsLayout from "./layouts/admin/settings/AdminSettingsLayout";
+
+// Admin Dashboard
 import AdminDashboard from "./pages/admin/AdminDashboard";
+
+// Admin Online Store
 import AdminHomePage from "./pages/admin/onlineStore/AdminHomePage";
 
 // Admin Products
@@ -40,23 +69,29 @@ import AdminBrands from "./pages/admin/products/AdminBrands";
 import AdminBrandCreate from "./pages/admin/products/AdminBrandCreate";
 import AdminBrandEdit from "./pages/admin/products/AdminBrandEdit";
 
-// Auth
-import RoleRoute from "./components/auth/RoleRoute";
+// Admin Vendors
 import AdminVendors from "./pages/admin/vendors/AdminVendors";
 import AdminVendorCreate from "./pages/admin/vendors/AdminVendorCreate";
 import AdminVendorEdit from "./pages/admin/vendors/AdminVendorEdit";
+
+// Admin Vendor Plans
 import AdminVendorPlans from "./pages/admin/vendors/vendorPlan/AdminVendorPlans";
-import AdminVendorPlanEdit from "./pages/admin/vendors/vendorPlan/AdminVendorPlanEdit";
 import AdminVendorPlanCreate from "./pages/admin/vendors/vendorPlan/AdminVendorPlanCreate";
+import AdminVendorPlanEdit from "./pages/admin/vendors/vendorPlan/AdminVendorPlanEdit";
+
+// Admin Vendor Configuration
 import AdminVendorConfiguration from "./pages/admin/vendors/configuration/AdminVendorConfiguration";
-import TopVendors from "./components/frontend/TopVendors";
 
+// Admin Settings Pages
+import GeneralSettings from "./pages/admin/setting/GeneralSettings";
+import PaymentSettings from "./pages/admin/setting/PaymentSettings";
+import PaymentSuccess from "./pages/frontend/payment/PaymentSuccess";
+import PaymentCancelled from "./pages/frontend/payment/PaymentCancelled";
+import PaymentError from "./pages/frontend/payment/PaymentError";
 
-// Frontend Home
 const Home = () => {
     return (
         <>
-            <Navbar />
             <Hero />
             <FeaturedCategories />
             <ProductsOnSale />
@@ -67,82 +102,103 @@ const Home = () => {
     );
 };
 
-
-function App() {
+const App = () => {
     return (
         <BrowserRouter>
-            <Routes>
+            <CartProvider>
+                <Routes>
 
-                {/* Frontend Public Routes */}
-                <Route path="/" element={<Home />} />
-                <Route path="/login" element={<Login />} />
-                <Route path="/register" element={<Register />} />
-                <Route path="/become-vendor" element={<BecomeVendor />} />
+                    {/* Frontend */}
+                    <Route element={<FrontendLayout />}>
+                        <Route path="/" element={<Home />} />
+                        <Route path="/products/:slug" element={<ProductDetails />} />
+                        <Route path="/cart" element={<Cart />} />
+                        <Route path="/checkout" element={<Checkout />} />
 
-                {/* Admin Routes */}
-                <Route
-                    path="/admin"
-                    element={
-                        <RoleRoute allowedRole="admin">
-                            <AdminLayout />
-                        </RoleRoute>
-                    }
-                >
+                        <Route path="/account" element={<CustomerDashboard />} />
+                        <Route path="/account/profile" element={<CustomerProfile />} />
+                        <Route path="/account/addresses" element={<CustomerAddresses />} />
+                        <Route path="/account/security" element={<CustomerSecurity />} />
+                        <Route path="/account/preferences" element={<CustomerPreferences />} />
+                        <Route path="/account/wishlist" element={<CustomerWishlist />} />
 
-                    {/* Admin Dashboard */}
-                    <Route path="dashboard" element={<AdminDashboard />} />
+                        <Route path="/payment/success" element={<PaymentSuccess />} />
+                        <Route path="/payment/cancelled" element={<PaymentCancelled />} />
+                        <Route  path="/payment/error"  element={<PaymentError />} />
 
-                    {/* Products */}
-                    <Route path="products" element={<AdminProducts />} />
-                    <Route path="products/new" element={<AdminProductCreate />} />
-                    <Route path="products/:id/edit" element={<AdminProductEdit />} />
 
-                    {/* Collections */}
-                    <Route path="products/collections" element={<AdminCollections />} />
-                    <Route path="products/collections/new" element={<AdminCollectionCreate />} />
-                    <Route path="products/collections/:id/edit" element={<AdminCollectionEdit />} />
 
-                    {/* Global Variants */}
-                    <Route path="products/global-variants" element={<AdminGlobalVariants />} />
 
-                    {/* Categories */}
-                    <Route path="products/categories" element={<AdminCategories />} />
-                    <Route path="products/categories/new" element={<AdminCategoryCreate />} />
-                    <Route path="products/categories/:id/edit" element={<AdminCategoryEdit />} />
+                    </Route>
 
-                    {/* Brands */}
-                    <Route path="products/brands" element={<AdminBrands />} />
-                    <Route path="products/brands/new" element={<AdminBrandCreate />} />
-                    <Route path="products/brands/:id/edit" element={<AdminBrandEdit />} />
+                    {/* Auth */}
+                    <Route path="/login" element={<Login />} />
+                    <Route path="/two-factor-challenge" element={<TwoFactorChallenge />} />
+                    <Route path="/register" element={<Register />} />
+                    <Route path="/become-vendor" element={<BecomeVendor />} />
 
-                    {/* Online Store */}
-                    <Route path="online-store/home-page" element={<AdminHomePage />} />
+                    {/* Admin */}
+                    <Route
+                        path="/admin"
+                        element={
+                            <RoleRoute allowedRole="admin">
+                                <AdminLayout />
+                            </RoleRoute>
+                        }
+                    >
+                        <Route path="dashboard" element={<AdminDashboard />} />
 
-                    {/* Vendors */}
-                    <Route path="vendors" element={<AdminVendors />} />
+                        <Route path="products" element={<AdminProducts />} />
+                        <Route path="products/new" element={<AdminProductCreate />} />
+                        <Route path="products/:id/edit" element={<AdminProductEdit />} />
 
-                    <Route path="vendors/new" element={<AdminVendorCreate />} />
+                        <Route path="products/collections" element={<AdminCollections />} />
+                        <Route path="products/collections/new" element={<AdminCollectionCreate />} />
+                        <Route path="products/collections/:id/edit" element={<AdminCollectionEdit />} />
 
-                    <Route path="vendors/:id/edit" element={<AdminVendorEdit />} />
+                        <Route path="products/global-variants" element={<AdminGlobalVariants />} />
 
-                    {/* Vendor Plans */}
-                    <Route path="vendors/plans" element={<AdminVendorPlans />} />
+                        <Route path="products/categories" element={<AdminCategories />} />
+                        <Route path="products/categories/new" element={<AdminCategoryCreate />} />
+                        <Route path="products/categories/:id/edit" element={<AdminCategoryEdit />} />
 
-                    <Route path="vendors/plans/new" element={<AdminVendorPlanCreate />} />
+                        <Route path="products/brands" element={<AdminBrands />} />
+                        <Route path="products/brands/new" element={<AdminBrandCreate />} />
+                        <Route path="products/brands/:id/edit" element={<AdminBrandEdit />} />
 
-                    <Route path="vendors/plans/:id/edit" element={<AdminVendorPlanEdit />} />
+                        <Route path="online-store/home-page" element={<AdminHomePage />} />
 
-                    {/* Vendor Configuration */}
-                    <Route path="vendors/configuration" element={<AdminVendorConfiguration />} />
+                        <Route path="vendors" element={<AdminVendors />} />
+                        <Route path="vendors/new" element={<AdminVendorCreate />} />
+                        <Route path="vendors/:id/edit" element={<AdminVendorEdit />} />
 
-                </Route>
+                        <Route path="vendors/plans" element={<AdminVendorPlans />} />
+                        <Route path="vendors/plans/new" element={<AdminVendorPlanCreate />} />
+                        <Route path="vendors/plans/:id/edit" element={<AdminVendorPlanEdit />} />
 
-                {/* Fallback */}
-                <Route path="*" element={<Navigate to="/" replace />} />
+                        <Route path="vendors/configuration" element={<AdminVendorConfiguration />} />
+                    </Route>
 
-            </Routes>
+                    {/* Standalone Admin Settings */}
+                    <Route
+                        path="/admin/settings"
+                        element={
+                            <RoleRoute allowedRole="admin">
+                                <AdminSettingsLayout />
+                            </RoleRoute>
+                        }
+                    >
+                        <Route path="general" element={<GeneralSettings />} />
+                        <Route path="payments" element={<PaymentSettings />} />
+                    </Route>
+
+                    {/* Fallback */}
+                    <Route path="*" element={<Navigate to="/" replace />} />
+
+                </Routes>
+            </CartProvider>
         </BrowserRouter>
     );
-}
+};
 
 export default App;

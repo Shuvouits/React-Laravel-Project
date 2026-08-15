@@ -26,10 +26,14 @@ return new class extends Migration
                 'banned',
                 'pending_activation',
                 'suspended',
-            ])->default('active')->after('role')->index();
+            ])->default('active')->index();
 
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
+
+            $table->text('two_factor_secret')->nullable();
+            $table->text('two_factor_recovery_codes')->nullable();
+            $table->timestamp('two_factor_confirmed_at')->nullable();
 
             $table->enum('role', [
                 'admin',
@@ -39,10 +43,6 @@ return new class extends Migration
 
             $table->rememberToken();
             $table->timestamps();
-
-
-
-
         });
 
         Schema::create('password_reset_tokens', function (Blueprint $table) {

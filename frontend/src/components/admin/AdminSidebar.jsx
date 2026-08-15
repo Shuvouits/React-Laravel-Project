@@ -85,10 +85,9 @@ const AdminSidebar = () => {
         font-medium
         transition-all
         duration-150
-        ${
-            isActive
-                ? "bg-[#edf3ff] text-[#2065D1]"
-                : "text-[#4d5562] hover:bg-[#f5f6f8] hover:text-[#111827]"
+        ${isActive
+            ? "bg-[#edf3ff] text-[#2065D1]"
+            : "text-[#4d5562] hover:bg-[#f5f6f8] hover:text-[#111827]"
         }
     `;
 
@@ -104,10 +103,9 @@ const AdminSidebar = () => {
         font-medium
         transition-all
         duration-150
-        ${
-            isActive
-                ? "bg-[#eeeeef] text-[#222]"
-                : "text-[#74777d] hover:bg-[#f5f5f6] hover:text-[#222]"
+        ${isActive
+            ? "bg-[#eeeeef] text-[#222]"
+            : "text-[#74777d] hover:bg-[#f5f5f6] hover:text-[#222]"
         }
     `;
 
@@ -251,12 +249,17 @@ const AdminSidebar = () => {
 
             {/* Settings */}
             <div className="shrink-0 border-t border-[#eeeeef] bg-white px-[12px] py-[12px]">
-                <SidebarNavItem
-                    to="/admin/settings"
-                    icon={Settings}
-                    label="Settings"
-                    className={navItemClass}
-                />
+
+
+                <NavLink
+                    to="/admin/settings/general"
+                    className="flex items-center gap-[12px] px-[16px] py-[12px] text-[15px] text-[#4b5563] transition hover:bg-[#f3f4f6]"
+                >
+                    <Settings size={18} />
+                    <span>Settings</span>
+                </NavLink>
+
+
             </div>
 
         </aside>
@@ -313,11 +316,10 @@ const SidebarDropdown = ({
             <button
                 type="button"
                 onClick={onToggle}
-                className={`flex min-h-[42px] w-full items-center gap-[11px] rounded-[10px] px-[14px] text-[14px] font-medium transition-all duration-150 ${
-                    active
+                className={`flex min-h-[42px] w-full items-center gap-[11px] rounded-[10px] px-[14px] text-[14px] font-medium transition-all duration-150 ${active
                         ? activeClass
                         : "text-[#4d5562] hover:bg-[#f5f6f8] hover:text-[#111827]"
-                }`}
+                    }`}
             >
                 <Icon size={18} />
 
@@ -327,18 +329,16 @@ const SidebarDropdown = ({
 
                 <ChevronDown
                     size={16}
-                    className={`transition-transform duration-200 ${
-                        open ? "rotate-0" : "-rotate-90"
-                    }`}
+                    className={`transition-transform duration-200 ${open ? "rotate-0" : "-rotate-90"
+                        }`}
                 />
             </button>
 
             <div
-                className={`grid transition-all duration-200 ease-in-out ${
-                    open
+                className={`grid transition-all duration-200 ease-in-out ${open
                         ? "grid-rows-[1fr] opacity-100"
                         : "grid-rows-[0fr] opacity-0"
-                }`}
+                    }`}
             >
                 <div className="overflow-hidden">
                     <div className="relative ml-[31px] mt-[5px] space-y-[1px] border-l border-[#dedfe2] pb-[4px] pl-[12px]">
