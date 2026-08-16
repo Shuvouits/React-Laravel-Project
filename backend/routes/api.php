@@ -38,6 +38,7 @@ use App\Http\Controllers\Api\Frontend\ProductContentSectionController as Fronten
 use App\Http\Controllers\Api\Admin\ProductContentSectionController as AdminProductContentSectionController;
 
 use App\Http\Controllers\Api\Admin\AdminPreOrderController;
+use App\Http\Controllers\Api\Admin\AdminReturnController;
 use Illuminate\Support\Facades\Route;
 
 
@@ -365,6 +366,16 @@ Route::delete('/products/{product}/content-sections/{section}', [AdminProductCon
     Route::get('/preorders', [AdminPreOrderController::class, 'index']);
     Route::delete('/preorders/{preorder}', [AdminPreOrderController::class, 'destroy']);
 
+    // Returns
+    Route::get('/returns', [AdminReturnController::class, 'index']);
+    Route::get('/returns/{orderReturn}', [AdminReturnController::class, 'show']);
+    Route::post('/orders/{order}/returns', [AdminReturnController::class, 'store']);
+    Route::post('/returns/{orderReturn}/approve', [AdminReturnController::class, 'approve']);
+    Route::post('/returns/{orderReturn}/reject', [AdminReturnController::class, 'reject']);
+    Route::post('/returns/{orderReturn}/in-transit', [AdminReturnController::class, 'markInTransit']);
+    Route::post('/returns/{orderReturn}/received', [AdminReturnController::class, 'markReceived']);
+    Route::post('/returns/{orderReturn}/cancel', [AdminReturnController::class, 'cancel']);
+    Route::post('/returns/{orderReturn}/refund', [AdminOrderController::class, 'refundReturn']);
 
 
 });

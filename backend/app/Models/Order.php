@@ -95,6 +95,11 @@ public function preorder()
 
 
 
-
+public function returns(): HasMany
+{
+    return $this->hasMany(
+        OrderReturn::class
+    );
+}
 
 }

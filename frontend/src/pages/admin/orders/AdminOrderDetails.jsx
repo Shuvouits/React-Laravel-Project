@@ -40,6 +40,23 @@ const AdminOrderDetails = () => {
     const [refundLoading, setRefundLoading] = useState(false);
     const [refundError, setRefundError] = useState("");
 
+    const [returns, setReturns] = useState([]);
+    const [returnsLoading, setReturnsLoading] = useState(false);
+    const [returnsError, setReturnsError] = useState("");
+
+    const [returnModalOpen, setReturnModalOpen] = useState(false);
+    const [returnItems, setReturnItems] = useState([]);
+    const [returnNote, setReturnNote] = useState("");
+    const [returnLoading, setReturnLoading] = useState(false);
+    const [returnError, setReturnError] = useState("");
+
+    const [returnActionModal, setReturnActionModal] = useState({
+        open: false,
+        type: null,
+        item: null,
+    });
+    const [returnActionLoading, setReturnActionLoading] = useState(false);
+
     const [successMessage, setSuccessMessage] = useState("");
 
     useEffect(() => {
@@ -58,6 +75,51 @@ const AdminOrderDetails = () => {
         };
     }, []);
 
+    const fetchOrderReturns = async (orderData) => {
+        if (!orderData?.order_no) {
+            setReturns([]);
+            return;
+        }
+
+        try {
+            setReturnsLoading(true);
+            setReturnsError("");
+            setReturns([]);
+
+            const response = await api.get("/admin/returns", {
+                params: {
+                    tab: "all",
+                    search: orderData.order_no,
+                    per_page: 100,
+                },
+            });
+
+            const rows =
+                response.data?.returns?.data || [];
+
+            setReturns(
+                rows.filter((item) => {
+                    return (
+                        Number(item.order_id) ===
+                        Number(orderData.id)
+                    );
+                })
+            );
+        } catch (error) {
+            console.error(
+                "Order returns error:",
+                error.response?.data || error.message
+            );
+
+            setReturnsError(
+                error.response?.data?.message ||
+                "Unable to load returns for this order."
+            );
+        } finally {
+            setReturnsLoading(false);
+        }
+    };
+
     const fetchOrder = async () => {
         try {
             setLoading(true);
@@ -65,7 +127,16 @@ const AdminOrderDetails = () => {
 
             const response = await api.get(`/admin/orders/${id}`);
 
-            setOrder(response.data?.order || null);
+            const orderData =
+                response.data?.order || null;
+
+            setOrder(orderData);
+
+            if (orderData) {
+                fetchOrderReturns(orderData);
+            } else {
+                setReturns([]);
+            }
         } catch (error) {
             console.error(
                 "Order details error:",
@@ -416,6 +487,283 @@ const AdminOrderDetails = () => {
         }
     };
 
+    const openReturnModal = () => {
+        if (!order) {
+            return;
+        }
+
+        setMenuOpen(false);
+        setReturnError("");
+        setReturnNote("");
+
+        const rows = (order.items || [])
+            .map((item) => {
+                const maxQuantity =
+                    getAvailableReturnQuantity(
+                        item,
+                        returns
+                    );
+
+                return {
+                    order_item_id: item.id,
+                    product_id: item.product_id,
+                    variant_id: item.variant_id,
+                    product_name: item.product_name,
+                    variant_name: item.variant_name,
+                    sku: item.sku,
+                    image_url: item.image_url,
+                    ordered_quantity: Number(
+                        item.quantity || 0
+                    ),
+                    max_quantity: maxQuantity,
+                    selected: false,
+                    quantity: maxQuantity > 0 ? 1 : 0,
+                    reason: "",
+                    item_condition: "",
+                };
+            })
+            .filter((item) => {
+                return item.max_quantity > 0;
+            });
+
+        setReturnItems(rows);
+        setReturnModalOpen(true);
+    };
+
+    const closeReturnModal = () => {
+        if (returnLoading) {
+            return;
+        }
+
+        setReturnModalOpen(false);
+        setReturnItems([]);
+        setReturnNote("");
+        setReturnError("");
+    };
+
+    const updateReturnItem = (
+        orderItemId,
+        field,
+        value
+    ) => {
+        setReturnItems((currentItems) => {
+            return currentItems.map((item) => {
+                if (
+                    Number(item.order_item_id) !==
+                    Number(orderItemId)
+                ) {
+                    return item;
+                }
+
+                return {
+                    ...item,
+                    [field]: value,
+                };
+            });
+        });
+    };
+
+    const handleCreateReturn = async () => {
+        if (!order || returnLoading) {
+            return;
+        }
+
+        const selectedItems =
+            returnItems.filter((item) => {
+                return item.selected;
+            });
+
+        if (!selectedItems.length) {
+            setReturnError(
+                "Select at least one item to return."
+            );
+            return;
+        }
+
+        for (const item of selectedItems) {
+            const quantity =
+                Number(item.quantity || 0);
+
+            if (
+                quantity < 1 ||
+                quantity > item.max_quantity
+            ) {
+                setReturnError(
+                    `Return quantity for ${item.product_name} must be between 1 and ${item.max_quantity}.`
+                );
+                return;
+            }
+
+            if (!String(item.reason || "").trim()) {
+                setReturnError(
+                    `Select a return reason for ${item.product_name}.`
+                );
+                return;
+            }
+        }
+
+        try {
+            setReturnLoading(true);
+            setReturnError("");
+            setSuccessMessage("");
+
+            const payload = {
+                items: selectedItems.map((item) => ({
+                    order_item_id:
+                        item.order_item_id,
+                    quantity:
+                        Number(item.quantity),
+                    reason:
+                        item.reason,
+                    item_condition:
+                        item.item_condition || null,
+                })),
+                admin_note:
+                    returnNote.trim() || null,
+            };
+
+            const response = await api.post(
+                `/admin/orders/${order.id}/returns`,
+                payload
+            );
+
+            setReturnModalOpen(false);
+            setReturnItems([]);
+            setReturnNote("");
+
+            setSuccessMessage(
+                response.data?.message ||
+                "Return created successfully."
+            );
+
+            await fetchOrderReturns(order);
+
+            setTimeout(() => {
+                setSuccessMessage("");
+            }, 5000);
+        } catch (error) {
+            console.error(
+                "Create return error:",
+                error.response?.data || error.message
+            );
+
+            const validationErrors =
+                error.response?.data?.errors;
+
+            const firstValidationError =
+                validationErrors &&
+                Object.values(validationErrors)
+                    .flat()
+                    .find(Boolean);
+
+            setReturnError(
+                firstValidationError ||
+                error.response?.data?.message ||
+                "Unable to create return."
+            );
+        } finally {
+            setReturnLoading(false);
+        }
+    };
+
+    const openReturnAction = (
+        type,
+        returnItem
+    ) => {
+        setReturnActionModal({
+            open: true,
+            type,
+            item: returnItem,
+        });
+    };
+
+    const closeReturnAction = () => {
+        if (returnActionLoading) {
+            return;
+        }
+
+        setReturnActionModal({
+            open: false,
+            type: null,
+            item: null,
+        });
+    };
+
+    const handleReturnAction = async () => {
+        const type =
+            returnActionModal.type;
+
+        const returnItem =
+            returnActionModal.item;
+
+        if (
+            !type ||
+            !returnItem ||
+            returnActionLoading
+        ) {
+            return;
+        }
+
+        const endpointMap = {
+            approve:
+                `/admin/returns/${returnItem.id}/approve`,
+            reject:
+                `/admin/returns/${returnItem.id}/reject`,
+            in_transit:
+                `/admin/returns/${returnItem.id}/in-transit`,
+            received:
+                `/admin/returns/${returnItem.id}/received`,
+            cancel:
+                `/admin/returns/${returnItem.id}/cancel`,
+        };
+
+        const endpoint =
+            endpointMap[type];
+
+        if (!endpoint) {
+            return;
+        }
+
+        try {
+            setReturnActionLoading(true);
+            setSuccessMessage("");
+
+            const response =
+                await api.post(endpoint);
+
+            setReturnActionModal({
+                open: false,
+                type: null,
+                item: null,
+            });
+
+            setSuccessMessage(
+                response.data?.message ||
+                "Return updated successfully."
+            );
+
+            await fetchOrderReturns(order);
+
+            setTimeout(() => {
+                setSuccessMessage("");
+            }, 5000);
+        } catch (error) {
+            console.error(
+                "Return action error:",
+                error.response?.data || error.message
+            );
+
+            setReturnActionModal((current) => ({
+                ...current,
+                error:
+                    error.response?.data?.message ||
+                    "Unable to update return.",
+            }));
+        } finally {
+            setReturnActionLoading(false);
+        }
+    };
+
     if (loading) {
         return <PageLoader />;
     }
@@ -478,6 +826,19 @@ const AdminOrderDetails = () => {
             "partially_refunded",
         ].includes(paymentStatus) &&
         refundableAmount > 0;
+
+    const canCreateReturn =
+        !returnsLoading &&
+        String(order.status || "").toLowerCase() !==
+            "cancelled" &&
+        items.some((item) => {
+            return (
+                getAvailableReturnQuantity(
+                    item,
+                    returns
+                ) > 0
+            );
+        });
 
     return (
         <>
@@ -658,6 +1019,20 @@ const AdminOrderDetails = () => {
                                             Mark as shipped
                                         </button>
 
+                                        {canCreateReturn && (
+                                            <button
+                                                type="button"
+                                                onClick={openReturnModal}
+                                                className="flex w-full items-center gap-[10px] px-[14px] py-[10px] text-left text-[13px] text-[#333] transition hover:bg-[#f6f6f6]"
+                                            >
+                                                <RefreshCcw
+                                                    size={15}
+                                                    className="text-[#666]"
+                                                />
+                                                Create return
+                                            </button>
+                                        )}
+
                                         <button
                                             type="button"
                                             onClick={handleCancelOrder}
@@ -724,9 +1099,19 @@ const AdminOrderDetails = () => {
                                 items={items}
                             />
 
+                            <ReturnsCard
+                                returns={returns}
+                                loading={returnsLoading}
+                                error={returnsError}
+                                canCreateReturn={canCreateReturn}
+                                onCreate={openReturnModal}
+                                onAction={openReturnAction}
+                            />
+
                             <TimelineCard
                                 order={order}
                                 transactions={transactions}
+                                returns={returns}
                             />
 
                         </div>
@@ -753,7 +1138,917 @@ const AdminOrderDetails = () => {
                 onClose={closeRefundModal}
                 onConfirm={handleRefund}
             />
+
+            <CreateReturnModal
+                open={returnModalOpen}
+                order={order}
+                items={returnItems}
+                note={returnNote}
+                loading={returnLoading}
+                error={returnError}
+                onItemChange={updateReturnItem}
+                onNoteChange={setReturnNote}
+                onClose={closeReturnModal}
+                onConfirm={handleCreateReturn}
+            />
+
+            <ReturnActionModal
+                modal={returnActionModal}
+                loading={returnActionLoading}
+                onClose={closeReturnAction}
+                onConfirm={handleReturnAction}
+            />
         </>
+    );
+};
+
+
+const CreateReturnModal = ({
+    open,
+    order,
+    items,
+    note,
+    loading,
+    error,
+    onItemChange,
+    onNoteChange,
+    onClose,
+    onConfirm,
+}) => {
+    if (!open || !order) {
+        return null;
+    }
+
+    const selectedCount =
+        items.filter((item) => {
+            return item.selected;
+        }).length;
+
+    return (
+        <div className="fixed inset-0 z-[400] flex items-center justify-center bg-black/45 px-[20px] py-[30px]">
+            <div className="relative flex max-h-[90vh] w-full max-w-[760px] flex-col overflow-hidden rounded-[22px] bg-white shadow-[0_25px_70px_rgba(0,0,0,0.24)]">
+
+                <div className="h-[3px] shrink-0 bg-[#2467d5]" />
+
+                <button
+                    type="button"
+                    onClick={onClose}
+                    disabled={loading}
+                    className="absolute right-[20px] top-[20px] z-10 flex h-[34px] w-[34px] items-center justify-center rounded-full text-[#888] transition hover:bg-[#f5f5f5] disabled:opacity-50"
+                >
+                    <X size={19} />
+                </button>
+
+                <div className="shrink-0 px-[30px] pb-[20px] pt-[28px]">
+
+                    <div className="flex h-[52px] w-[52px] items-center justify-center rounded-full bg-[#edf3ff]">
+                        <RefreshCcw
+                            size={23}
+                            className="text-[#2467d5]"
+                        />
+                    </div>
+
+                    <h2 className="mt-[18px] text-[22px] font-semibold text-[#222]">
+                        Create Return
+                    </h2>
+
+                    <p className="mt-[6px] text-[13px] text-[#777]">
+                        Select the items being returned from{" "}
+                        <span className="font-semibold text-[#333]">
+                            {order.order_no}
+                        </span>
+                        .
+                    </p>
+
+                </div>
+
+                <div className="flex-1 overflow-y-auto border-y border-[#eeeeee]">
+
+                    {items.length === 0 && (
+                        <div className="px-[30px] py-[45px] text-center">
+                            <Package
+                                size={32}
+                                className="mx-auto text-[#aaa]"
+                            />
+
+                            <p className="mt-[12px] text-[14px] font-medium text-[#333]">
+                                No items are available to return
+                            </p>
+
+                            <p className="mt-[5px] text-[12px] text-[#888]">
+                                All quantities in this order are already part of an active or completed return.
+                            </p>
+                        </div>
+                    )}
+
+                    {items.map((item) => (
+                        <div
+                            key={item.order_item_id}
+                            className="border-b border-[#eeeeee] px-[30px] py-[18px] last:border-b-0"
+                        >
+                            <div className="flex items-start gap-[14px]">
+
+                                <label className="mt-[20px] flex cursor-pointer items-center">
+                                    <input
+                                        type="checkbox"
+                                        checked={item.selected}
+                                        onChange={(event) => {
+                                            onItemChange(
+                                                item.order_item_id,
+                                                "selected",
+                                                event.target.checked
+                                            );
+                                        }}
+                                        className="h-[17px] w-[17px] cursor-pointer rounded border-[#cfcfcf] accent-[#2467d5]"
+                                    />
+                                </label>
+
+                                <div className="flex h-[58px] w-[58px] shrink-0 items-center justify-center overflow-hidden rounded-[10px] border border-[#e4e4e4] bg-[#f7f7f7]">
+                                    {item.image_url ? (
+                                        <img
+                                            src={item.image_url}
+                                            alt={item.product_name || "Product"}
+                                            className="h-full w-full object-contain p-[5px]"
+                                        />
+                                    ) : (
+                                        <Package
+                                            size={22}
+                                            className="text-[#999]"
+                                        />
+                                    )}
+                                </div>
+
+                                <div className="min-w-0 flex-1">
+
+                                    <div className="flex flex-wrap items-start justify-between gap-[10px]">
+
+                                        <div className="min-w-0">
+                                            <p className="truncate text-[14px] font-medium text-[#171717]">
+                                                {item.product_name}
+                                            </p>
+
+                                            {item.variant_name && (
+                                                <p className="mt-[2px] text-[12px] text-[#777]">
+                                                    {item.variant_name}
+                                                </p>
+                                            )}
+
+                                            {item.sku && (
+                                                <p className="mt-[2px] text-[11px] text-[#999]">
+                                                    SKU: {item.sku}
+                                                </p>
+                                            )}
+                                        </div>
+
+                                        <div className="text-right">
+                                            <p className="text-[11px] text-[#888]">
+                                                Available to return
+                                            </p>
+
+                                            <p className="mt-[2px] text-[13px] font-semibold text-[#333]">
+                                                {item.max_quantity} of {item.ordered_quantity}
+                                            </p>
+                                        </div>
+
+                                    </div>
+
+                                    {item.selected && (
+                                        <div className="mt-[16px] grid grid-cols-1 gap-[12px] md:grid-cols-3">
+
+                                            <div>
+                                                <label className="text-[11px] font-medium text-[#555]">
+                                                    Quantity
+                                                </label>
+
+                                                <input
+                                                    type="number"
+                                                    min="1"
+                                                    max={item.max_quantity}
+                                                    value={item.quantity}
+                                                    onChange={(event) => {
+                                                        onItemChange(
+                                                            item.order_item_id,
+                                                            "quantity",
+                                                            event.target.value
+                                                        );
+                                                    }}
+                                                    className="mt-[6px] h-[40px] w-full rounded-[9px] border border-[#dedede] bg-white px-[11px] text-[13px] text-[#222] outline-none focus:border-[#2467d5]"
+                                                />
+                                            </div>
+
+                                            <div>
+                                                <label className="text-[11px] font-medium text-[#555]">
+                                                    Return reason
+                                                </label>
+
+                                                <select
+                                                    value={item.reason}
+                                                    onChange={(event) => {
+                                                        onItemChange(
+                                                            item.order_item_id,
+                                                            "reason",
+                                                            event.target.value
+                                                        );
+                                                    }}
+                                                    className="mt-[6px] h-[40px] w-full rounded-[9px] border border-[#dedede] bg-white px-[10px] text-[13px] text-[#222] outline-none focus:border-[#2467d5]"
+                                                >
+                                                    <option value="">
+                                                        Select reason
+                                                    </option>
+                                                    <option value="Damaged">
+                                                        Damaged
+                                                    </option>
+                                                    <option value="Defective">
+                                                        Defective
+                                                    </option>
+                                                    <option value="Wrong item">
+                                                        Wrong item
+                                                    </option>
+                                                    <option value="Not as described">
+                                                        Not as described
+                                                    </option>
+                                                    <option value="Changed mind">
+                                                        Changed mind
+                                                    </option>
+                                                    <option value="Other">
+                                                        Other
+                                                    </option>
+                                                </select>
+                                            </div>
+
+                                            <div>
+                                                <label className="text-[11px] font-medium text-[#555]">
+                                                    Item condition
+                                                </label>
+
+                                                <select
+                                                    value={item.item_condition}
+                                                    onChange={(event) => {
+                                                        onItemChange(
+                                                            item.order_item_id,
+                                                            "item_condition",
+                                                            event.target.value
+                                                        );
+                                                    }}
+                                                    className="mt-[6px] h-[40px] w-full rounded-[9px] border border-[#dedede] bg-white px-[10px] text-[13px] text-[#222] outline-none focus:border-[#2467d5]"
+                                                >
+                                                    <option value="">
+                                                        Not specified
+                                                    </option>
+                                                    <option value="Unopened">
+                                                        Unopened
+                                                    </option>
+                                                    <option value="Opened">
+                                                        Opened
+                                                    </option>
+                                                    <option value="Used">
+                                                        Used
+                                                    </option>
+                                                    <option value="Damaged">
+                                                        Damaged
+                                                    </option>
+                                                    <option value="Defective">
+                                                        Defective
+                                                    </option>
+                                                </select>
+                                            </div>
+
+                                        </div>
+                                    )}
+
+                                </div>
+
+                            </div>
+                        </div>
+                    ))}
+
+                    {items.length > 0 && (
+                        <div className="bg-[#fafafa] px-[30px] py-[18px]">
+
+                            <label className="text-[12px] font-medium text-[#444]">
+                                Internal note
+                            </label>
+
+                            <textarea
+                                rows="3"
+                                value={note}
+                                onChange={(event) => {
+                                    onNoteChange(event.target.value);
+                                }}
+                                placeholder="Add an optional note about this return..."
+                                className="mt-[7px] w-full resize-none rounded-[10px] border border-[#dedede] bg-white px-[13px] py-[10px] text-[13px] text-[#222] outline-none focus:border-[#2467d5]"
+                            />
+
+                        </div>
+                    )}
+
+                </div>
+
+                <div className="shrink-0 px-[30px] py-[20px]">
+
+                    {error && (
+                        <div className="mb-[14px] rounded-[9px] border border-red-200 bg-red-50 px-[13px] py-[10px] text-[12px] text-red-600">
+                            {error}
+                        </div>
+                    )}
+
+                    <div className="flex items-center justify-between gap-[14px]">
+
+                        <p className="text-[12px] text-[#777]">
+                            {selectedCount} item
+                            {selectedCount === 1 ? "" : "s"} selected
+                        </p>
+
+                        <div className="flex gap-[10px]">
+
+                            <button
+                                type="button"
+                                onClick={onClose}
+                                disabled={loading}
+                                className="h-[42px] rounded-[10px] border border-[#dedede] bg-white px-[18px] text-[13px] font-semibold text-[#333] transition hover:bg-[#f8f8f8] disabled:opacity-50"
+                            >
+                                Cancel
+                            </button>
+
+                            <button
+                                type="button"
+                                onClick={onConfirm}
+                                disabled={
+                                    loading ||
+                                    selectedCount === 0 ||
+                                    items.length === 0
+                                }
+                                className="flex h-[42px] items-center gap-[7px] rounded-[10px] bg-[#2467d5] px-[18px] text-[13px] font-semibold text-white transition hover:bg-[#1f59ba] disabled:cursor-not-allowed disabled:opacity-50"
+                            >
+                                {loading && (
+                                    <LoaderCircle
+                                        size={15}
+                                        className="animate-spin"
+                                    />
+                                )}
+
+                                {loading
+                                    ? "Creating..."
+                                    : "Create Return"}
+                            </button>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </div>
+        </div>
+    );
+};
+
+const ReturnActionModal = ({
+    modal,
+    loading,
+    onClose,
+    onConfirm,
+}) => {
+    if (!modal?.open || !modal?.item) {
+        return null;
+    }
+
+    const configs = {
+        approve: {
+            title: "Approve Return",
+            message:
+                "Approve this return request and allow the return process to continue?",
+            button: "Approve Return",
+            destructive: false,
+        },
+        reject: {
+            title: "Reject Return",
+            message:
+                "Reject this return request? The returned quantity will become available for a new return request.",
+            button: "Reject Return",
+            destructive: true,
+        },
+        in_transit: {
+            title: "Mark In Transit",
+            message:
+                "Confirm that the customer has sent the returned items and the return is now in transit.",
+            button: "Mark In Transit",
+            destructive: false,
+        },
+        received: {
+            title: "Mark Return Received",
+            message:
+                "Confirm that the returned items have been received.",
+            button: "Mark Received",
+            destructive: false,
+        },
+        cancel: {
+            title: "Cancel Return",
+            message:
+                "Cancel this return? The returned quantity will become available again. This action cannot be undone.",
+            button: "Cancel Return",
+            destructive: true,
+        },
+    };
+
+    const config =
+        configs[modal.type] ||
+        configs.cancel;
+
+    return (
+        <div className="fixed inset-0 z-[450] flex items-center justify-center bg-black/45 px-[20px]">
+            <div className="relative w-full max-w-[470px] overflow-hidden rounded-[20px] bg-white shadow-[0_25px_70px_rgba(0,0,0,0.24)]">
+
+                <div
+                    className={`h-[3px] ${
+                        config.destructive
+                            ? "bg-red-500"
+                            : "bg-[#2467d5]"
+                    }`}
+                />
+
+                <button
+                    type="button"
+                    onClick={onClose}
+                    disabled={loading}
+                    className="absolute right-[18px] top-[18px] flex h-[34px] w-[34px] items-center justify-center rounded-full text-[#888] transition hover:bg-[#f5f5f5] disabled:opacity-50"
+                >
+                    <X size={18} />
+                </button>
+
+                <div className="px-[28px] pb-[26px] pt-[30px]">
+
+                    <div
+                        className={`flex h-[54px] w-[54px] items-center justify-center rounded-full ${
+                            config.destructive
+                                ? "bg-red-50 text-red-600"
+                                : "bg-[#edf3ff] text-[#2467d5]"
+                        }`}
+                    >
+                        {config.destructive ? (
+                            <XCircle size={23} />
+                        ) : (
+                            <RefreshCcw size={23} />
+                        )}
+                    </div>
+
+                    <h2 className="mt-[18px] text-[21px] font-semibold text-[#222]">
+                        {config.title}
+                    </h2>
+
+                    <p className="mt-[8px] text-[13px] leading-[21px] text-[#666]">
+                        {config.message}
+                    </p>
+
+                    <div className="mt-[15px] rounded-[10px] bg-[#f7f8fa] px-[13px] py-[11px]">
+                        <p className="text-[12px] text-[#777]">
+                            Return
+                        </p>
+
+                        <p className="mt-[2px] text-[13px] font-semibold text-[#222]">
+                            {modal.item.return_no}
+                        </p>
+                    </div>
+
+                    {modal.error && (
+                        <div className="mt-[14px] rounded-[9px] border border-red-200 bg-red-50 px-[13px] py-[10px] text-[12px] text-red-600">
+                            {modal.error}
+                        </div>
+                    )}
+
+                    <div className="mt-[24px] grid grid-cols-2 gap-[10px]">
+
+                        <button
+                            type="button"
+                            onClick={onClose}
+                            disabled={loading}
+                            className="h-[44px] rounded-[10px] border border-[#dedede] bg-white text-[13px] font-semibold text-[#333] transition hover:bg-[#f8f8f8] disabled:opacity-50"
+                        >
+                            Cancel
+                        </button>
+
+                        <button
+                            type="button"
+                            onClick={onConfirm}
+                            disabled={loading}
+                            className={`flex h-[44px] items-center justify-center gap-[7px] rounded-[10px] text-[13px] font-semibold text-white transition disabled:opacity-50 ${
+                                config.destructive
+                                    ? "bg-red-600 hover:bg-red-700"
+                                    : "bg-[#2467d5] hover:bg-[#1f59ba]"
+                            }`}
+                        >
+                            {loading && (
+                                <LoaderCircle
+                                    size={15}
+                                    className="animate-spin"
+                                />
+                            )}
+
+                            {loading
+                                ? "Processing..."
+                                : config.button}
+                        </button>
+
+                    </div>
+
+                </div>
+
+            </div>
+        </div>
+    );
+};
+
+const ReturnsCard = ({
+    returns,
+    loading,
+    error,
+    canCreateReturn,
+    onCreate,
+    onAction,
+}) => {
+    return (
+        <section className="order-print-card overflow-hidden rounded-[17px] border border-[#dedede] bg-white shadow-sm">
+
+            <div className="flex items-center justify-between gap-[15px] px-[24px] py-[20px]">
+
+                <div>
+                    <h2 className="text-[17px] font-semibold text-[#171717]">
+                        Returns
+                    </h2>
+
+                    <p className="mt-[3px] text-[12px] text-[#888]">
+                        Track returned items and their current status.
+                    </p>
+                </div>
+
+                {canCreateReturn && (
+                    <button
+                        type="button"
+                        onClick={onCreate}
+                        className="order-print-hide flex h-[36px] items-center gap-[7px] rounded-[9px] border border-[#dedede] bg-white px-[12px] text-[12px] font-semibold text-[#333] transition hover:bg-[#f7f7f7]"
+                    >
+                        <RefreshCcw size={14} />
+                        Create Return
+                    </button>
+                )}
+
+            </div>
+
+            {loading && (
+                <div className="border-t border-[#eeeeee] px-[24px] py-[24px]">
+                    <div className="flex items-center gap-[8px] text-[13px] text-[#777]">
+                        <LoaderCircle
+                            size={16}
+                            className="animate-spin"
+                        />
+                        Loading returns...
+                    </div>
+                </div>
+            )}
+
+            {!loading && error && (
+                <div className="border-t border-[#eeeeee] px-[24px] py-[20px]">
+                    <div className="rounded-[9px] border border-red-200 bg-red-50 px-[13px] py-[10px] text-[12px] text-red-600">
+                        {error}
+                    </div>
+                </div>
+            )}
+
+            {!loading &&
+                !error &&
+                returns.length === 0 && (
+                    <div className="border-t border-[#eeeeee] px-[24px] py-[30px] text-center">
+
+                        <RefreshCcw
+                            size={27}
+                            className="mx-auto text-[#aaa]"
+                        />
+
+                        <p className="mt-[10px] text-[13px] font-medium text-[#444]">
+                            No returns for this order
+                        </p>
+
+                        <p className="mt-[4px] text-[12px] text-[#888]">
+                            Create a return when one or more order items are being sent back.
+                        </p>
+
+                    </div>
+                )}
+
+            {!loading &&
+                !error &&
+                returns.length > 0 && (
+                    <div className="border-t border-[#eeeeee]">
+
+                        {returns.map((returnItem) => {
+                            const status =
+                                String(
+                                    returnItem.status || ""
+                                ).toLowerCase();
+
+                            const returnItems =
+                                Array.isArray(returnItem.items)
+                                    ? returnItem.items
+                                    : [];
+
+                            const totalQuantity =
+                                returnItems.reduce(
+                                    (total, item) => {
+                                        return (
+                                            total +
+                                            Number(
+                                                item.quantity || 0
+                                            )
+                                        );
+                                    },
+                                    0
+                                );
+
+                            return (
+                                <div
+                                    key={returnItem.id}
+                                    className="border-b border-[#eeeeee] px-[24px] py-[18px] last:border-b-0"
+                                >
+                                    <div className="flex flex-col justify-between gap-[12px] md:flex-row md:items-start">
+
+                                        <div>
+                                            <div className="flex flex-wrap items-center gap-[7px]">
+
+                                                <p className="text-[14px] font-semibold text-[#222]">
+                                                    {returnItem.return_no}
+                                                </p>
+
+                                                <ReturnStatusBadge
+                                                    status={returnItem.status}
+                                                />
+
+                                                <RefundStatusBadge
+                                                    status={returnItem.refund_status}
+                                                />
+
+                                            </div>
+
+                                            <p className="mt-[6px] text-[12px] text-[#777]">
+                                                Requested{" "}
+                                                {formatDateTime(
+                                                    returnItem.requested_at ||
+                                                    returnItem.created_at
+                                                )}
+                                                {" · "}
+                                                {totalQuantity} item
+                                                {totalQuantity === 1
+                                                    ? ""
+                                                    : "s"}
+                                            </p>
+                                        </div>
+
+                                        <div className="order-print-hide flex flex-wrap gap-[7px]">
+
+                                            {status === "requested" && (
+                                                <>
+                                                    <ReturnActionButton
+                                                        label="Approve"
+                                                        onClick={() => {
+                                                            onAction(
+                                                                "approve",
+                                                                returnItem
+                                                            );
+                                                        }}
+                                                    />
+
+                                                    <ReturnActionButton
+                                                        label="Reject"
+                                                        danger
+                                                        onClick={() => {
+                                                            onAction(
+                                                                "reject",
+                                                                returnItem
+                                                            );
+                                                        }}
+                                                    />
+                                                </>
+                                            )}
+
+                                            {status === "approved" && (
+                                                <>
+                                                    <ReturnActionButton
+                                                        label="In Transit"
+                                                        onClick={() => {
+                                                            onAction(
+                                                                "in_transit",
+                                                                returnItem
+                                                            );
+                                                        }}
+                                                    />
+
+                                                    <ReturnActionButton
+                                                        label="Received"
+                                                        onClick={() => {
+                                                            onAction(
+                                                                "received",
+                                                                returnItem
+                                                            );
+                                                        }}
+                                                    />
+                                                </>
+                                            )}
+
+                                            {status === "in_transit" && (
+                                                <ReturnActionButton
+                                                    label="Received"
+                                                    onClick={() => {
+                                                        onAction(
+                                                            "received",
+                                                            returnItem
+                                                        );
+                                                    }}
+                                                />
+                                            )}
+
+                                            {[
+                                                "requested",
+                                                "approved",
+                                                "in_transit",
+                                            ].includes(status) && (
+                                                <ReturnActionButton
+                                                    label="Cancel"
+                                                    danger
+                                                    onClick={() => {
+                                                        onAction(
+                                                            "cancel",
+                                                            returnItem
+                                                        );
+                                                    }}
+                                                />
+                                            )}
+
+                                        </div>
+
+                                    </div>
+
+                                    <div className="mt-[14px] overflow-hidden rounded-[10px] border border-[#ececec]">
+
+                                        {returnItems.map((item) => (
+                                            <div
+                                                key={item.id}
+                                                className="flex flex-col justify-between gap-[8px] border-b border-[#eeeeee] bg-[#fcfcfc] px-[13px] py-[11px] last:border-b-0 sm:flex-row sm:items-center"
+                                            >
+                                                <div className="min-w-0">
+                                                    <p className="truncate text-[12px] font-medium text-[#333]">
+                                                        {item.product_name}
+                                                        {item.variant_name
+                                                            ? ` · ${item.variant_name}`
+                                                            : ""}
+                                                    </p>
+
+                                                    <p className="mt-[2px] text-[11px] text-[#888]">
+                                                        Qty {item.quantity}
+                                                        {" · "}
+                                                        {item.reason}
+                                                        {item.item_condition
+                                                            ? ` · ${item.item_condition}`
+                                                            : ""}
+                                                    </p>
+                                                </div>
+
+                                                {Number(
+                                                    item.refund_amount || 0
+                                                ) > 0 && (
+                                                    <p className="shrink-0 text-[12px] font-semibold text-[#333]">
+                                                        {formatMoney(
+                                                            item.refund_amount
+                                                        )}
+                                                    </p>
+                                                )}
+                                            </div>
+                                        ))}
+
+                                    </div>
+
+                                    {returnItem.admin_note && (
+                                        <div className="mt-[10px] rounded-[9px] bg-[#f7f8fa] px-[12px] py-[9px]">
+                                            <span className="text-[11px] font-medium text-[#666]">
+                                                Internal note:
+                                            </span>{" "}
+                                            <span className="text-[11px] text-[#777]">
+                                                {returnItem.admin_note}
+                                            </span>
+                                        </div>
+                                    )}
+
+                                    {Number(
+                                        returnItem.refund_amount || 0
+                                    ) > 0 && (
+                                        <div className="mt-[10px] text-[12px] text-[#666]">
+                                            Refund amount:{" "}
+                                            <span className="font-semibold text-[#222]">
+                                                {formatMoney(
+                                                    returnItem.refund_amount
+                                                )}
+                                            </span>
+                                        </div>
+                                    )}
+
+                                </div>
+                            );
+                        })}
+
+                    </div>
+                )}
+
+        </section>
+    );
+};
+
+const ReturnActionButton = ({
+    label,
+    onClick,
+    danger = false,
+}) => {
+    return (
+        <button
+            type="button"
+            onClick={onClick}
+            className={`h-[32px] rounded-[8px] border px-[10px] text-[11px] font-semibold transition ${
+                danger
+                    ? "border-red-200 bg-white text-red-600 hover:bg-red-50"
+                    : "border-[#dcdcdc] bg-white text-[#333] hover:bg-[#f7f7f7]"
+            }`}
+        >
+            {label}
+        </button>
+    );
+};
+
+const ReturnStatusBadge = ({ status }) => {
+    const value =
+        String(status || "requested")
+            .toLowerCase();
+
+    let className =
+        "bg-amber-50 text-amber-700";
+
+    if (value === "approved") {
+        className =
+            "bg-blue-50 text-blue-700";
+    }
+
+    if (value === "in_transit") {
+        className =
+            "bg-purple-50 text-purple-700";
+    }
+
+    if (value === "received") {
+        className =
+            "bg-green-50 text-green-700";
+    }
+
+    if (value === "refunded") {
+        className =
+            "bg-cyan-50 text-cyan-700";
+    }
+
+    if (
+        value === "rejected" ||
+        value === "cancelled"
+    ) {
+        className =
+            "bg-red-50 text-red-600";
+    }
+
+    return (
+        <span
+            className={`inline-flex rounded-full px-[8px] py-[4px] text-[10px] font-semibold ${className}`}
+        >
+            {formatStatus(status)}
+        </span>
+    );
+};
+
+const RefundStatusBadge = ({ status }) => {
+    const value =
+        String(status || "not_refunded")
+            .toLowerCase();
+
+    let className =
+        "bg-[#f3f3f3] text-[#666]";
+
+    if (value === "partially_refunded") {
+        className =
+            "bg-amber-50 text-amber-700";
+    }
+
+    if (value === "refunded") {
+        className =
+            "bg-green-50 text-green-700";
+    }
+
+    return (
+        <span
+            className={`inline-flex rounded-full px-[8px] py-[4px] text-[10px] font-semibold ${className}`}
+        >
+            {formatStatus(status)}
+        </span>
     );
 };
 
@@ -1093,11 +2388,13 @@ const TotalRow = ({
 const TimelineCard = ({
     order,
     transactions,
+    returns,
 }) => {
     const events =
         buildTimeline(
             order,
-            transactions
+            transactions,
+            returns
         );
 
     return (
@@ -1173,6 +2470,13 @@ const TimelineEvent = ({ event }) => {
 
         iconClass =
             "border-red-200 bg-red-50 text-red-500";
+    }
+
+    if (event.type === "return") {
+        icon = <RefreshCcw size={14} />;
+
+        iconClass =
+            "border-orange-200 bg-orange-50 text-orange-600";
     }
 
     return (
@@ -1509,7 +2813,8 @@ const OrderError = ({
 
 const buildTimeline = (
     order,
-    transactions
+    transactions,
+    returns = []
 ) => {
     const events = [];
 
@@ -1597,12 +2902,157 @@ const buildTimeline = (
         });
     }
 
+    if (Array.isArray(returns)) {
+        returns.forEach((returnItem) => {
+            if (returnItem.requested_at) {
+                events.push({
+                    type: "return",
+                    text:
+                        `Return ${returnItem.return_no} requested`,
+                    date:
+                        returnItem.requested_at,
+                });
+            }
+
+            if (returnItem.approved_at) {
+                events.push({
+                    type: "return",
+                    text:
+                        `Return ${returnItem.return_no} approved`,
+                    date:
+                        returnItem.approved_at,
+                });
+            }
+
+            if (returnItem.received_at) {
+                events.push({
+                    type: "return",
+                    text:
+                        `Return ${returnItem.return_no} received`,
+                    date:
+                        returnItem.received_at,
+                });
+            }
+
+            if (returnItem.rejected_at) {
+                events.push({
+                    type: "return",
+                    text:
+                        `Return ${returnItem.return_no} rejected`,
+                    date:
+                        returnItem.rejected_at,
+                });
+            }
+
+            if (returnItem.refunded_at) {
+                events.push({
+                    type: "return",
+                    text:
+                        `Return ${returnItem.return_no} refunded`,
+                    date:
+                        returnItem.refunded_at,
+                });
+            }
+
+            if (returnItem.cancelled_at) {
+                events.push({
+                    type: "return",
+                    text:
+                        `Return ${returnItem.return_no} cancelled`,
+                    date:
+                        returnItem.cancelled_at,
+                });
+            }
+        });
+    }
+
     return events.sort((first, second) => {
         return (
             new Date(second.date) -
             new Date(first.date)
         );
     });
+};
+
+
+const getReturnedQuantity = (
+    orderItemId,
+    returns
+) => {
+    if (!Array.isArray(returns)) {
+        return 0;
+    }
+
+    return returns.reduce(
+        (total, returnItem) => {
+            const status =
+                String(
+                    returnItem.status || ""
+                ).toLowerCase();
+
+            if (
+                status === "rejected" ||
+                status === "cancelled"
+            ) {
+                return total;
+            }
+
+            const returnItems =
+                Array.isArray(returnItem.items)
+                    ? returnItem.items
+                    : [];
+
+            const returnedQuantity =
+                returnItems
+                    .filter((item) => {
+                        return (
+                            Number(
+                                item.order_item_id
+                            ) ===
+                            Number(orderItemId)
+                        );
+                    })
+                    .reduce(
+                        (quantity, item) => {
+                            return (
+                                quantity +
+                                Number(
+                                    item.quantity || 0
+                                )
+                            );
+                        },
+                        0
+                    );
+
+            return (
+                total +
+                returnedQuantity
+            );
+        },
+        0
+    );
+};
+
+const getAvailableReturnQuantity = (
+    orderItem,
+    returns
+) => {
+    const orderedQuantity =
+        Number(
+            orderItem?.quantity || 0
+        );
+
+    const returnedQuantity =
+        getReturnedQuantity(
+            orderItem?.id,
+            returns
+        );
+
+    return Math.max(
+        0,
+        orderedQuantity -
+        returnedQuantity
+    );
 };
 
 const getRefundableAmount = (order) => {

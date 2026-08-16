@@ -11,11 +11,13 @@ use App\Models\Product;
 use App\Models\User;
 use App\Models\PaymentTransaction;
 use App\Models\ProductVariant;
+use App\Models\OrderReturn;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use App\Models\PaymentSetting;
 use Stripe\StripeClient;
+
 use Throwable;
 
 class AdminOrderController extends Controller
@@ -700,6 +702,222 @@ private function generateManualOrderNumber(): string
     );
 
     return $orderNo;
+}
+
+
+
+public function refundReturn(
+    Request $request,
+    OrderReturn $orderReturn
+): JsonResponse {
+    $validated = $request->validate([
+        'amount' => [
+            'required',
+            'numeric',
+            'min:0.01',
+        ],
+        'reason' => [
+            'nullable',
+            'string',
+            'max:2000',
+        ],
+    ]);
+
+    $orderReturn->load([
+        'order.items',
+        'items',
+    ]);
+
+    $order = $orderReturn->order;
+
+    if (!$order) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Order not found for this return.',
+        ], 404);
+    }
+
+    if ($orderReturn->status !== 'received') {
+        return response()->json([
+            'success' => false,
+            'message' => 'Only received returns can be refunded.',
+        ], 422);
+    }
+
+    if ($orderReturn->refund_status === 'refunded') {
+        return response()->json([
+            'success' => false,
+            'message' => 'This return has already been fully refunded.',
+        ], 422);
+    }
+
+    $returnValue = 0;
+
+    foreach ($orderReturn->items as $returnItem) {
+        $orderItem = $order->items->firstWhere(
+            'id',
+            $returnItem->order_item_id
+        );
+
+        if (!$orderItem) {
+            continue;
+        }
+
+        $returnValue += (
+            (float) $orderItem->unit_price *
+            (int) $returnItem->quantity
+        );
+    }
+
+    $returnValue = round(
+        $returnValue,
+        2
+    );
+
+    if ($returnValue <= 0) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Unable to calculate the return value.',
+        ], 422);
+    }
+
+    $alreadyRefunded = round(
+        (float) $orderReturn->refund_amount,
+        2
+    );
+
+    $remainingReturnAmount = max(
+        0,
+        round(
+            $returnValue - $alreadyRefunded,
+            2
+        )
+    );
+
+    if ($remainingReturnAmount <= 0) {
+        return response()->json([
+            'success' => false,
+            'message' => 'This return has no refundable balance remaining.',
+        ], 422);
+    }
+
+    $amount = round(
+        (float) $validated['amount'],
+        2
+    );
+
+    if ($amount > $remainingReturnAmount) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Refund amount cannot exceed the remaining return value.',
+        ], 422);
+    }
+
+    $orderRefundableAmount =
+        $this->getRefundableAmount($order);
+
+    if ($orderRefundableAmount <= 0) {
+        return response()->json([
+            'success' => false,
+            'message' => 'This order has no refundable balance remaining.',
+        ], 422);
+    }
+
+    if ($amount > $orderRefundableAmount) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Refund amount exceeds the remaining refundable balance for this order.',
+        ], 422);
+    }
+
+    $refundResponse = $this->processRefund(
+        $order,
+        $amount
+    );
+
+    if (
+        $refundResponse->getStatusCode() < 200 ||
+        $refundResponse->getStatusCode() >= 300
+    ) {
+        return $refundResponse;
+    }
+
+    $newRefundAmount = round(
+        $alreadyRefunded + $amount,
+        2
+    );
+
+    $fullyRefunded =
+        $newRefundAmount >=
+        ($returnValue - 0.009);
+
+    $adminNote =
+        $orderReturn->admin_note;
+
+    $reason = trim(
+        (string) (
+            $validated['reason'] ?? ''
+        )
+    );
+
+    if ($reason !== '') {
+        $refundNote =
+            'Refund note: ' .
+            $reason;
+
+        $adminNote = $adminNote
+            ? $adminNote . "\n" . $refundNote
+            : $refundNote;
+    }
+
+    $orderReturn->update([
+        'status' => $fullyRefunded
+            ? 'refunded'
+            : 'received',
+
+        'refund_status' => $fullyRefunded
+            ? 'refunded'
+            : 'partially_refunded',
+
+        'refund_amount' =>
+            $newRefundAmount,
+
+        'refunded_at' => $fullyRefunded
+            ? now()
+            : $orderReturn->refunded_at,
+
+        'admin_note' =>
+            $adminNote,
+    ]);
+
+    return response()->json([
+        'success' => true,
+
+        'message' => $fullyRefunded
+            ? 'Return refund issued successfully.'
+            : 'Partial return refund issued successfully.',
+
+        'refunded_amount' =>
+            $amount,
+
+        'return_refunded_total' =>
+            $newRefundAmount,
+
+        'return_refundable_amount' => max(
+            0,
+            round(
+                $returnValue -
+                $newRefundAmount,
+                2
+            )
+        ),
+
+        'return' => $orderReturn->fresh([
+            'order.user',
+            'order.items',
+            'items',
+        ]),
+    ]);
 }
 
 

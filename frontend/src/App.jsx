@@ -94,6 +94,7 @@ import AdminOrderCreate from "./pages/admin/orders/AdminOrderCreate";
 import CustomerOrderDetails from "./pages/frontend/account/CustomerOrderDetails";
 import PreOrder from "./pages/frontend/PreOrder";
 import AdminPreOrders from "./pages/admin/preorders/AdminPreOrders";
+import AdminReturns from "./pages/admin/returns/AdminReturns";
 
 const Home = () => {
     return (
@@ -200,6 +201,9 @@ const App = () => {
                         <Route path="orders/create" element={<AdminOrderCreate />} />
 
                         <Route path="orders/:id" element={<AdminOrderDetails />} />
+
+                        
+                        <Route path="orders/returns" element={<AdminReturns />} />
 
                        
 
