@@ -88,5 +88,13 @@ class Order extends Model
 }
 
 
+public function preorder()
+{
+    return $this->hasOne(OrderPreorder::class);
+}
+
+
+
+
 
 }

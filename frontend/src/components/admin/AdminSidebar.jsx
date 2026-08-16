@@ -1,5 +1,12 @@
-import { useEffect, useState } from "react";
-import { NavLink, useLocation } from "react-router-dom";
+import {
+    useEffect,
+    useState,
+} from "react";
+
+import {
+    NavLink,
+    useLocation,
+} from "react-router-dom";
 
 import {
     LayoutGrid,
@@ -22,101 +29,189 @@ import {
     ChevronRight,
 } from "lucide-react";
 
+const orderItems = [
+    {
+        to: "/admin/orders",
+        label: "All Orders",
+        end: true,
+    },
+    {
+        to: "/admin/orders/pre-orders",
+        label: "Pre-orders",
+    },
+    {
+        to: "/admin/orders/returns",
+        label: "Returns",
+    },
+    {
+        to: "/admin/orders/abandoned-checkouts",
+        label: "Abandoned checkouts",
+    },
+];
+
 const productItems = [
-    { to: "/admin/products", label: "All Products", end: true },
-    { to: "/admin/products/global-variants", label: "Global Variants" },
-    { to: "/admin/products/collections", label: "Collections" },
-    { to: "/admin/products/categories", label: "Categories" },
-    { to: "/admin/products/brands", label: "Brands" },
-    { to: "/admin/products/inventory", label: "Inventory" },
-    { to: "/admin/products/transfers", label: "Transfers" },
-    { to: "/admin/products/reviews", label: "Reviews" },
+    {
+        to: "/admin/products",
+        label: "All Products",
+        end: true,
+    },
+    {
+        to: "/admin/products/global-variants",
+        label: "Global Variants",
+    },
+    {
+        to: "/admin/products/collections",
+        label: "Collections",
+    },
+    {
+        to: "/admin/products/categories",
+        label: "Categories",
+    },
+    {
+        to: "/admin/products/brands",
+        label: "Brands",
+    },
+    {
+        to: "/admin/products/inventory",
+        label: "Inventory",
+    },
+    {
+        to: "/admin/products/transfers",
+        label: "Transfers",
+    },
+    {
+        to: "/admin/products/reviews",
+        label: "Reviews",
+    },
 ];
 
 const vendorItems = [
-    { to: "/admin/vendors", label: "Vendors", end: true },
-    { to: "/admin/vendors/plans", label: "Vendor Plans" },
-    { to: "/admin/vendors/configuration", label: "Configuration" },
-    { to: "/admin/vendors/onboarding-flow", label: "Onboarding Flow" },
+    {
+        to: "/admin/vendors",
+        label: "Vendors",
+        end: true,
+    },
+    {
+        to: "/admin/vendors/plans",
+        label: "Vendor Plans",
+    },
+    {
+        to: "/admin/vendors/configuration",
+        label: "Configuration",
+    },
+    {
+        to: "/admin/vendors/onboarding-flow",
+        label: "Onboarding Flow",
+    },
 ];
 
 const onlineStoreItems = [
-    { to: "/admin/online-store/themes", label: "Themes" },
-    { to: "/admin/online-store/home-page", label: "Home" },
-    { to: "/admin/online-store/pages", label: "Pages" },
-    { to: "/admin/online-store/menus", label: "Menus" },
+    {
+        to: "/admin/online-store/themes",
+        label: "Themes",
+    },
+    {
+        to: "/admin/online-store/home-page",
+        label: "Home",
+    },
+    {
+        to: "/admin/online-store/pages",
+        label: "Pages",
+    },
+    {
+        to: "/admin/online-store/menus",
+        label: "Menus",
+    },
 ];
 
 const AdminSidebar = () => {
     const location = useLocation();
 
-    // Active routes
-    const isProductsRoute = location.pathname.startsWith("/admin/products");
-    const isVendorsRoute = location.pathname.startsWith("/admin/vendors");
-    const isOnlineStoreRoute = location.pathname.startsWith("/admin/online-store");
+    const isOrdersRoute =
+        location.pathname.startsWith(
+            "/admin/orders"
+        );
 
-    // Menu states
-    const [productsOpen, setProductsOpen] = useState(isProductsRoute);
-    const [vendorsOpen, setVendorsOpen] = useState(isVendorsRoute);
-    const [onlineStoreOpen, setOnlineStoreOpen] = useState(isOnlineStoreRoute);
+    const isProductsRoute =
+        location.pathname.startsWith(
+            "/admin/products"
+        );
 
-    // Auto open active menu
+    const isVendorsRoute =
+        location.pathname.startsWith(
+            "/admin/vendors"
+        );
+
+    const isOnlineStoreRoute =
+        location.pathname.startsWith(
+            "/admin/online-store"
+        );
+
+    const [ordersOpen, setOrdersOpen] =
+        useState(isOrdersRoute);
+
+    const [productsOpen, setProductsOpen] =
+        useState(isProductsRoute);
+
+    const [vendorsOpen, setVendorsOpen] =
+        useState(isVendorsRoute);
+
+    const [onlineStoreOpen, setOnlineStoreOpen] =
+        useState(isOnlineStoreRoute);
+
     useEffect(() => {
-        if (isProductsRoute) setProductsOpen(true);
+        if (isOrdersRoute) {
+            setOrdersOpen(true);
+        }
+    }, [isOrdersRoute]);
+
+    useEffect(() => {
+        if (isProductsRoute) {
+            setProductsOpen(true);
+        }
     }, [isProductsRoute]);
 
     useEffect(() => {
-        if (isVendorsRoute) setVendorsOpen(true);
+        if (isVendorsRoute) {
+            setVendorsOpen(true);
+        }
     }, [isVendorsRoute]);
 
     useEffect(() => {
-        if (isOnlineStoreRoute) setOnlineStoreOpen(true);
+        if (isOnlineStoreRoute) {
+            setOnlineStoreOpen(true);
+        }
     }, [isOnlineStoreRoute]);
 
-    // Main menu class
-    const navItemClass = ({ isActive }) => `
-        min-h-[42px]
-        px-[14px]
-        rounded-[10px]
-        flex
-        items-center
-        gap-[11px]
-        text-[14px]
-        font-medium
-        transition-all
-        duration-150
-        ${isActive
-            ? "bg-[#edf3ff] text-[#2065D1]"
-            : "text-[#4d5562] hover:bg-[#f5f6f8] hover:text-[#111827]"
-        }
-    `;
+    const navItemClass = ({ isActive }) => {
+        const base =
+            "flex min-h-[42px] items-center gap-[11px] rounded-[10px] px-[14px] text-[14px] font-medium transition-all duration-150";
 
-    // Sub menu class
-    const subMenuClass = ({ isActive }) => `
-        relative
-        min-h-[35px]
-        px-[12px]
-        rounded-[9px]
-        flex
-        items-center
-        text-[13px]
-        font-medium
-        transition-all
-        duration-150
-        ${isActive
-            ? "bg-[#eeeeef] text-[#222]"
-            : "text-[#74777d] hover:bg-[#f5f5f6] hover:text-[#222]"
+        if (isActive) {
+            return `${base} bg-[#edf3ff] text-[#2065D1]`;
         }
-    `;
+
+        return `${base} text-[#4d5562] hover:bg-[#f5f6f8] hover:text-[#111827]`;
+    };
+
+    const subMenuClass = ({ isActive }) => {
+        const base =
+            "relative flex min-h-[35px] items-center rounded-[9px] px-[12px] text-[13px] font-medium transition-all duration-150";
+
+        if (isActive) {
+            return `${base} bg-[#eeeeef] text-[#222]`;
+        }
+
+        return `${base} text-[#74777d] hover:bg-[#f5f5f6] hover:text-[#222]`;
+    };
 
     return (
         <aside className="sticky top-0 flex h-screen w-[230px] min-w-[230px] flex-col border-r border-[#e7e8eb] bg-white font-['Inter']">
 
-            {/* Logo */}
             <SidebarLogo />
 
-            {/* Main menu */}
             <div className="scrollbar-thin scrollbar-thumb-[#b6b7ba] scrollbar-track-transparent flex-1 overflow-y-auto px-[12px] py-[14px]">
+
                 <nav className="space-y-[3px]">
 
                     <SidebarNavItem
@@ -133,12 +228,19 @@ const AdminSidebar = () => {
                         className={navItemClass}
                     />
 
-                    <SidebarNavItem
-                        to="/admin/orders"
-                        icon={ClipboardList}
+                    <SidebarDropdown
                         label="Orders"
-                        className={navItemClass}
-                        arrow
+                        icon={ClipboardList}
+                        open={ordersOpen}
+                        active={isOrdersRoute}
+                        onToggle={() => {
+                            setOrdersOpen(
+                                !ordersOpen
+                            );
+                        }}
+                        items={orderItems}
+                        subMenuClass={subMenuClass}
+                        activeClass="bg-[#edf3ff] text-[#2065D1]"
                     />
 
                     <SidebarDropdown
@@ -146,7 +248,11 @@ const AdminSidebar = () => {
                         icon={Box}
                         open={productsOpen}
                         active={isProductsRoute}
-                        onToggle={() => setProductsOpen((prev) => !prev)}
+                        onToggle={() => {
+                            setProductsOpen(
+                                !productsOpen
+                            );
+                        }}
                         items={productItems}
                         subMenuClass={subMenuClass}
                         activeClass="bg-[#f5f5f5] text-[#111]"
@@ -178,7 +284,11 @@ const AdminSidebar = () => {
                         icon={Store}
                         open={vendorsOpen}
                         active={isVendorsRoute}
-                        onToggle={() => setVendorsOpen((prev) => !prev)}
+                        onToggle={() => {
+                            setVendorsOpen(
+                                !vendorsOpen
+                            );
+                        }}
                         items={vendorItems}
                         subMenuClass={subMenuClass}
                         activeClass="bg-[#eaf1ff] text-[#2065D1]"
@@ -223,7 +333,6 @@ const AdminSidebar = () => {
 
                 </nav>
 
-                {/* Sales Channels */}
                 <div className="mb-[8px] mt-[28px] px-[10px] text-[10px] font-semibold tracking-[0.12em] text-[#a1a4aa]">
                     SALES CHANNELS
                 </div>
@@ -233,7 +342,11 @@ const AdminSidebar = () => {
                     icon={ShoppingBag}
                     open={onlineStoreOpen}
                     active={isOnlineStoreRoute}
-                    onToggle={() => setOnlineStoreOpen((prev) => !prev)}
+                    onToggle={() => {
+                        setOnlineStoreOpen(
+                            !onlineStoreOpen
+                        );
+                    }}
                     items={onlineStoreItems}
                     subMenuClass={subMenuClass}
                     activeClass="bg-[#eaf1ff] text-[#2065D1]"
@@ -245,20 +358,18 @@ const AdminSidebar = () => {
                     label="Point of Sale"
                     className={navItemClass}
                 />
+
             </div>
 
-            {/* Settings */}
             <div className="shrink-0 border-t border-[#eeeeef] bg-white px-[12px] py-[12px]">
-
 
                 <NavLink
                     to="/admin/settings/general"
-                    className="flex items-center gap-[12px] px-[16px] py-[12px] text-[15px] text-[#4b5563] transition hover:bg-[#f3f4f6]"
+                    className="flex items-center gap-[12px] rounded-[9px] px-[14px] py-[11px] text-[14px] font-medium text-[#4b5563] transition hover:bg-[#f3f4f6]"
                 >
                     <Settings size={18} />
                     <span>Settings</span>
                 </NavLink>
-
 
             </div>
 
@@ -266,11 +377,15 @@ const AdminSidebar = () => {
     );
 };
 
-// Sidebar logo
 const SidebarLogo = () => {
     return (
         <div className="flex h-[74px] shrink-0 items-center border-b border-[#eeeeef] px-[20px]">
-            <NavLink to="/admin/dashboard" className="flex items-center gap-[9px]">
+
+            <NavLink
+                to="/admin/dashboard"
+                className="flex items-center gap-[9px]"
+            >
+
                 <div className="flex h-[33px] w-[29px] items-center justify-center rounded-[7px] border-2 border-[#4d83ed] text-[17px] font-semibold text-[#2065D1]">
                     S
                 </div>
@@ -278,12 +393,13 @@ const SidebarLogo = () => {
                 <span className="text-[21px] font-bold tracking-[-0.7px] text-[#2065D1]">
                     Storify
                 </span>
+
             </NavLink>
+
         </div>
     );
 };
 
-// Main sidebar item
 const SidebarNavItem = ({
     to,
     icon: Icon,
@@ -292,15 +408,25 @@ const SidebarNavItem = ({
     arrow = false,
 }) => {
     return (
-        <NavLink to={to} className={className}>
+        <NavLink
+            to={to}
+            className={className}
+        >
+
             <Icon size={18} />
-            <span className="flex-1">{label}</span>
-            {arrow && <ChevronRight size={16} />}
+
+            <span className="flex-1">
+                {label}
+            </span>
+
+            {arrow && (
+                <ChevronRight size={16} />
+            )}
+
         </NavLink>
     );
 };
 
-// Collapsible sidebar menu
 const SidebarDropdown = ({
     label,
     icon: Icon,
@@ -313,14 +439,17 @@ const SidebarDropdown = ({
 }) => {
     return (
         <div>
+
             <button
                 type="button"
                 onClick={onToggle}
-                className={`flex min-h-[42px] w-full items-center gap-[11px] rounded-[10px] px-[14px] text-[14px] font-medium transition-all duration-150 ${active
+                className={`flex min-h-[42px] w-full items-center gap-[11px] rounded-[10px] px-[14px] text-[14px] font-medium transition-all duration-150 ${
+                    active
                         ? activeClass
                         : "text-[#4d5562] hover:bg-[#f5f6f8] hover:text-[#111827]"
-                    }`}
+                }`}
             >
+
                 <Icon size={18} />
 
                 <span className="flex-1 text-left">
@@ -329,19 +458,27 @@ const SidebarDropdown = ({
 
                 <ChevronDown
                     size={16}
-                    className={`transition-transform duration-200 ${open ? "rotate-0" : "-rotate-90"
-                        }`}
+                    className={`transition-transform duration-200 ${
+                        open
+                            ? "rotate-0"
+                            : "-rotate-90"
+                    }`}
                 />
+
             </button>
 
             <div
-                className={`grid transition-all duration-200 ease-in-out ${open
+                className={`grid transition-all duration-200 ease-in-out ${
+                    open
                         ? "grid-rows-[1fr] opacity-100"
                         : "grid-rows-[0fr] opacity-0"
-                    }`}
+                }`}
             >
+
                 <div className="overflow-hidden">
+
                     <div className="relative ml-[31px] mt-[5px] space-y-[1px] border-l border-[#dedfe2] pb-[4px] pl-[12px]">
+
                         {items.map((item) => (
                             <SidebarSubItem
                                 key={item.to}
@@ -351,14 +488,17 @@ const SidebarDropdown = ({
                                 className={subMenuClass}
                             />
                         ))}
+
                     </div>
+
                 </div>
+
             </div>
+
         </div>
     );
 };
 
-// Sidebar sub menu item
 const SidebarSubItem = ({
     to,
     label,
@@ -366,7 +506,11 @@ const SidebarSubItem = ({
     end = false,
 }) => {
     return (
-        <NavLink to={to} end={end} className={className}>
+        <NavLink
+            to={to}
+            end={end}
+            className={className}
+        >
             {label}
         </NavLink>
     );

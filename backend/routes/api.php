@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\Account\CustomerDashboardController;
 use App\Http\Controllers\Api\Account\PreferenceController;
 use App\Http\Controllers\Api\Account\ProfileController;
 use App\Http\Controllers\Api\Account\WishlistController;
@@ -30,10 +31,23 @@ use App\Http\Controllers\Api\Frontend\CustomerSecurityController;
 use App\Http\Controllers\Api\Admin\PaymentSettingController;
 use App\Http\Controllers\Api\Customer\OrderController;
 use App\Http\Controllers\Api\Admin\AdminOrderController;
+use App\Http\Controllers\Api\Customer\StripePaymentController;
+use App\Http\Controllers\Api\Frontend\PreOrderController;
+
+use App\Http\Controllers\Api\Frontend\ProductContentSectionController as FrontendProductContentSectionController;
+use App\Http\Controllers\Api\Admin\ProductContentSectionController as AdminProductContentSectionController;
+
+use App\Http\Controllers\Api\Admin\AdminPreOrderController;
 use Illuminate\Support\Facades\Route;
 
 
+
+Route::get('/payments/stripe/success', [StripePaymentController::class,'success']);
+
 // Storefront Home
+Route::get('/home/hero-slides', [HeroSlideController::class, 'index']);
+Route::get('/home/sections', [HomeSectionController::class, 'index']);
+
 Route::get('/home/featured-categories', [HomeController::class, 'featuredCategories']);
 Route::get('/home/products-on-sale', [HomeController::class, 'productsOnSale']);
 Route::get('/home/promotions', [HomeController::class, 'promotions']);
@@ -52,6 +66,12 @@ Route::get('/products/{slug}', [ProductController::class, 'showBySlug']);
 // Cart
 Route::post('/cart/summary', [CartController::class, 'summary']);
 
+// Pre-orders
+Route::get('/pre-orders', [PreOrderController::class, 'index']);
+Route::get('/pre-orders/{slug}', [PreOrderController::class, 'show']);
+
+// Product Content Sections
+Route::get('/products/{slug}/content-sections', [FrontendProductContentSectionController::class, 'index']);
 
 
 
@@ -65,7 +85,7 @@ Route::prefix('customer')->middleware(['auth:sanctum', 'customer'])->group(funct
     Route::delete('/addresses/{id}', [CustomerAddressController::class, 'destroy']);
     Route::post('/addresses/{id}/default', [CustomerAddressController::class, 'setDefault']);
 
-     // Customer Security
+    // Customer Security
     Route::get('/security', [CustomerSecurityController::class, 'index']);
 
     // Password
@@ -80,24 +100,22 @@ Route::prefix('customer')->middleware(['auth:sanctum', 'customer'])->group(funct
     // Active Sessions
     Route::post('/security/sessions/logout-others', [CustomerSecurityController::class, 'logoutOtherSessions']);
 
-     // Orders
-        Route::get('/orders', [OrderController::class, 'index']);
-        Route::post('/orders', [OrderController::class, 'store']);
-        Route::get('/orders/{order}', [OrderController::class, 'show']);
-
-
+    // Orders
+    Route::get('/orders', [OrderController::class, 'index']);
+    Route::post('/orders', [OrderController::class, 'store']);
+    Route::get('/orders/{order}', [OrderController::class, 'show']);
 });
 
 Route::middleware(['auth:sanctum', 'customer'])->prefix('account')->group(function () {
 
-        Route::get('/preferences',[PreferenceController::class, 'show']);
+    Route::get('/preferences', [PreferenceController::class, 'show']);
 
-        Route::put('/preferences',[PreferenceController::class, 'update']);
+    Route::put('/preferences', [PreferenceController::class, 'update']);
 
-        Route::get('/profile', [ProfileController::class, 'show']);
-        Route::put('/profile', [ProfileController::class, 'update']);
+    Route::get('/profile', [ProfileController::class, 'show']);
+    Route::put('/profile', [ProfileController::class, 'update']);
 
-         Route::get('/wishlist', [WishlistController::class, 'index']);
+    Route::get('/wishlist', [WishlistController::class, 'index']);
 
     Route::post('/wishlist/{product}', [WishlistController::class, 'store']);
 
@@ -105,10 +123,8 @@ Route::middleware(['auth:sanctum', 'customer'])->prefix('account')->group(functi
 
     Route::get('/wishlist/{product}/check', [WishlistController::class, 'check']);
 
-
-
+    Route::get('/overview', [CustomerDashboardController::class, 'overview']);
 });
-
 
 // Vendor Registration
 Route::prefix('vendor-registration')->group(function () {
@@ -123,9 +139,6 @@ Route::prefix('vendor-registration')->group(function () {
     });
 });
 
-
-
-
 // Authentication
 Route::prefix('auth')->group(function () {
 
@@ -133,13 +146,11 @@ Route::prefix('auth')->group(function () {
     Route::post('/vendor/register', [AuthController::class, 'vendorRegister']);
 
     Route::post('/login', [AuthController::class, 'login'])
-        ->middleware('throttle:10,1');
+    ->middleware('throttle:10,1');
 
     Route::post('/two-factor/challenge', [AuthController::class, 'twoFactorChallenge'])
-        ->middleware('throttle:6,1');
-
+    ->middleware('throttle:6,1');
 });
-
 
 // Protected Authentication Routes
 Route::middleware('auth:sanctum')->prefix('auth')->group(function () {
@@ -148,12 +159,12 @@ Route::middleware('auth:sanctum')->prefix('auth')->group(function () {
     Route::post('/logout-all', [AuthController::class, 'logoutAll']);
 });
 
-
 // Admin Routes
 Route::prefix('admin')->middleware(['auth:sanctum', 'admin'])->group(function () {
 
- // Hero Slider
+    // Hero Slider
     Route::get('/hero-slides', [HeroSlideController::class, 'index']);
+
     Route::post('/hero-slides', [HeroSlideController::class, 'store']);
     Route::post('/hero-slides/reorder', [HeroSlideController::class, 'reorder']);
     Route::get('/hero-slides/{id}', [HeroSlideController::class, 'show']);
@@ -161,13 +172,11 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'admin'])->group(function ()
     Route::post('/hero-slides/{id}/toggle', [HeroSlideController::class, 'toggle']);
     Route::delete('/hero-slides/{id}', [HeroSlideController::class, 'destroy']);
 
-
     // Home Page Sections
     Route::get('/home-sections', [HomeSectionController::class, 'index']);
     Route::post('/home-sections/{section_key}/toggle', [HomeSectionController::class, 'toggle']);
     Route::post('/home-sections/{sectionKey}/update', [HomeSectionController::class, 'update']);
     Route::post('/home-sections/promotions/cards/{index}/image', [HomeSectionController::class, 'uploadPromotionImage']);
-
 
     // Brands
     Route::get('/brands', [BrandController::class, 'index']);
@@ -178,11 +187,9 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'admin'])->group(function ()
     Route::post('/brands/{id}/update', [BrandController::class, 'update']);
     Route::delete('/brands/{id}', [BrandController::class, 'destroy']);
 
-
     // Brand AI
     Route::post('/ai/brand-content', [BrandAIController::class, 'generate']);
     Route::post('/brands/{id}/toggle-featured', [BrandController::class, 'toggleFeatured']);
-
 
     // Category Management
     Route::get('/categories', [CategoryController::class, 'index']);
@@ -211,7 +218,6 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'admin'])->group(function ()
     // Category Mega Menu Image
     Route::post('/categories/{id}/mega-menu-image', [CategoryMegaMenuController::class, 'updateImage']);
 
-
     // Global Variants
     Route::get('/global-variants', [GlobalVariantController::class, 'index']);
     Route::post('/global-variants', [GlobalVariantController::class, 'store']);
@@ -222,7 +228,6 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'admin'])->group(function ()
     Route::get('/global-variants/{id}', [GlobalVariantController::class, 'show']);
     Route::post('/global-variants/{id}/update', [GlobalVariantController::class, 'update']);
     Route::delete('/global-variants/{id}', [GlobalVariantController::class, 'destroy']);
-
 
     // Collections
     Route::get('/collections', [CollectionController::class, 'index']);
@@ -247,7 +252,6 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'admin'])->group(function ()
 
     // Collection AI
     Route::post('/ai/collection-content', [CollectionAIController::class, 'generate']);
-
 
     // Products
     Route::get('/products', [ProductController::class, 'index']);
@@ -300,8 +304,8 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'admin'])->group(function ()
 
     // Vendor Account Activation
     Route::get('/vendor/activate/{user}', [VendorActivationController::class, 'activate'])
-        ->middleware('signed')
-        ->name('vendor.activate');
+    ->middleware('signed')
+    ->name('vendor.activate');
 
     // Vendor Plans
     Route::get('/vendor-plans', [VendorPlanController::class, 'index']);
@@ -314,23 +318,53 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'admin'])->group(function ()
     Route::get('/vendor-configuration', [VendorConfigurationController::class, 'show']);
     Route::post('/vendor-configuration', [VendorConfigurationController::class, 'update']);
 
-     Route::get('/settings/payments', [PaymentSettingController::class, 'index']);
+    Route::get('/settings/payments', [PaymentSettingController::class, 'index']);
 
-     Route::put('/settings/payments/{gateway}', [PaymentSettingController::class, 'update']);
+    Route::put('/settings/payments/{gateway}', [PaymentSettingController::class, 'update']);
+
+    // Orders
+    Route::get('/orders', [AdminOrderController::class, 'index']);
+
+    Route::get('/orders/create/products', [AdminOrderController::class, 'createProducts']);
+
+    Route::get('/orders/create/customers', [AdminOrderController::class, 'createCustomers']);
+
+    Route::post('/orders/{order}/refund/full', [AdminOrderController::class, 'refundFull']);
+
+    Route::post('/orders/{order}/refund/partial', [AdminOrderController::class, 'refundPartial']);
+
+    Route::post('/orders/manual', [AdminOrderController::class, 'storeManual']);
+
+    Route::get('/orders/{order}', [AdminOrderController::class, 'show']);
+
+    Route::post('/orders/{order}/mark-shipped', [AdminOrderController::class, 'markShipped']);
+
+    Route::post('/orders/{order}/cancel', [AdminOrderController::class, 'cancel']);
+
+    Route::post('/orders/{order}/mark-paid', [AdminOrderController::class, 'markPaid']);
+
+    Route::get('/orders/{order}/invoice', [AdminOrderController::class, 'invoice']);
+
+    Route::delete('/orders/{order}', [AdminOrderController::class, 'destroy']);
 
 
-     // Orders
-Route::get('/orders', [AdminOrderController::class, 'index']);
-Route::get('/orders/{order}', [AdminOrderController::class, 'show']);
 
-Route::post('/orders/{order}/mark-shipped', [ AdminOrderController::class, 'markShipped',]);
 
-Route::post('/orders/{order}/cancel', [ AdminOrderController::class, 'cancel']);
+    // Product Content Sections
+Route::get('/products/{product}/content-sections', [AdminProductContentSectionController::class, 'index']);
 
-Route::delete('/orders/{order}', [AdminOrderController::class,'destroy']);
+Route::post('/products/{product}/content-sections', [AdminProductContentSectionController::class, 'store']);
+
+Route::post('/products/{product}/content-sections/reorder', [AdminProductContentSectionController::class, 'reorder']);
+
+Route::put('/products/{product}/content-sections/{section}', [AdminProductContentSectionController::class, 'update']);
+
+Route::delete('/products/{product}/content-sections/{section}', [AdminProductContentSectionController::class, 'destroy']);
+
+  // Pre-orders
+    Route::get('/preorders', [AdminPreOrderController::class, 'index']);
+    Route::delete('/preorders/{preorder}', [AdminPreOrderController::class, 'destroy']);
+
 
 
 });
-
-
-

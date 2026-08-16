@@ -70,11 +70,11 @@ const Hero = () => {
         ] = await Promise.all([
 
           api.get(
-            "/admin/home-sections"
+            "/home/sections"
           ),
 
           api.get(
-            "/admin/hero-slides"
+            "/home/hero-slides"
           ),
 
         ]);

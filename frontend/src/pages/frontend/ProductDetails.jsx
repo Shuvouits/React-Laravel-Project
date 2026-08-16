@@ -1,19 +1,34 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import {
+    Bold,
     ChevronDown,
     ChevronLeft,
     ChevronRight,
+    Heading2,
+    Heading3,
+    Italic,
     Link2,
+    List,
+    ListOrdered,
     LoaderCircle,
     Maximize2,
     Minus,
+    Pencil,
     Plus,
+    Quote,
+    Redo2,
     ShoppingBag,
     Star,
+    Strikethrough,
+    Underline,
+    Undo2,
     X,
     ZoomIn,
 } from "lucide-react";
+
+import { EditorContent, useEditor } from "@tiptap/react";
+import StarterKit from "@tiptap/starter-kit";
 
 import api from "../../api/axios";
 
@@ -46,9 +61,23 @@ const ProductDetails = () => {
     const [selectedImage, setSelectedImage] = useState(null);
 
     const [previewOpen, setPreviewOpen] = useState(false);
-    const [technicalOpen, setTechnicalOpen] = useState(false);
-    const [faqOpen, setFaqOpen] = useState(false);
     const [activeTab, setActiveTab] = useState("description");
+
+    const [authChecked, setAuthChecked] = useState(false);
+    const [isAdmin, setIsAdmin] = useState(false);
+
+    const [contentSections, setContentSections] = useState([]);
+    const [sectionsLoading, setSectionsLoading] = useState(false);
+    const [sectionsError, setSectionsError] = useState("");
+    const [sectionOpenMap, setSectionOpenMap] = useState({});
+
+    const [sectionModalOpen, setSectionModalOpen] = useState(false);
+    const [editingSection, setEditingSection] = useState(null);
+    const [sectionTitle, setSectionTitle] = useState("");
+    const [sectionContent, setSectionContent] = useState("");
+    const [sectionEnabled, setSectionEnabled] = useState(true);
+    const [sectionSaving, setSectionSaving] = useState(false);
+    const [sectionFormError, setSectionFormError] = useState("");
 
     // Fetch product
     const fetchProduct = async () => {
@@ -71,9 +100,95 @@ const ProductDetails = () => {
         }
     };
 
+    const checkCurrentUser = async () => {
+        const storedUser = getStoredUser();
+
+        if (getUserRole(storedUser) === "admin") {
+            setIsAdmin(true);
+            setAuthChecked(true);
+            return;
+        }
+
+        try {
+            const response = await api.get("/auth/me");
+            const user =
+                response.data?.user ||
+                response.data?.data?.user ||
+                response.data?.data ||
+                null;
+
+            setIsAdmin(getUserRole(user) === "admin");
+        } catch (error) {
+            setIsAdmin(false);
+        } finally {
+            setAuthChecked(true);
+        }
+    };
+
+    const fetchContentSections = async (productId) => {
+        if (!productId) {
+            return;
+        }
+
+        try {
+            setSectionsLoading(true);
+            setSectionsError("");
+
+            const endpoint = isAdmin
+                ? `/admin/products/${productId}/content-sections`
+                : `/products/${slug}/content-sections`;
+
+            const response = await api.get(endpoint);
+            const sections = Array.isArray(response.data?.sections)
+                ? response.data.sections
+                : [];
+
+            setContentSections(sections);
+
+            setSectionOpenMap((current) => {
+                const next = {};
+
+                sections.forEach((section, index) => {
+                    next[section.id] =
+                        current[section.id] !== undefined
+                            ? current[section.id]
+                            : index === 0;
+                });
+
+                return next;
+            });
+        } catch (error) {
+            console.error(
+                "Product content sections error:",
+                error.response?.data || error.message
+            );
+
+            setSectionsError(
+                error.response?.data?.message ||
+                "Unable to load product sections."
+            );
+
+            setContentSections([]);
+        } finally {
+            setSectionsLoading(false);
+        }
+    };
+
     useEffect(() => {
         fetchProduct();
     }, [slug]);
+
+    useEffect(() => {
+        checkCurrentUser();
+    }, []);
+
+    useEffect(() => {
+        if (!product?.id || !authChecked) {
+            return;
+        }
+
+        fetchContentSections(product.id);
+    }, [product?.id, slug, isAdmin, authChecked]);
 
     const options = useMemo(() => {
         return getProductOptions(product);
@@ -202,6 +317,35 @@ const ProductDetails = () => {
         return getVariantGallery(product);
     }, [product]);
 
+    const displayContentSections = useMemo(() => {
+        if (contentSections.length) {
+            return contentSections;
+        }
+
+        if (!product) {
+            return [];
+        }
+
+        return [
+            {
+                id: "legacy-technical",
+                legacy_key: "technical",
+                is_legacy: true,
+                title: "Technical Details",
+                content: product.specifications || "",
+                is_enabled: true,
+            },
+            {
+                id: "legacy-faq",
+                legacy_key: "faq",
+                is_legacy: true,
+                title: "FAQ",
+                content: "",
+                is_enabled: true,
+            },
+        ];
+    }, [contentSections, product]);
+
     // Update main image when variant changes
     useEffect(() => {
         if (variantImage) {
@@ -272,15 +416,170 @@ const ProductDetails = () => {
     };
 
     // Buy now
-const handleBuyNow = () => {
-    addToCart(
-        getCartItem()
-    );
+    const handleBuyNow = () => {
+        addToCart(
+            getCartItem()
+        );
 
-    navigate("/checkout");
-};
+        navigate("/checkout");
+    };
 
-   
+    const toggleContentSection = (sectionId, defaultOpen = false) => {
+        setSectionOpenMap((current) => {
+            const currentValue =
+                current[sectionId] !== undefined
+                    ? current[sectionId]
+                    : defaultOpen;
+
+            return {
+                ...current,
+                [sectionId]: !currentValue,
+            };
+        });
+    };
+
+    const openSectionEditor = (section = null) => {
+        if (!isAdmin) {
+            return;
+        }
+
+        setEditingSection(section);
+        setSectionTitle(section?.title || "");
+        setSectionContent(section?.content || "");
+        setSectionEnabled(section?.is_enabled !== false);
+        setSectionFormError("");
+        setSectionModalOpen(true);
+    };
+
+    const closeSectionEditor = () => {
+        if (sectionSaving) {
+            return;
+        }
+
+        setSectionModalOpen(false);
+        setEditingSection(null);
+        setSectionTitle("");
+        setSectionContent("");
+        setSectionEnabled(true);
+        setSectionFormError("");
+    };
+
+    const createLegacySections = async (
+        selectedSection = null,
+        selectedPayload = null
+    ) => {
+        const legacySections = [
+            {
+                legacy_key: "technical",
+                title: "Technical Details",
+                content: product?.specifications || null,
+            },
+            {
+                legacy_key: "faq",
+                title: "FAQ",
+                content: null,
+            },
+        ];
+
+        for (const legacySection of legacySections) {
+            const selected =
+                selectedSection?.legacy_key === legacySection.legacy_key;
+
+            await api.post(
+                `/admin/products/${product.id}/content-sections`,
+                {
+                    title:
+                        selected && selectedPayload
+                            ? selectedPayload.title
+                            : legacySection.title,
+                    content:
+                        selected && selectedPayload
+                            ? selectedPayload.content
+                            : legacySection.content,
+                    is_enabled:
+                        selected && selectedPayload
+                            ? selectedPayload.is_enabled
+                            : true,
+                }
+            );
+        }
+    };
+
+    const handleSaveSection = async () => {
+        if (!isAdmin || !product?.id || sectionSaving) {
+            return;
+        }
+
+        const title = sectionTitle.trim();
+
+        if (!title) {
+            setSectionFormError("Section title is required.");
+            return;
+        }
+
+        const payload = {
+            title,
+            content: cleanEditorContent(sectionContent),
+            is_enabled: sectionEnabled,
+        };
+
+        try {
+            setSectionSaving(true);
+            setSectionFormError("");
+
+            if (editingSection?.is_legacy && contentSections.length === 0) {
+                await createLegacySections(editingSection, payload);
+            } else if (editingSection?.id && !editingSection?.is_legacy) {
+                await api.put(
+                    `/admin/products/${product.id}/content-sections/${editingSection.id}`,
+                    payload
+                );
+            } else {
+                if (contentSections.length === 0) {
+                    await createLegacySections();
+                }
+
+                await api.post(
+                    `/admin/products/${product.id}/content-sections`,
+                    payload
+                );
+            }
+
+            await fetchContentSections(product.id);
+
+            setSectionModalOpen(false);
+            setEditingSection(null);
+            setSectionTitle("");
+            setSectionContent("");
+            setSectionEnabled(true);
+            setSectionFormError("");
+        } catch (error) {
+            console.error(
+                "Save product section error:",
+                error.response?.data || error.message
+            );
+
+            const validationErrors = error.response?.data?.errors;
+
+            if (validationErrors) {
+                const firstError = Object.values(validationErrors)
+                    .flat()
+                    .find(Boolean);
+
+                setSectionFormError(
+                    firstError || "Unable to save product section."
+                );
+                return;
+            }
+
+            setSectionFormError(
+                error.response?.data?.message ||
+                "Unable to save product section."
+            );
+        } finally {
+            setSectionSaving(false);
+        }
+    };
 
     if (loading) {
         return <ProductLoader />;
@@ -396,26 +695,61 @@ const handleBuyNow = () => {
 
                         <div className="mt-[40px] space-y-[8px]">
 
-                            <ProductAccordion
-                                title="Technical Details"
-                                open={technicalOpen}
-                                onToggle={() => setTechnicalOpen(!technicalOpen)}
-                            >
-                                <ProductContent
-                                    content={product.specifications}
-                                    empty="No technical details available."
-                                />
-                            </ProductAccordion>
+                            {sectionsLoading && (
+                                <div className="flex min-h-[70px] items-center justify-center rounded-[8px] border border-[#dedede] bg-[#f7f7f7]">
+                                    <LoaderCircle
+                                        size={20}
+                                        className="animate-spin text-[#2065D1]"
+                                    />
+                                </div>
+                            )}
 
-                            <ProductAccordion
-                                title="FAQ"
-                                open={faqOpen}
-                                onToggle={() => setFaqOpen(!faqOpen)}
-                            >
-                                <p className="text-[12px] leading-[20px] text-[#777]">
-                                    No FAQ available for this product.
+                            {!sectionsLoading &&
+                                displayContentSections.map((section, index) => {
+                                    const open =
+                                        sectionOpenMap[section.id] !== undefined
+                                            ? sectionOpenMap[section.id]
+                                            : index === 0;
+
+                                    return (
+                                        <ProductAccordion
+                                            key={section.id}
+                                            title={section.title}
+                                            open={open}
+                                            disabled={section.is_enabled === false}
+                                            isAdmin={isAdmin}
+                                            onEdit={() => openSectionEditor(section)}
+                                            onToggle={() => {
+                                                toggleContentSection(
+                                                    section.id,
+                                                    index === 0
+                                                );
+                                            }}
+                                        >
+                                            <ProductContent
+                                                content={section.content}
+                                                empty="No content added yet."
+                                            />
+                                        </ProductAccordion>
+                                    );
+                                })}
+
+                            {isAdmin && (
+                                <button
+                                    type="button"
+                                    onClick={() => openSectionEditor(null)}
+                                    className="flex h-[40px] w-full items-center justify-center gap-[7px] rounded-[8px] border border-dashed border-[#b8ccef] bg-[#f8fbff] text-[13px] font-semibold text-[#2065D1] transition hover:border-[#2065D1] hover:bg-[#f2f7ff]"
+                                >
+                                    <Plus size={15} />
+                                    Add content section
+                                </button>
+                            )}
+
+                            {isAdmin && sectionsError && (
+                                <p className="px-[4px] pt-[3px] text-[12px] text-red-500">
+                                    {sectionsError}
                                 </p>
-                            </ProductAccordion>
+                            )}
 
                         </div>
 
@@ -430,6 +764,22 @@ const handleBuyNow = () => {
                 />
 
             </div>
+
+            {sectionModalOpen && isAdmin && (
+                <SectionEditorModal
+                    editing={Boolean(editingSection)}
+                    title={sectionTitle}
+                    content={sectionContent}
+                    enabled={sectionEnabled}
+                    saving={sectionSaving}
+                    error={sectionFormError}
+                    onTitleChange={setSectionTitle}
+                    onContentChange={setSectionContent}
+                    onEnabledChange={setSectionEnabled}
+                    onClose={closeSectionEditor}
+                    onSave={handleSaveSection}
+                />
+            )}
 
             {previewOpen && (
                 <ImagePreview
@@ -828,24 +1178,53 @@ const ProductAccordion = ({
     open,
     onToggle,
     children,
+    isAdmin = false,
+    onEdit,
+    disabled = false,
 }) => {
     return (
         <div className="overflow-hidden rounded-[8px] border border-[#dedede] bg-[#f7f7f7]">
 
-            <button
-                type="button"
-                onClick={onToggle}
-                className="flex w-full items-center justify-between px-[15px] py-[12px]"
-            >
-                <span className="text-[14px] font-semibold text-[#171717]">
-                    {title}
-                </span>
+            <div className="flex items-center">
 
-                <ChevronDown
-                    size={17}
-                    className={open ? "rotate-180" : ""}
-                />
-            </button>
+                <button
+                    type="button"
+                    onClick={onToggle}
+                    className="flex flex-1 items-center justify-between px-[15px] py-[12px] text-left"
+                >
+                    <div className="flex items-center gap-[8px]">
+                        <span className="text-[14px] font-semibold text-[#171717]">
+                            {title}
+                        </span>
+
+                        {isAdmin && disabled && (
+                            <span className="rounded-full bg-[#eeeeee] px-[7px] py-[2px] text-[10px] font-medium text-[#777]">
+                                Hidden
+                            </span>
+                        )}
+                    </div>
+
+                    <ChevronDown
+                        size={17}
+                        className={`transition ${open ? "rotate-180" : ""}`}
+                    />
+                </button>
+
+                {isAdmin && (
+                    <button
+                        type="button"
+                        title="Edit section"
+                        onClick={(event) => {
+                            event.stopPropagation();
+                            onEdit?.();
+                        }}
+                        className="mr-[10px] flex h-[31px] w-[31px] shrink-0 items-center justify-center rounded-[7px] border border-[#dedede] bg-white text-[#555] transition hover:border-[#2065D1] hover:bg-[#f3f7ff] hover:text-[#2065D1]"
+                    >
+                        <Pencil size={14} strokeWidth={1.8} />
+                    </button>
+                )}
+
+            </div>
 
             {open && (
                 <div className="border-t border-[#e2e2e2] bg-white px-[15px] py-[14px]">
@@ -1054,9 +1433,19 @@ const ProductContent = ({
     }
 
     if (typeof content === "string") {
+        const looksLikeHtml = /<\/?[a-z][\s\S]*>/i.test(content);
+
+        if (!looksLikeHtml) {
+            return (
+                <div className="whitespace-pre-line text-[13px] leading-[23px] text-[#666]">
+                    {content}
+                </div>
+            );
+        }
+
         return (
             <div
-                className="text-[13px] leading-[23px] text-[#666] [&_h2]:mb-[10px] [&_h2]:mt-[20px] [&_h2]:text-[19px] [&_h2]:font-semibold [&_h2]:text-[#171717] [&_h3]:mb-[8px] [&_h3]:mt-[18px] [&_h3]:text-[16px] [&_h3]:font-semibold [&_h3]:text-[#171717] [&_p]:mb-[12px]"
+                className="text-[13px] leading-[23px] text-[#666] [&_a]:text-[#2065D1] [&_a]:underline [&_blockquote]:my-[12px] [&_blockquote]:border-l-4 [&_blockquote]:border-[#d8d8d8] [&_blockquote]:pl-[14px] [&_h2]:mb-[10px] [&_h2]:mt-[18px] [&_h2]:text-[19px] [&_h2]:font-semibold [&_h2]:text-[#171717] [&_h3]:mb-[8px] [&_h3]:mt-[16px] [&_h3]:text-[16px] [&_h3]:font-semibold [&_h3]:text-[#171717] [&_ol]:my-[10px] [&_ol]:list-decimal [&_ol]:pl-[22px] [&_p]:mb-[10px] [&_ul]:my-[10px] [&_ul]:list-disc [&_ul]:pl-[22px]"
                 dangerouslySetInnerHTML={{
                     __html: content,
                 }}
@@ -1069,6 +1458,382 @@ const ProductContent = ({
             {JSON.stringify(content, null, 2)}
         </pre>
     );
+};
+
+const RichTextEditor = ({
+    value,
+    disabled,
+    onChange,
+}) => {
+    const editor = useEditor({
+        immediatelyRender: false,
+        extensions: [StarterKit],
+        content: value || "",
+        editable: !disabled,
+        editorProps: {
+            attributes: {
+                class: "min-h-[220px] px-[14px] py-[12px] text-[14px] leading-[23px] text-[#333] outline-none [&_a]:text-[#2065D1] [&_a]:underline [&_blockquote]:my-[12px] [&_blockquote]:border-l-4 [&_blockquote]:border-[#d8d8d8] [&_blockquote]:pl-[14px] [&_h2]:mb-[8px] [&_h2]:mt-[14px] [&_h2]:text-[20px] [&_h2]:font-semibold [&_h3]:mb-[7px] [&_h3]:mt-[12px] [&_h3]:text-[17px] [&_h3]:font-semibold [&_ol]:my-[8px] [&_ol]:list-decimal [&_ol]:pl-[24px] [&_p]:mb-[8px] [&_ul]:my-[8px] [&_ul]:list-disc [&_ul]:pl-[24px]",
+            },
+        },
+        onUpdate: ({ editor }) => {
+            onChange(editor.getHTML());
+        },
+    });
+
+    useEffect(() => {
+        if (!editor) {
+            return;
+        }
+
+        editor.setEditable(!disabled);
+    }, [editor, disabled]);
+
+    useEffect(() => {
+        if (!editor) {
+            return;
+        }
+
+        const current = editor.getHTML();
+        const next = value || "";
+
+        if (current !== next) {
+            editor.commands.setContent(next, {
+                emitUpdate: false,
+            });
+        }
+    }, [editor, value]);
+
+    if (!editor) {
+        return (
+            <div className="flex min-h-[260px] items-center justify-center rounded-[9px] border border-[#dcdcdc] bg-white">
+                <LoaderCircle
+                    size={20}
+                    className="animate-spin text-[#2065D1]"
+                />
+            </div>
+        );
+    }
+
+    const setLink = () => {
+        const previousUrl = editor.getAttributes("link").href || "";
+        const url = window.prompt("Enter link URL", previousUrl || "https://");
+
+        if (url === null) {
+            return;
+        }
+
+        if (!url.trim()) {
+            editor
+                .chain()
+                .focus()
+                .extendMarkRange("link")
+                .unsetLink()
+                .run();
+            return;
+        }
+
+        editor
+            .chain()
+            .focus()
+            .extendMarkRange("link")
+            .setLink({ href: url.trim() })
+            .run();
+    };
+
+    return (
+        <div
+            className={`overflow-hidden rounded-[9px] border border-[#dcdcdc] bg-white transition focus-within:border-[#2065D1] focus-within:ring-2 focus-within:ring-blue-100 ${
+                disabled ? "opacity-60" : ""
+            }`}
+        >
+            <div className="flex flex-wrap items-center gap-[5px] border-b border-[#e5e5e5] bg-[#fafafa] px-[9px] py-[8px]">
+                <EditorToolbarButton
+                    title="Bold"
+                    active={editor.isActive("bold")}
+                    disabled={disabled}
+                    onClick={() => editor.chain().focus().toggleBold().run()}
+                >
+                    <Bold size={15} />
+                </EditorToolbarButton>
+
+                <EditorToolbarButton
+                    title="Italic"
+                    active={editor.isActive("italic")}
+                    disabled={disabled}
+                    onClick={() => editor.chain().focus().toggleItalic().run()}
+                >
+                    <Italic size={15} />
+                </EditorToolbarButton>
+
+                <EditorToolbarButton
+                    title="Underline"
+                    active={editor.isActive("underline")}
+                    disabled={disabled}
+                    onClick={() => editor.chain().focus().toggleUnderline().run()}
+                >
+                    <Underline size={15} />
+                </EditorToolbarButton>
+
+                <EditorToolbarButton
+                    title="Strikethrough"
+                    active={editor.isActive("strike")}
+                    disabled={disabled}
+                    onClick={() => editor.chain().focus().toggleStrike().run()}
+                >
+                    <Strikethrough size={15} />
+                </EditorToolbarButton>
+
+                <EditorToolbarDivider />
+
+                <EditorToolbarButton
+                    title="Heading 2"
+                    active={editor.isActive("heading", { level: 2 })}
+                    disabled={disabled}
+                    onClick={() =>
+                        editor.chain().focus().toggleHeading({ level: 2 }).run()
+                    }
+                >
+                    <Heading2 size={16} />
+                </EditorToolbarButton>
+
+                <EditorToolbarButton
+                    title="Heading 3"
+                    active={editor.isActive("heading", { level: 3 })}
+                    disabled={disabled}
+                    onClick={() =>
+                        editor.chain().focus().toggleHeading({ level: 3 }).run()
+                    }
+                >
+                    <Heading3 size={16} />
+                </EditorToolbarButton>
+
+                <EditorToolbarDivider />
+
+                <EditorToolbarButton
+                    title="Bullet list"
+                    active={editor.isActive("bulletList")}
+                    disabled={disabled}
+                    onClick={() =>
+                        editor.chain().focus().toggleBulletList().run()
+                    }
+                >
+                    <List size={16} />
+                </EditorToolbarButton>
+
+                <EditorToolbarButton
+                    title="Numbered list"
+                    active={editor.isActive("orderedList")}
+                    disabled={disabled}
+                    onClick={() =>
+                        editor.chain().focus().toggleOrderedList().run()
+                    }
+                >
+                    <ListOrdered size={16} />
+                </EditorToolbarButton>
+
+                <EditorToolbarButton
+                    title="Blockquote"
+                    active={editor.isActive("blockquote")}
+                    disabled={disabled}
+                    onClick={() =>
+                        editor.chain().focus().toggleBlockquote().run()
+                    }
+                >
+                    <Quote size={16} />
+                </EditorToolbarButton>
+
+                <EditorToolbarButton
+                    title="Link"
+                    active={editor.isActive("link")}
+                    disabled={disabled}
+                    onClick={setLink}
+                >
+                    <Link2 size={15} />
+                </EditorToolbarButton>
+
+                <EditorToolbarDivider />
+
+                <EditorToolbarButton
+                    title="Undo"
+                    disabled={disabled || !editor.can().chain().focus().undo().run()}
+                    onClick={() => editor.chain().focus().undo().run()}
+                >
+                    <Undo2 size={15} />
+                </EditorToolbarButton>
+
+                <EditorToolbarButton
+                    title="Redo"
+                    disabled={disabled || !editor.can().chain().focus().redo().run()}
+                    onClick={() => editor.chain().focus().redo().run()}
+                >
+                    <Redo2 size={15} />
+                </EditorToolbarButton>
+            </div>
+
+            <EditorContent editor={editor} />
+        </div>
+    );
+};
+
+const EditorToolbarButton = ({
+    title,
+    active = false,
+    disabled = false,
+    onClick,
+    children,
+}) => {
+    return (
+        <button
+            type="button"
+            title={title}
+            disabled={disabled}
+            onMouseDown={(event) => event.preventDefault()}
+            onClick={onClick}
+            className={`flex h-[31px] min-w-[31px] items-center justify-center rounded-[6px] border px-[7px] transition ${
+                active
+                    ? "border-[#b9cef5] bg-[#eaf2ff] text-[#2065D1]"
+                    : "border-transparent text-[#555] hover:border-[#dedede] hover:bg-white"
+            } disabled:cursor-not-allowed disabled:opacity-35`}
+        >
+            {children}
+        </button>
+    );
+};
+
+const EditorToolbarDivider = () => {
+    return <span className="mx-[2px] h-[22px] w-px bg-[#dedede]" />;
+};
+
+const SectionEditorModal = ({
+    editing,
+    title,
+    content,
+    enabled,
+    saving,
+    error,
+    onTitleChange,
+    onContentChange,
+    onEnabledChange,
+    onClose,
+    onSave,
+}) => {
+    return (
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 px-[20px] py-[30px]">
+
+            <div className="relative flex max-h-[92vh] w-full max-w-[700px] flex-col overflow-hidden rounded-[18px] bg-white shadow-[0_25px_80px_rgba(0,0,0,0.28)]">
+
+                <div className="shrink-0 border-b border-[#e7e7e7] px-[26px] py-[20px]">
+                    <h2 className="text-[20px] font-semibold text-[#171717]">
+                        {editing ? "Edit Product Section" : "Add Product Section"}
+                    </h2>
+
+                    <p className="mt-[4px] text-[13px] text-[#777]">
+                        This content is shown only on this product page.
+                    </p>
+                </div>
+
+                <button
+                    type="button"
+                    onClick={onClose}
+                    disabled={saving}
+                    className="absolute right-[18px] top-[18px] flex h-[32px] w-[32px] items-center justify-center rounded-full text-[#777] transition hover:bg-[#f2f2f2] hover:text-[#222] disabled:opacity-50"
+                >
+                    <X size={18} />
+                </button>
+
+                <div className="flex-1 space-y-[20px] overflow-y-auto px-[26px] py-[22px]">
+                    <div>
+                        <label className="mb-[7px] block text-[13px] font-semibold text-[#333]">
+                            Section title
+                        </label>
+
+                        <input
+                            type="text"
+                            value={title}
+                            disabled={saving}
+                            onChange={(event) => onTitleChange(event.target.value)}
+                            placeholder="Example: Dimensions & Details"
+                            className="h-[46px] w-full rounded-[9px] border border-[#dcdcdc] px-[14px] text-[14px] text-[#222] outline-none transition focus:border-[#2065D1] focus:ring-2 focus:ring-blue-100 disabled:bg-[#f5f5f5]"
+                        />
+                    </div>
+
+                    <div>
+                        <label className="mb-[7px] block text-[13px] font-semibold text-[#333]">
+                            Content
+                        </label>
+
+                        <RichTextEditor
+                            value={content}
+                            disabled={saving}
+                            onChange={onContentChange}
+                        />
+                    </div>
+
+                    <label className="flex cursor-pointer items-start gap-[9px]">
+                        <input
+                            type="checkbox"
+                            checked={enabled}
+                            disabled={saving}
+                            onChange={(event) =>
+                                onEnabledChange(event.target.checked)
+                            }
+                            className="mt-[2px] h-[16px] w-[16px]"
+                        />
+
+                        <div>
+                            <p className="text-[13px] font-medium text-[#333]">
+                                Show this section
+                            </p>
+                            <p className="mt-[1px] text-[11px] text-[#888]">
+                                Turn this off to hide it from customers.
+                            </p>
+                        </div>
+                    </label>
+
+                    {error && (
+                        <div className="rounded-[8px] border border-red-200 bg-red-50 px-[12px] py-[10px] text-[12px] text-red-600">
+                            {error}
+                        </div>
+                    )}
+                </div>
+
+                <div className="flex shrink-0 items-center justify-end gap-[9px] border-t border-[#e7e7e7] px-[26px] py-[17px]">
+                    <button
+                        type="button"
+                        onClick={onClose}
+                        disabled={saving}
+                        className="h-[40px] rounded-[9px] border border-[#dedede] bg-white px-[17px] text-[13px] font-semibold text-[#333] transition hover:bg-[#f7f7f7] disabled:opacity-50"
+                    >
+                        Cancel
+                    </button>
+
+                    <button
+                        type="button"
+                        onClick={onSave}
+                        disabled={saving || !title.trim()}
+                        className="flex h-[40px] items-center gap-[7px] rounded-[9px] bg-[#2065D1] px-[18px] text-[13px] font-semibold text-white transition hover:bg-[#1959bd] disabled:cursor-not-allowed disabled:bg-[#91afe0]"
+                    >
+                        {saving && (
+                            <LoaderCircle size={15} className="animate-spin" />
+                        )}
+                        {saving ? "Saving..." : "Save Section"}
+                    </button>
+                </div>
+
+            </div>
+
+        </div>
+    );
+};
+
+const cleanEditorContent = (content) => {
+    const value = String(content || "").trim();
+
+    if (!value || value === "<p></p>") {
+        return null;
+    }
+
+    return value;
 };
 
 // Image preview
@@ -1190,6 +1955,54 @@ const ProductNotFound = ({ error }) => {
 
         </div>
     );
+};
+
+const getStoredUser = () => {
+    if (typeof window === "undefined") {
+        return null;
+    }
+
+    const storageValues = [
+        localStorage.getItem("user"),
+        localStorage.getItem("auth_user"),
+        localStorage.getItem("currentUser"),
+        localStorage.getItem("auth"),
+        sessionStorage.getItem("user"),
+    ];
+
+    for (const value of storageValues) {
+        if (!value) {
+            continue;
+        }
+
+        try {
+            const parsed = JSON.parse(value);
+            const user = parsed?.user || parsed?.data?.user || parsed;
+
+            if (user && typeof user === "object") {
+                return user;
+            }
+        } catch (error) {
+            continue;
+        }
+    }
+
+    return null;
+};
+
+const getUserRole = (user) => {
+    if (!user) {
+        return "";
+    }
+
+    const role =
+        user.role?.name ||
+        user.role ||
+        user.user_type ||
+        user.type ||
+        "";
+
+    return String(role).trim().toLowerCase();
 };
 
 export default ProductDetails;

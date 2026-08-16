@@ -151,11 +151,7 @@ const CustomerSidebar = ({
                         end
                     />
 
-                    <SidebarItem
-                        to="/account/orders"
-                        icon={Box}
-                        label="My Orders"
-                    />
+                   
 
                     <SidebarItem
                         to="/account/notifications"

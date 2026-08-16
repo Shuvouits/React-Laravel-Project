@@ -7,6 +7,7 @@ use App\Models\CustomerAddress;
 use App\Models\Order;
 use App\Models\Product;
 use App\Models\ProductVariant;
+use App\Services\OrderPreorderService;
 use App\Services\Payments\StripePaymentService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -25,6 +26,7 @@ class OrderController extends Controller
             ->with([
                 'items',
                 'shippingAddress',
+                'preorder',
             ])
             ->latest('id')
             ->paginate(10);
@@ -35,30 +37,56 @@ class OrderController extends Controller
         ]);
     }
 
-    public function show(
-        Request $request,
-        Order $order
-    ): JsonResponse {
-        if ((int) $order->user_id !== (int) $request->user()->id) {
-            abort(404);
+   public function show(Request $request, Order $order): JsonResponse
+{
+    if ((int) $order->user_id !== (int) $request->user()->id) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Order not found.',
+        ], 404);
+    }
+
+    $order->load([
+        'user',
+        'items.product.media',
+        'items.variant.media',
+        'shippingAddress',
+        'billingAddress',
+        'paymentTransactions',
+        'preorder',
+    ]);
+
+    $order->items->transform(function ($item) {
+        $imageUrl = null;
+
+        if ($item->variant && $item->variant->media) {
+            $imageUrl = asset($item->variant->media->file_path);
         }
 
-        $order->load([
-            'items',
-            'shippingAddress',
-            'billingAddress',
-            'paymentTransactions',
-        ]);
+        if (!$imageUrl && $item->product && $item->product->media->isNotEmpty()) {
+            $cover = $item->product->media->firstWhere('is_cover', true);
+            $media = $cover ?? $item->product->media->first();
 
-        return response()->json([
-            'success' => true,
-            'order' => $order,
-        ]);
-    }
+            if ($media) {
+                $imageUrl = asset($media->file_path);
+            }
+        }
+
+        $item->setAttribute('image_url', $imageUrl);
+
+        return $item;
+    });
+
+    return response()->json([
+        'success' => true,
+        'order' => $order,
+    ]);
+}
 
     public function store(
         Request $request,
-        StripePaymentService $stripePaymentService
+        StripePaymentService $stripePaymentService,
+        OrderPreorderService $orderPreorderService
     ): JsonResponse {
         $validated = $request->validate([
             'items' => [
@@ -185,7 +213,8 @@ class OrderController extends Controller
             $validated,
             $user,
             $shippingAddress,
-            $billingAddress
+            $billingAddress,
+            $orderPreorderService
         ) {
             $orderItems = [];
             $subtotal = 0;
@@ -371,6 +400,10 @@ class OrderController extends Controller
                 );
             }
 
+            $orderPreorderService->createFromOrder(
+                $order
+            );
+
             $this->createAddressSnapshot(
                 $order,
                 $shippingAddress,
@@ -399,7 +432,43 @@ class OrderController extends Controller
             'items',
             'shippingAddress',
             'billingAddress',
+            'preorder',
         ]);
+
+        if (
+            $order->preorder &&
+            $order->preorder->payment_terms === 'pay_later'
+        ) {
+            return response()->json([
+                'success' => true,
+
+                'message' =>
+                    'Pre-order reserved successfully. Payment will be collected later.',
+
+                'order' =>
+                    $order,
+
+                'payment' => [
+                    'required' =>
+                        false,
+
+                    'method' =>
+                        'pay_later',
+
+                    'status' =>
+                        'pending',
+
+                    'amount_due' =>
+                        (float) $order->preorder->balance_due,
+
+                    'balance_due_at' =>
+                        $order->preorder->balance_due_at,
+
+                    'redirect_url' =>
+                        null,
+                ],
+            ], 201);
+        }
 
         if ($order->payment_method === 'stripe') {
             return $this->startStripePayment(
@@ -437,6 +506,10 @@ class OrderController extends Controller
         StripePaymentService $stripePaymentService
     ): JsonResponse {
         try {
+            $order->loadMissing([
+                'preorder',
+            ]);
+
             $transaction =
                 $stripePaymentService
                     ->createCheckout($order);
@@ -445,7 +518,10 @@ class OrderController extends Controller
                 'success' => true,
 
                 'message' =>
-                    'Order created. Redirecting to Stripe.',
+                    $order->preorder &&
+                    $order->preorder->payment_terms === 'deposit'
+                        ? 'Pre-order created. Redirecting to Stripe for the deposit payment.'
+                        : 'Order created. Redirecting to Stripe.',
 
                 'order' =>
                     $order,
@@ -487,6 +563,10 @@ class OrderController extends Controller
         ?ProductVariant $variant,
         int $quantity
     ): void {
+        if ((bool) $product->preorder_enabled) {
+            return;
+        }
+
         if ($variant) {
             $trackQuantity = (bool) (
                 $variant->track_quantity ?? true

@@ -88,6 +88,12 @@ import PaymentSettings from "./pages/admin/setting/PaymentSettings";
 import PaymentSuccess from "./pages/frontend/payment/PaymentSuccess";
 import PaymentCancelled from "./pages/frontend/payment/PaymentCancelled";
 import PaymentError from "./pages/frontend/payment/PaymentError";
+import AdminOrders from "./pages/admin/orders/AdminOrders";
+import AdminOrderDetails from "./pages/admin/orders/AdminOrderDetails";
+import AdminOrderCreate from "./pages/admin/orders/AdminOrderCreate";
+import CustomerOrderDetails from "./pages/frontend/account/CustomerOrderDetails";
+import PreOrder from "./pages/frontend/PreOrder";
+import AdminPreOrders from "./pages/admin/preorders/AdminPreOrders";
 
 const Home = () => {
     return (
@@ -111,11 +117,16 @@ const App = () => {
                     {/* Frontend */}
                     <Route element={<FrontendLayout />}>
                         <Route path="/" element={<Home />} />
+
+                        <Route path="/pre-order" element={<PreOrder />} />
                         <Route path="/products/:slug" element={<ProductDetails />} />
                         <Route path="/cart" element={<Cart />} />
                         <Route path="/checkout" element={<Checkout />} />
 
                         <Route path="/account" element={<CustomerDashboard />} />
+                        <Route path="/account/orders/:id" element={<CustomerOrderDetails />} />
+
+
                         <Route path="/account/profile" element={<CustomerProfile />} />
                         <Route path="/account/addresses" element={<CustomerAddresses />} />
                         <Route path="/account/security" element={<CustomerSecurity />} />
@@ -125,6 +136,8 @@ const App = () => {
                         <Route path="/payment/success" element={<PaymentSuccess />} />
                         <Route path="/payment/cancelled" element={<PaymentCancelled />} />
                         <Route  path="/payment/error"  element={<PaymentError />} />
+
+                        
 
 
 
@@ -177,6 +190,22 @@ const App = () => {
                         <Route path="vendors/plans/:id/edit" element={<AdminVendorPlanEdit />} />
 
                         <Route path="vendors/configuration" element={<AdminVendorConfiguration />} />
+
+                        <Route path="orders" element={<AdminOrders />} />
+
+                         <Route path="orders/pre-orders" element={<AdminPreOrders />} />
+
+                         
+
+                        <Route path="orders/create" element={<AdminOrderCreate />} />
+
+                        <Route path="orders/:id" element={<AdminOrderDetails />} />
+
+                       
+
+                       
+
+
                     </Route>
 
                     {/* Standalone Admin Settings */}

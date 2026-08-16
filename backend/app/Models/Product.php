@@ -160,4 +160,21 @@ class Product extends Model
                 'price'
             );
     }
+
+    public function preorder(): HasOne
+{
+    return $this->hasOne(ProductPreorder::class);
+}
+
+
+public function contentSections(): HasMany
+{
+    return $this->hasMany(ProductContentSection::class)
+        ->orderBy('sort_order')
+        ->orderBy('id');
+}
+
+
+
+
 }
