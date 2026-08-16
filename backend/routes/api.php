@@ -39,6 +39,8 @@ use App\Http\Controllers\Api\Admin\ProductContentSectionController as AdminProdu
 
 use App\Http\Controllers\Api\Admin\AdminPreOrderController;
 use App\Http\Controllers\Api\Admin\AdminReturnController;
+use App\Http\Controllers\Api\Admin\AdminInventoryController;
+use App\Http\Controllers\Api\Admin\AdminInventoryLocationController;
 use Illuminate\Support\Facades\Route;
 
 
@@ -376,6 +378,23 @@ Route::delete('/products/{product}/content-sections/{section}', [AdminProductCon
     Route::post('/returns/{orderReturn}/received', [AdminReturnController::class, 'markReceived']);
     Route::post('/returns/{orderReturn}/cancel', [AdminReturnController::class, 'cancel']);
     Route::post('/returns/{orderReturn}/refund', [AdminOrderController::class, 'refundReturn']);
+
+
+    // Inventory
+Route::get('/inventory', [AdminInventoryController::class, 'index']);
+Route::post('/inventory/on-hand', [AdminInventoryController::class, 'updateOnHand']);
+
+// Inventory Locations
+Route::get('/inventory/locations', [AdminInventoryLocationController::class, 'index']);
+Route::post('/inventory/locations', [AdminInventoryLocationController::class, 'store']);
+Route::get('/inventory/locations/{inventoryLocation}', [AdminInventoryLocationController::class, 'show']);
+Route::put('/inventory/locations/{inventoryLocation}', [AdminInventoryLocationController::class, 'update']);
+Route::post('/inventory/locations/{inventoryLocation}/default', [AdminInventoryLocationController::class, 'setDefault']);
+Route::post('/inventory/locations/{inventoryLocation}/toggle-status', [AdminInventoryLocationController::class, 'toggleStatus']);
+Route::delete('/inventory/locations/{inventoryLocation}', [AdminInventoryLocationController::class, 'destroy']);
+
+
+
 
 
 });

@@ -162,19 +162,32 @@ class Product extends Model
     }
 
     public function preorder(): HasOne
-{
-    return $this->hasOne(ProductPreorder::class);
-}
+    {
+        return $this->hasOne(ProductPreorder::class);
+    }
 
 
-public function contentSections(): HasMany
-{
-    return $this->hasMany(ProductContentSection::class)
-        ->orderBy('sort_order')
-        ->orderBy('id');
-}
+    public function contentSections(): HasMany
+    {
+        return $this->hasMany(ProductContentSection::class)
+            ->orderBy('sort_order')
+            ->orderBy('id');
+    }
 
 
+    public function inventoryLevels(): HasMany
+    {
+        return $this->hasMany(
+            InventoryLevel::class,
+            'product_id'
+        );
+    }
 
-
+    public function inventoryMovements(): HasMany
+    {
+        return $this->hasMany(
+            InventoryMovement::class,
+            'product_id'
+        );
+    }
 }

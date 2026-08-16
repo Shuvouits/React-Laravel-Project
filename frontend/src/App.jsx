@@ -95,6 +95,8 @@ import CustomerOrderDetails from "./pages/frontend/account/CustomerOrderDetails"
 import PreOrder from "./pages/frontend/PreOrder";
 import AdminPreOrders from "./pages/admin/preorders/AdminPreOrders";
 import AdminReturns from "./pages/admin/returns/AdminReturns";
+import AdminInventory from "./pages/admin/inventory/AdminInventory";
+import AdminInventoryLocations from "./pages/admin/inventory/AdminInventoryLocations";
 
 const Home = () => {
     return (
@@ -204,6 +206,10 @@ const App = () => {
 
                         
                         <Route path="orders/returns" element={<AdminReturns />} />
+
+                        <Route path="products/inventory" element={<AdminInventory />} />
+
+                        <Route path="products/inventory/locations" element={<AdminInventoryLocations />} />
 
                        
 

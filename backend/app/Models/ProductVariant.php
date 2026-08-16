@@ -82,4 +82,25 @@ class ProductVariant extends Model
         )
         ->withTimestamps();
     }
+
+
+    public function inventoryLevels()
+{
+    return $this->hasMany(
+        InventoryLevel::class,
+        'variant_id'
+    );
+}
+
+public function inventoryMovements()
+{
+    return $this->hasMany(
+        InventoryMovement::class,
+        'variant_id'
+    );
+}
+
+
+
+
 }

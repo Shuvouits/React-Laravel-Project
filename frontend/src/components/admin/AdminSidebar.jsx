@@ -43,10 +43,6 @@ const orderItems = [
         to: "/admin/orders/returns",
         label: "Returns",
     },
-    {
-        to: "/admin/orders/abandoned-checkouts",
-        label: "Abandoned checkouts",
-    },
 ];
 
 const productItems = [
@@ -74,6 +70,11 @@ const productItems = [
     {
         to: "/admin/products/inventory",
         label: "Inventory",
+        end: true,
+    },
+    {
+        to: "/admin/products/inventory/locations",
+        label: "Location",
     },
     {
         to: "/admin/products/transfers",
@@ -183,7 +184,9 @@ const AdminSidebar = () => {
         }
     }, [isOnlineStoreRoute]);
 
-    const navItemClass = ({ isActive }) => {
+    const navItemClass = ({
+        isActive,
+    }) => {
         const base =
             "flex min-h-[42px] items-center gap-[11px] rounded-[10px] px-[14px] text-[14px] font-medium transition-all duration-150";
 
@@ -194,7 +197,9 @@ const AdminSidebar = () => {
         return `${base} text-[#4d5562] hover:bg-[#f5f6f8] hover:text-[#111827]`;
     };
 
-    const subMenuClass = ({ isActive }) => {
+    const subMenuClass = ({
+        isActive,
+    }) => {
         const base =
             "relative flex min-h-[35px] items-center rounded-[9px] px-[12px] text-[13px] font-medium transition-all duration-150";
 
@@ -207,13 +212,10 @@ const AdminSidebar = () => {
 
     return (
         <aside className="sticky top-0 flex h-screen w-[230px] min-w-[230px] flex-col border-r border-[#e7e8eb] bg-white font-['Inter']">
-
             <SidebarLogo />
 
             <div className="scrollbar-thin scrollbar-thumb-[#b6b7ba] scrollbar-track-transparent flex-1 overflow-y-auto px-[12px] py-[14px]">
-
                 <nav className="space-y-[3px]">
-
                     <SidebarNavItem
                         to="/admin/dashboard"
                         icon={LayoutGrid}
@@ -239,7 +241,9 @@ const AdminSidebar = () => {
                             );
                         }}
                         items={orderItems}
-                        subMenuClass={subMenuClass}
+                        subMenuClass={
+                            subMenuClass
+                        }
                         activeClass="bg-[#edf3ff] text-[#2065D1]"
                     />
 
@@ -247,14 +251,18 @@ const AdminSidebar = () => {
                         label="Products"
                         icon={Box}
                         open={productsOpen}
-                        active={isProductsRoute}
+                        active={
+                            isProductsRoute
+                        }
                         onToggle={() => {
                             setProductsOpen(
                                 !productsOpen
                             );
                         }}
                         items={productItems}
-                        subMenuClass={subMenuClass}
+                        subMenuClass={
+                            subMenuClass
+                        }
                         activeClass="bg-[#f5f5f5] text-[#111]"
                     />
 
@@ -262,35 +270,45 @@ const AdminSidebar = () => {
                         to="/admin/ai-studio"
                         icon={Sparkles}
                         label="AI Studio"
-                        className={navItemClass}
+                        className={
+                            navItemClass
+                        }
                     />
 
                     <SidebarNavItem
                         to="/admin/sales-agent"
                         icon={Bot}
                         label="Sales Agent"
-                        className={navItemClass}
+                        className={
+                            navItemClass
+                        }
                     />
 
                     <SidebarNavItem
                         to="/admin/customers"
                         icon={Users}
                         label="Customers"
-                        className={navItemClass}
+                        className={
+                            navItemClass
+                        }
                     />
 
                     <SidebarDropdown
                         label="Vendors"
                         icon={Store}
                         open={vendorsOpen}
-                        active={isVendorsRoute}
+                        active={
+                            isVendorsRoute
+                        }
                         onToggle={() => {
                             setVendorsOpen(
                                 !vendorsOpen
                             );
                         }}
                         items={vendorItems}
-                        subMenuClass={subMenuClass}
+                        subMenuClass={
+                            subMenuClass
+                        }
                         activeClass="bg-[#eaf1ff] text-[#2065D1]"
                     />
 
@@ -298,14 +316,18 @@ const AdminSidebar = () => {
                         to="/admin/staff"
                         icon={UserCog}
                         label="Staff"
-                        className={navItemClass}
+                        className={
+                            navItemClass
+                        }
                     />
 
                     <SidebarNavItem
                         to="/admin/payments"
                         icon={WalletCards}
                         label="Payments"
-                        className={navItemClass}
+                        className={
+                            navItemClass
+                        }
                         arrow
                     />
 
@@ -313,14 +335,18 @@ const AdminSidebar = () => {
                         to="/admin/discounts"
                         icon={Percent}
                         label="Discounts"
-                        className={navItemClass}
+                        className={
+                            navItemClass
+                        }
                     />
 
                     <SidebarNavItem
                         to="/admin/content"
                         icon={FileText}
                         label="Content"
-                        className={navItemClass}
+                        className={
+                            navItemClass
+                        }
                         arrow
                     />
 
@@ -328,9 +354,10 @@ const AdminSidebar = () => {
                         to="/admin/inbox"
                         icon={MessageSquare}
                         label="Inbox"
-                        className={navItemClass}
+                        className={
+                            navItemClass
+                        }
                     />
-
                 </nav>
 
                 <div className="mb-[8px] mt-[28px] px-[10px] text-[10px] font-semibold tracking-[0.12em] text-[#a1a4aa]">
@@ -340,15 +367,23 @@ const AdminSidebar = () => {
                 <SidebarDropdown
                     label="Online Store"
                     icon={ShoppingBag}
-                    open={onlineStoreOpen}
-                    active={isOnlineStoreRoute}
+                    open={
+                        onlineStoreOpen
+                    }
+                    active={
+                        isOnlineStoreRoute
+                    }
                     onToggle={() => {
                         setOnlineStoreOpen(
                             !onlineStoreOpen
                         );
                     }}
-                    items={onlineStoreItems}
-                    subMenuClass={subMenuClass}
+                    items={
+                        onlineStoreItems
+                    }
+                    subMenuClass={
+                        subMenuClass
+                    }
                     activeClass="bg-[#eaf1ff] text-[#2065D1]"
                 />
 
@@ -356,23 +391,26 @@ const AdminSidebar = () => {
                     to="/admin/point-of-sale"
                     icon={Monitor}
                     label="Point of Sale"
-                    className={navItemClass}
+                    className={
+                        navItemClass
+                    }
                 />
-
             </div>
 
             <div className="shrink-0 border-t border-[#eeeeef] bg-white px-[12px] py-[12px]">
-
                 <NavLink
                     to="/admin/settings/general"
                     className="flex items-center gap-[12px] rounded-[9px] px-[14px] py-[11px] text-[14px] font-medium text-[#4b5563] transition hover:bg-[#f3f4f6]"
                 >
-                    <Settings size={18} />
-                    <span>Settings</span>
+                    <Settings
+                        size={18}
+                    />
+
+                    <span>
+                        Settings
+                    </span>
                 </NavLink>
-
             </div>
-
         </aside>
     );
 };
@@ -380,12 +418,10 @@ const AdminSidebar = () => {
 const SidebarLogo = () => {
     return (
         <div className="flex h-[74px] shrink-0 items-center border-b border-[#eeeeef] px-[20px]">
-
             <NavLink
                 to="/admin/dashboard"
                 className="flex items-center gap-[9px]"
             >
-
                 <div className="flex h-[33px] w-[29px] items-center justify-center rounded-[7px] border-2 border-[#4d83ed] text-[17px] font-semibold text-[#2065D1]">
                     S
                 </div>
@@ -393,9 +429,7 @@ const SidebarLogo = () => {
                 <span className="text-[21px] font-bold tracking-[-0.7px] text-[#2065D1]">
                     Storify
                 </span>
-
             </NavLink>
-
         </div>
     );
 };
@@ -412,7 +446,6 @@ const SidebarNavItem = ({
             to={to}
             className={className}
         >
-
             <Icon size={18} />
 
             <span className="flex-1">
@@ -420,9 +453,10 @@ const SidebarNavItem = ({
             </span>
 
             {arrow && (
-                <ChevronRight size={16} />
+                <ChevronRight
+                    size={16}
+                />
             )}
-
         </NavLink>
     );
 };
@@ -439,7 +473,6 @@ const SidebarDropdown = ({
 }) => {
     return (
         <div>
-
             <button
                 type="button"
                 onClick={onToggle}
@@ -449,7 +482,6 @@ const SidebarDropdown = ({
                         : "text-[#4d5562] hover:bg-[#f5f6f8] hover:text-[#111827]"
                 }`}
             >
-
                 <Icon size={18} />
 
                 <span className="flex-1 text-left">
@@ -464,7 +496,6 @@ const SidebarDropdown = ({
                             : "-rotate-90"
                     }`}
                 />
-
             </button>
 
             <div
@@ -474,27 +505,32 @@ const SidebarDropdown = ({
                         : "grid-rows-[0fr] opacity-0"
                 }`}
             >
-
                 <div className="overflow-hidden">
-
                     <div className="relative ml-[31px] mt-[5px] space-y-[1px] border-l border-[#dedfe2] pb-[4px] pl-[12px]">
-
-                        {items.map((item) => (
-                            <SidebarSubItem
-                                key={item.to}
-                                to={item.to}
-                                label={item.label}
-                                end={item.end}
-                                className={subMenuClass}
-                            />
-                        ))}
-
+                        {items.map(
+                            (item) => (
+                                <SidebarSubItem
+                                    key={
+                                        item.to
+                                    }
+                                    to={
+                                        item.to
+                                    }
+                                    label={
+                                        item.label
+                                    }
+                                    end={
+                                        item.end
+                                    }
+                                    className={
+                                        subMenuClass
+                                    }
+                                />
+                            )
+                        )}
                     </div>
-
                 </div>
-
             </div>
-
         </div>
     );
 };
