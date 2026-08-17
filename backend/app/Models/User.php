@@ -15,8 +15,13 @@ class User extends Authenticatable
 
     protected $fillable = [
         'name',
+        'first_name',
+        'last_name',
         'email',
         'phone',
+        'birthdate',
+        'gender',
+        'photo',
         'password',
         'role',
         'account_status',
@@ -25,50 +30,76 @@ class User extends Authenticatable
     protected $hidden = [
         'password',
         'remember_token',
+        'two_factor_secret',
+        'two_factor_recovery_codes',
     ];
 
     protected function casts(): array
     {
         return [
             'email_verified_at' => 'datetime',
+            'birthdate' => 'date',
+            'two_factor_confirmed_at' => 'datetime',
             'password' => 'hashed',
         ];
     }
 
-    // Vendor application
     public function vendorApplication(): HasOne
     {
-        return $this->hasOne(VendorApplication::class);
+        return $this->hasOne(
+            VendorApplication::class
+        );
     }
 
-    // Vendor store
     public function vendor(): HasOne
     {
-        return $this->hasOne(Vendor::class);
+        return $this->hasOne(
+            Vendor::class
+        );
     }
 
-    // Customer addresses
     public function addresses(): HasMany
     {
-        return $this->hasMany(CustomerAddress::class);
+        return $this->hasMany(
+            CustomerAddress::class
+        );
     }
 
-    // Default customer address
     public function defaultAddress(): HasOne
     {
-        return $this->hasOne(CustomerAddress::class)
-            ->where('is_default', true);
+        return $this->hasOne(
+            CustomerAddress::class
+        )->where(
+            'is_default',
+            true
+        );
     }
 
-    public function preference()
-{
-    return $this->hasOne(UserPreference::class);
-}
+    public function customerProfile(): HasOne
+    {
+        return $this->hasOne(
+            CustomerProfile::class
+        );
+    }
 
-public function wishlists(): HasMany
-{
-    return $this->hasMany(Wishlist::class);
-}
+    public function orders(): HasMany
+    {
+        return $this->hasMany(
+            Order::class
+        );
+    }
 
+    public function preference(): HasOne
+    {
+        return $this->hasOne(
+            UserPreference::class
+        );
+    }
 
+    public function wishlists(): HasMany
+    {
+        return $this->hasMany(
+            Wishlist::class
+        );
+    }
 }

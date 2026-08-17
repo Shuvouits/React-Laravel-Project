@@ -44,6 +44,7 @@ use App\Http\Controllers\Api\Admin\AdminInventoryLocationController;
 use App\Http\Controllers\Api\ProductReviewController;
 use App\Http\Controllers\Api\Admin\AdminReviewController;
 use App\Http\Controllers\Api\Admin\AdminProfileController;
+use App\Http\Controllers\Api\Admin\AdminCustomerController;
 use Illuminate\Support\Facades\Route;
 
 
@@ -430,6 +431,14 @@ Route::post('/security/two-factor/confirm', [CustomerSecurityController::class, 
 Route::post('/security/two-factor/disable', [CustomerSecurityController::class, 'disableTwoFactor']);
 Route::post('/security/two-factor/recovery-codes', [CustomerSecurityController::class, 'regenerateRecoveryCodes']);
 Route::post('/security/logout-other-sessions', [CustomerSecurityController::class, 'logoutOtherSessions']);
+
+
+
+    Route::get('/customers', [AdminCustomerController::class, 'index']);
+    Route::post('/customers', [AdminCustomerController::class, 'store']);
+    Route::get('/customers/{customer}/edit', [AdminCustomerController::class, 'edit']);
+    Route::put('/customers/{customer}', [AdminCustomerController::class, 'update']);
+    Route::delete('/customers/{customer}', [AdminCustomerController::class, 'destroy']);
 
 
 

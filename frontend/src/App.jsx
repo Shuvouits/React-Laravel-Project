@@ -99,6 +99,8 @@ import AdminInventory from "./pages/admin/inventory/AdminInventory";
 import AdminInventoryLocations from "./pages/admin/inventory/AdminInventoryLocations";
 import AdminReviews from "./pages/admin/products/reviews/AdminReviews";
 import AdminProfile from "./pages/admin/profile/AdminProfile";
+import AdminCustomers from "./pages/admin/customers/AdminCustomers";
+import AdminCustomerEdit from "./pages/admin/customers/AdminCustomerEdit";
 
 const Home = () => {
     return (
@@ -216,6 +218,10 @@ const App = () => {
                         <Route path="products/reviews" element={<AdminReviews />} />
 
                        <Route path="profile" element={<AdminProfile />} />
+
+                       <Route path="customers" element={<AdminCustomers />} />
+
+                       <Route path="customers/:id/edit" element={<AdminCustomerEdit />} />
 
                        
 
