@@ -97,6 +97,8 @@ import AdminPreOrders from "./pages/admin/preorders/AdminPreOrders";
 import AdminReturns from "./pages/admin/returns/AdminReturns";
 import AdminInventory from "./pages/admin/inventory/AdminInventory";
 import AdminInventoryLocations from "./pages/admin/inventory/AdminInventoryLocations";
+import AdminReviews from "./pages/admin/products/reviews/AdminReviews";
+import AdminProfile from "./pages/admin/profile/AdminProfile";
 
 const Home = () => {
     return (
@@ -211,7 +213,9 @@ const App = () => {
 
                         <Route path="products/inventory/locations" element={<AdminInventoryLocations />} />
 
-                       
+                        <Route path="products/reviews" element={<AdminReviews />} />
+
+                       <Route path="profile" element={<AdminProfile />} />
 
                        
 

@@ -11,39 +11,68 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('users', function (Blueprint $table) {
+       
 
-            $table->id();
-            $table->string('name');
-            $table->string('email')->unique();
+    Schema::create('users', function (Blueprint $table) {
+
+    $table->id();
+
+    $table->string('name');
+
+    $table->string('first_name')
+        ->nullable();
+
+    $table->string('last_name')
+        ->nullable();
+
+    $table->string('email')
+        ->unique();
+
+    $table->string('phone', 50)
+        ->nullable();
+
+    $table->date('birthdate')
+        ->nullable();
+
+    $table->enum('gender', [
+        'male',
+        'female',
+        'other',
+        'prefer_not_to_say',
+    ])->nullable();
+
+    $table->enum('account_status', [
+        'active',
+        'banned',
+        'pending_activation',
+        'suspended',
+    ])->default('active')->index();
+
+    $table->timestamp('email_verified_at')
+        ->nullable();
+
+    $table->string('password');
+
+    $table->text('two_factor_secret')
+        ->nullable();
+
+    $table->text('two_factor_recovery_codes')
+        ->nullable();
+
+    $table->timestamp('two_factor_confirmed_at')
+        ->nullable();
+
+    $table->enum('role', [
+        'admin',
+        'vendor',
+        'customer'
+    ])->default('customer')->index();
+
+    $table->rememberToken();
+    $table->timestamps();
+});
 
 
-
-            $table->string('phone', 50)->nullable();
-
-            $table->enum('account_status', [
-                'active',
-                'banned',
-                'pending_activation',
-                'suspended',
-            ])->default('active')->index();
-
-            $table->timestamp('email_verified_at')->nullable();
-            $table->string('password');
-
-            $table->text('two_factor_secret')->nullable();
-            $table->text('two_factor_recovery_codes')->nullable();
-            $table->timestamp('two_factor_confirmed_at')->nullable();
-
-            $table->enum('role', [
-                'admin',
-                'vendor',
-                'customer'
-            ])->default('customer')->index();
-
-            $table->rememberToken();
-            $table->timestamps();
-        });
 
         Schema::create('password_reset_tokens', function (Blueprint $table) {
             $table->string('email')->primary();

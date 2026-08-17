@@ -47,6 +47,20 @@ const AdminNavbar = () => {
 
   /*
   |--------------------------------------------------------------------------
+  | PROFILE
+  |--------------------------------------------------------------------------
+  */
+
+  const handleProfile = () => {
+
+    setProfileOpen(false);
+
+    navigate("/admin/profile");
+  };
+
+
+  /*
+  |--------------------------------------------------------------------------
   | LOGOUT
   |--------------------------------------------------------------------------
   */
@@ -361,6 +375,7 @@ const AdminNavbar = () => {
                 <DropdownItem
                   icon={User}
                   label="Profile"
+                  onClick={handleProfile}
                 />
 
                 <DropdownItem
@@ -446,11 +461,13 @@ const AdminNavbar = () => {
 const DropdownItem = ({
   icon: Icon,
   label,
+  onClick,
 }) => {
 
   return (
     <button
       type="button"
+      onClick={onClick}
       className="
         w-full
         px-4

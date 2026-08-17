@@ -41,6 +41,9 @@ use App\Http\Controllers\Api\Admin\AdminPreOrderController;
 use App\Http\Controllers\Api\Admin\AdminReturnController;
 use App\Http\Controllers\Api\Admin\AdminInventoryController;
 use App\Http\Controllers\Api\Admin\AdminInventoryLocationController;
+use App\Http\Controllers\Api\ProductReviewController;
+use App\Http\Controllers\Api\Admin\AdminReviewController;
+use App\Http\Controllers\Api\Admin\AdminProfileController;
 use Illuminate\Support\Facades\Route;
 
 
@@ -75,6 +78,8 @@ Route::get('/pre-orders/{slug}', [PreOrderController::class, 'show']);
 
 // Product Content Sections
 Route::get('/products/{slug}/content-sections', [FrontendProductContentSectionController::class, 'index']);
+
+Route::get('/products/{product:slug}/reviews', [ProductReviewController::class, 'index']);
 
 
 
@@ -160,6 +165,10 @@ Route::middleware('auth:sanctum')->prefix('auth')->group(function () {
     Route::get('/me', [AuthController::class, 'me']);
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::post('/logout-all', [AuthController::class, 'logoutAll']);
+});
+
+Route::middleware('auth:sanctum')->group(function () {
+    Route::post('/products/{product:slug}/reviews', [ProductReviewController::class, 'store']);
 });
 
 // Admin Routes
@@ -392,6 +401,35 @@ Route::put('/inventory/locations/{inventoryLocation}', [AdminInventoryLocationCo
 Route::post('/inventory/locations/{inventoryLocation}/default', [AdminInventoryLocationController::class, 'setDefault']);
 Route::post('/inventory/locations/{inventoryLocation}/toggle-status', [AdminInventoryLocationController::class, 'toggleStatus']);
 Route::delete('/inventory/locations/{inventoryLocation}', [AdminInventoryLocationController::class, 'destroy']);
+
+
+
+// Reviews
+Route::get('/reviews', [AdminReviewController::class, 'index']);
+Route::get('/reviews/{productReview}', [AdminReviewController::class, 'show']);
+Route::post('/reviews/{productReview}/publish', [AdminReviewController::class, 'publish']);
+Route::post('/reviews/{productReview}/hold', [AdminReviewController::class, 'hold']);
+Route::post('/reviews/{productReview}/release-hold', [AdminReviewController::class, 'releaseHold']);
+Route::post('/reviews/{productReview}/reply', [AdminReviewController::class, 'reply']);
+Route::delete('/reviews/{productReview}/reply', [AdminReviewController::class, 'deleteReply']);
+Route::post('/reviews/{productReview}/reject', [AdminReviewController::class, 'reject']);
+Route::delete('/reviews/{productReview}', [AdminReviewController::class, 'destroy']);
+
+
+ 
+
+    // Admin Profile
+Route::get('/profile', [AdminProfileController::class, 'show']);
+Route::post('/profile', [AdminProfileController::class, 'update']);
+
+// Admin Security
+Route::get('/security', [CustomerSecurityController::class, 'index']);
+Route::put('/security/password', [CustomerSecurityController::class, 'updatePassword']);
+Route::post('/security/two-factor/setup', [CustomerSecurityController::class, 'setupTwoFactor']);
+Route::post('/security/two-factor/confirm', [CustomerSecurityController::class, 'confirmTwoFactor']);
+Route::post('/security/two-factor/disable', [CustomerSecurityController::class, 'disableTwoFactor']);
+Route::post('/security/two-factor/recovery-codes', [CustomerSecurityController::class, 'regenerateRecoveryCodes']);
+Route::post('/security/logout-other-sessions', [CustomerSecurityController::class, 'logoutOtherSessions']);
 
 
 

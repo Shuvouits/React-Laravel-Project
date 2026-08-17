@@ -190,4 +190,14 @@ class Product extends Model
             'product_id'
         );
     }
+
+    public function reviews(): HasMany
+{
+    return $this->hasMany(
+        ProductReview::class
+    );
+}
+
+
+
 }
