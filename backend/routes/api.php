@@ -45,9 +45,12 @@ use App\Http\Controllers\Api\ProductReviewController;
 use App\Http\Controllers\Api\Admin\AdminReviewController;
 use App\Http\Controllers\Api\Admin\AdminProfileController;
 use App\Http\Controllers\Api\Admin\AdminCustomerController;
+use App\Http\Controllers\Api\Vendor\VendorProductController;
+
+use App\Http\Controllers\Api\Vendor\VendorInventoryController;
+
+
 use Illuminate\Support\Facades\Route;
-
-
 
 Route::get('/payments/stripe/success', [StripePaymentController::class,'success']);
 
@@ -82,8 +85,6 @@ Route::get('/products/{slug}/content-sections', [FrontendProductContentSectionCo
 
 Route::get('/products/{product:slug}/reviews', [ProductReviewController::class, 'index']);
 
-
-
 // Customer
 Route::prefix('customer')->middleware(['auth:sanctum', 'customer'])->group(function () {
 
@@ -113,6 +114,33 @@ Route::prefix('customer')->middleware(['auth:sanctum', 'customer'])->group(funct
     Route::get('/orders', [OrderController::class, 'index']);
     Route::post('/orders', [OrderController::class, 'store']);
     Route::get('/orders/{order}', [OrderController::class, 'show']);
+});
+
+
+
+Route::prefix('vendor')->middleware(['auth:sanctum', 'vendor'])->group(function () {
+
+    Route::get('/products/form-options', [ProductController::class, 'formOptions']);
+
+    Route::post('/products', [ProductController::class, 'store']);
+
+    Route::post('/ai/product-content', [ProductAIController::class, 'generate']);
+
+    Route::get('/products', [VendorProductController::class, 'index']);
+
+    Route::get('/products/{id}', [VendorProductController::class, 'show']);
+
+    Route::post('/products/{id}/update', [ProductController::class, 'update']);
+
+    Route::delete('/products/{id}', [VendorProductController::class, 'destroy']);
+
+    Route::post('/products/{productId}/variants/{variantId}/image', [VendorProductController::class, 'uploadVariantImage']);
+
+    // Inventory
+Route::get('/inventory', [VendorInventoryController::class, 'index']);
+
+Route::post('/inventory/on-hand', [VendorInventoryController::class, 'updateOnHand']);
+
 });
 
 Route::middleware(['auth:sanctum', 'customer'])->prefix('account')->group(function () {
@@ -155,10 +183,10 @@ Route::prefix('auth')->group(function () {
     Route::post('/vendor/register', [AuthController::class, 'vendorRegister']);
 
     Route::post('/login', [AuthController::class, 'login'])
-    ->middleware('throttle:10,1');
+        ->middleware('throttle:10,1');
 
     Route::post('/two-factor/challenge', [AuthController::class, 'twoFactorChallenge'])
-    ->middleware('throttle:6,1');
+        ->middleware('throttle:6,1');
 });
 
 // Protected Authentication Routes
@@ -317,8 +345,8 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'admin'])->group(function ()
 
     // Vendor Account Activation
     Route::get('/vendor/activate/{user}', [VendorActivationController::class, 'activate'])
-    ->middleware('signed')
-    ->name('vendor.activate');
+        ->middleware('signed')
+            ->name('vendor.activate');
 
     // Vendor Plans
     Route::get('/vendor-plans', [VendorPlanController::class, 'index']);
@@ -360,21 +388,18 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'admin'])->group(function ()
 
     Route::delete('/orders/{order}', [AdminOrderController::class, 'destroy']);
 
-
-
-
     // Product Content Sections
-Route::get('/products/{product}/content-sections', [AdminProductContentSectionController::class, 'index']);
+    Route::get('/products/{product}/content-sections', [AdminProductContentSectionController::class, 'index']);
 
-Route::post('/products/{product}/content-sections', [AdminProductContentSectionController::class, 'store']);
+    Route::post('/products/{product}/content-sections', [AdminProductContentSectionController::class, 'store']);
 
-Route::post('/products/{product}/content-sections/reorder', [AdminProductContentSectionController::class, 'reorder']);
+    Route::post('/products/{product}/content-sections/reorder', [AdminProductContentSectionController::class, 'reorder']);
 
-Route::put('/products/{product}/content-sections/{section}', [AdminProductContentSectionController::class, 'update']);
+    Route::put('/products/{product}/content-sections/{section}', [AdminProductContentSectionController::class, 'update']);
 
-Route::delete('/products/{product}/content-sections/{section}', [AdminProductContentSectionController::class, 'destroy']);
+    Route::delete('/products/{product}/content-sections/{section}', [AdminProductContentSectionController::class, 'destroy']);
 
-  // Pre-orders
+    // Pre-orders
     Route::get('/preorders', [AdminPreOrderController::class, 'index']);
     Route::delete('/preorders/{preorder}', [AdminPreOrderController::class, 'destroy']);
 
@@ -389,59 +414,47 @@ Route::delete('/products/{product}/content-sections/{section}', [AdminProductCon
     Route::post('/returns/{orderReturn}/cancel', [AdminReturnController::class, 'cancel']);
     Route::post('/returns/{orderReturn}/refund', [AdminOrderController::class, 'refundReturn']);
 
-
     // Inventory
-Route::get('/inventory', [AdminInventoryController::class, 'index']);
-Route::post('/inventory/on-hand', [AdminInventoryController::class, 'updateOnHand']);
+    Route::get('/inventory', [AdminInventoryController::class, 'index']);
+    Route::post('/inventory/on-hand', [AdminInventoryController::class, 'updateOnHand']);
 
-// Inventory Locations
-Route::get('/inventory/locations', [AdminInventoryLocationController::class, 'index']);
-Route::post('/inventory/locations', [AdminInventoryLocationController::class, 'store']);
-Route::get('/inventory/locations/{inventoryLocation}', [AdminInventoryLocationController::class, 'show']);
-Route::put('/inventory/locations/{inventoryLocation}', [AdminInventoryLocationController::class, 'update']);
-Route::post('/inventory/locations/{inventoryLocation}/default', [AdminInventoryLocationController::class, 'setDefault']);
-Route::post('/inventory/locations/{inventoryLocation}/toggle-status', [AdminInventoryLocationController::class, 'toggleStatus']);
-Route::delete('/inventory/locations/{inventoryLocation}', [AdminInventoryLocationController::class, 'destroy']);
+    // Inventory Locations
+    Route::get('/inventory/locations', [AdminInventoryLocationController::class, 'index']);
+    Route::post('/inventory/locations', [AdminInventoryLocationController::class, 'store']);
+    Route::get('/inventory/locations/{inventoryLocation}', [AdminInventoryLocationController::class, 'show']);
+    Route::put('/inventory/locations/{inventoryLocation}', [AdminInventoryLocationController::class, 'update']);
+    Route::post('/inventory/locations/{inventoryLocation}/default', [AdminInventoryLocationController::class, 'setDefault']);
+    Route::post('/inventory/locations/{inventoryLocation}/toggle-status', [AdminInventoryLocationController::class, 'toggleStatus']);
+    Route::delete('/inventory/locations/{inventoryLocation}', [AdminInventoryLocationController::class, 'destroy']);
 
-
-
-// Reviews
-Route::get('/reviews', [AdminReviewController::class, 'index']);
-Route::get('/reviews/{productReview}', [AdminReviewController::class, 'show']);
-Route::post('/reviews/{productReview}/publish', [AdminReviewController::class, 'publish']);
-Route::post('/reviews/{productReview}/hold', [AdminReviewController::class, 'hold']);
-Route::post('/reviews/{productReview}/release-hold', [AdminReviewController::class, 'releaseHold']);
-Route::post('/reviews/{productReview}/reply', [AdminReviewController::class, 'reply']);
-Route::delete('/reviews/{productReview}/reply', [AdminReviewController::class, 'deleteReply']);
-Route::post('/reviews/{productReview}/reject', [AdminReviewController::class, 'reject']);
-Route::delete('/reviews/{productReview}', [AdminReviewController::class, 'destroy']);
-
-
- 
+    // Reviews
+    Route::get('/reviews', [AdminReviewController::class, 'index']);
+    Route::get('/reviews/{productReview}', [AdminReviewController::class, 'show']);
+    Route::post('/reviews/{productReview}/publish', [AdminReviewController::class, 'publish']);
+    Route::post('/reviews/{productReview}/hold', [AdminReviewController::class, 'hold']);
+    Route::post('/reviews/{productReview}/release-hold', [AdminReviewController::class, 'releaseHold']);
+    Route::post('/reviews/{productReview}/reply', [AdminReviewController::class, 'reply']);
+    Route::delete('/reviews/{productReview}/reply', [AdminReviewController::class, 'deleteReply']);
+    Route::post('/reviews/{productReview}/reject', [AdminReviewController::class, 'reject']);
+    Route::delete('/reviews/{productReview}', [AdminReviewController::class, 'destroy']);
 
     // Admin Profile
-Route::get('/profile', [AdminProfileController::class, 'show']);
-Route::post('/profile', [AdminProfileController::class, 'update']);
+    Route::get('/profile', [AdminProfileController::class, 'show']);
+    Route::post('/profile', [AdminProfileController::class, 'update']);
 
-// Admin Security
-Route::get('/security', [CustomerSecurityController::class, 'index']);
-Route::put('/security/password', [CustomerSecurityController::class, 'updatePassword']);
-Route::post('/security/two-factor/setup', [CustomerSecurityController::class, 'setupTwoFactor']);
-Route::post('/security/two-factor/confirm', [CustomerSecurityController::class, 'confirmTwoFactor']);
-Route::post('/security/two-factor/disable', [CustomerSecurityController::class, 'disableTwoFactor']);
-Route::post('/security/two-factor/recovery-codes', [CustomerSecurityController::class, 'regenerateRecoveryCodes']);
-Route::post('/security/logout-other-sessions', [CustomerSecurityController::class, 'logoutOtherSessions']);
-
-
+    // Admin Security
+    Route::get('/security', [CustomerSecurityController::class, 'index']);
+    Route::put('/security/password', [CustomerSecurityController::class, 'updatePassword']);
+    Route::post('/security/two-factor/setup', [CustomerSecurityController::class, 'setupTwoFactor']);
+    Route::post('/security/two-factor/confirm', [CustomerSecurityController::class, 'confirmTwoFactor']);
+    Route::post('/security/two-factor/disable', [CustomerSecurityController::class, 'disableTwoFactor']);
+    Route::post('/security/two-factor/recovery-codes', [CustomerSecurityController::class, 'regenerateRecoveryCodes']);
+    Route::post('/security/logout-other-sessions', [CustomerSecurityController::class, 'logoutOtherSessions']);
 
     Route::get('/customers', [AdminCustomerController::class, 'index']);
     Route::post('/customers', [AdminCustomerController::class, 'store']);
     Route::get('/customers/{customer}/edit', [AdminCustomerController::class, 'edit']);
     Route::put('/customers/{customer}', [AdminCustomerController::class, 'update']);
     Route::delete('/customers/{customer}', [AdminCustomerController::class, 'destroy']);
-
-
-
-
 
 });

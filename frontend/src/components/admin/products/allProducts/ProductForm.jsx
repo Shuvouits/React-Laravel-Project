@@ -46,10 +46,48 @@ import {
 const ProductForm = ({
   mode = "create",
   initialData = null,
+  context = "admin",
 }) => {
 
   const navigate =
     useNavigate();
+
+
+  const isVendor =
+    context === "vendor";
+
+
+  const productApi =
+    isVendor
+      ? {
+          formOptions:
+            "/vendor/products/form-options",
+
+          ai:
+            "/vendor/ai/product-content",
+
+          create:
+            "/vendor/products",
+
+          update: (id) =>
+            `/vendor/products/${id}/update`,
+
+          delete: (id) =>
+            `/vendor/products/${id}`,
+        }
+      : PRODUCT_API;
+
+
+  const productRoutes =
+    isVendor
+      ? {
+          index:
+            "/vendor/products",
+
+          edit: (id) =>
+            `/vendor/products/${id}/edit`,
+        }
+      : PRODUCT_ROUTES;
 
 
   /*
@@ -210,7 +248,7 @@ const ProductForm = ({
 
           const response =
             await api.get(
-              PRODUCT_API
+              productApi
                 .formOptions
             );
 
@@ -700,7 +738,7 @@ const ProductForm = ({
 
         const response =
           await api.post(
-            PRODUCT_API.ai,
+            productApi.ai,
             {
               title:
                 form.title,
@@ -1139,6 +1177,78 @@ const ProductForm = ({
 
         /*
         |--------------------------------------------------------------------------
+        | VARIANT MEDIA
+        |--------------------------------------------------------------------------
+        |
+        | Unsaved variants cannot upload their image immediately because they
+        | do not have a database ID yet. Keep those files in the variant state,
+        | append them to media[], and send the matching media_index so the
+        | backend can attach the uploaded ProductMedia row to the new variant.
+        |
+        */
+
+        const variantMediaUploads = [];
+        const variantMediaIndexMap = {};
+
+
+        variants.forEach(
+          (
+            variant,
+            index
+          ) => {
+
+            const file =
+              variant
+                ?.pending_image_file;
+
+
+            if (
+              !(file instanceof File)
+            ) {
+              return;
+            }
+
+
+            const mediaIndex =
+              newMedia.length +
+              variantMediaUploads.length;
+
+
+            variantMediaIndexMap[
+              index
+            ] =
+              mediaIndex;
+
+
+            variantMediaUploads.push({
+              file,
+
+              alt_text:
+                variant.title ||
+                form.title ||
+                "",
+            });
+
+          }
+        );
+
+
+        if (
+          newMedia.length +
+          variantMediaUploads.length >
+          10
+        ) {
+
+          setMessage(
+            "A maximum of 10 new media files can be uploaded at once, including variant images."
+          );
+
+          return;
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
         | VARIANTS
         |--------------------------------------------------------------------------
         */
@@ -1202,6 +1312,17 @@ const ProductForm = ({
                   variant.product_media_id ||
                   null,
 
+                media_index:
+                  Object.prototype
+                    .hasOwnProperty.call(
+                      variantMediaIndexMap,
+                      index
+                    )
+                    ? variantMediaIndexMap[
+                        index
+                      ]
+                    : null,
+
                 sort_order:
                   index,
               })
@@ -1228,15 +1349,33 @@ const ProductForm = ({
         );
 
 
+        variantMediaUploads.forEach(
+          (media) => {
+
+            data.append(
+              "media[]",
+              media.file
+            );
+
+          }
+        );
+
+
         append(
           "media_alt_texts",
-          JSON.stringify(
-            newMedia.map(
+          JSON.stringify([
+            ...newMedia.map(
               (media) =>
                 media.alt_text ||
                 ""
-            )
-          )
+            ),
+
+            ...variantMediaUploads.map(
+              (media) =>
+                media.alt_text ||
+                ""
+            ),
+          ])
         );
 
 
@@ -1288,7 +1427,7 @@ const ProductForm = ({
 
           response =
             await api.post(
-              PRODUCT_API.update(
+              productApi.update(
                 initialData.id
               ),
               data,
@@ -1304,7 +1443,7 @@ const ProductForm = ({
 
           response =
             await api.post(
-              PRODUCT_API.create,
+              productApi.create,
               data,
               {
                 headers: {
@@ -1322,22 +1461,78 @@ const ProductForm = ({
             ?.product;
 
 
+      
+
+
+
+
+
         if (
-          mode === "create" &&
-          saved?.id
-        ) {
+  mode === "create" &&
+  saved?.id
+) {
 
-          navigate(
-            PRODUCT_ROUTES.edit(
-              saved.id
-            ),
-            {
-              replace: true,
-            }
-          );
+  /*
+  |--------------------------------------------------------------------------
+  | VENDOR CREATE
+  |--------------------------------------------------------------------------
+  */
 
-          return;
-        }
+  if (isVendor) {
+
+    setForm({
+      ...EMPTY_PRODUCT,
+
+      tags: [],
+      collection_ids: [],
+    });
+
+    setOptions([]);
+    setVariants([]);
+
+    setExistingMedia([]);
+    setNewMedia([]);
+    setDeletedMediaIds([]);
+
+    setCover(null);
+
+    setSlugEdited(false);
+    setSeoTitleEdited(false);
+    setSeoDescriptionEdited(false);
+
+    setErrors({});
+    setAiError("");
+
+    setMessage(
+      "Product created successfully."
+    );
+
+    window.scrollTo({
+      top: 0,
+      behavior: "smooth",
+    });
+
+    return;
+  }
+
+
+  /*
+  |--------------------------------------------------------------------------
+  | ADMIN CREATE
+  |--------------------------------------------------------------------------
+  */
+
+  navigate(
+    productRoutes.edit(
+      saved.id
+    ),
+    {
+      replace: true,
+    }
+  );
+
+  return;
+}
 
 
         if (
@@ -1356,6 +1551,80 @@ const ProductForm = ({
 
           setNewMedia([]);
           setDeletedMediaIds([]);
+
+
+          setOptions(
+            Array.isArray(
+              saved.options
+            )
+              ? saved.options.map(
+                  (
+                    option,
+                    index
+                  ) => ({
+                    ...option,
+
+                    sort_order:
+                      option.sort_order ??
+                      index,
+
+                    values:
+                      Array.isArray(
+                        option.values
+                      )
+                        ? option.values
+                        : [],
+                  })
+                )
+              : []
+          );
+
+
+          setVariants(
+            Array.isArray(
+              saved.variants
+            )
+              ? saved.variants.map(
+                  (
+                    variant,
+                    index
+                  ) => ({
+                    ...variant,
+
+                    global_variant_value_ids:
+                      Array.isArray(
+                        variant
+                          .global_variant_value_ids
+                      )
+                        ? variant
+                            .global_variant_value_ids
+                            .map(Number)
+                        : [],
+
+                    is_active:
+                      normalizeBoolean(
+                        variant.is_active
+                      ),
+
+                    quantity:
+                      Number(
+                        variant.quantity ||
+                        0
+                      ),
+
+                    pending_image_file:
+                      null,
+
+                    pending_image_preview:
+                      null,
+
+                    sort_order:
+                      variant.sort_order ??
+                      index,
+                  })
+                )
+              : []
+          );
 
 
           const savedCover =
@@ -1444,14 +1713,14 @@ const ProductForm = ({
 
 
         await api.delete(
-          PRODUCT_API.delete(
+          productApi.delete(
             initialData.id
           )
         );
 
 
         navigate(
-          PRODUCT_ROUTES.index,
+          productRoutes.index,
           {
             replace: true,
           }
@@ -1689,7 +1958,7 @@ const ProductForm = ({
 
               onClick={() =>
                 navigate(
-                  PRODUCT_ROUTES.index
+                  productRoutes.index
                 )
               }
 
@@ -1816,26 +2085,38 @@ const ProductForm = ({
             />
 
 
+            
             <ProductVariants
-              globalVariants={
-                formOptions
-                  .global_variants
-              }
+  productId={
+    initialData?.id ||
+    null
+  }
 
-              options={options}
+  context={
+    context
+  }
 
-              setOptions={
-                setOptions
-              }
+  globalVariants={
+    formOptions
+      .global_variants
+  }
 
-              variants={
-                variants
-              }
+  options={
+    options
+  }
 
-              setVariants={
-                setVariants
-              }
-            />
+  setOptions={
+    setOptions
+  }
+
+  variants={
+    variants
+  }
+
+  setVariants={
+    setVariants
+  }
+/>
 
 
             <ProductSEO

@@ -8,7 +8,6 @@ const ProductCommerce = ({
   updateField,
   variants = [],
 }) => {
-
   const hasVariants =
     variants.length > 0;
 
@@ -22,17 +21,6 @@ const ProductCommerce = ({
         ),
       0
     );
-
-
-  const variantPrices =
-    variants
-      .map((variant) =>
-        Number(variant.price)
-      )
-      .filter(
-        (value) =>
-          !Number.isNaN(value)
-      );
 
 
   return (
@@ -178,108 +166,64 @@ const ProductCommerce = ({
         </h2>
 
 
-        {hasVariants ? (
+        <div
+          className="
+            grid
+            grid-cols-1
+            md:grid-cols-3
 
-          <div
-            className="
-              rounded-[11px]
+            gap-[12px]
+          "
+        >
 
-              border
-              border-dashed
-              border-[#d4d6da]
+          <MoneyInput
+            label="Price"
 
-              px-[14px]
-              py-[14px]
-            "
-          >
+            value={
+              form.price
+            }
 
-            <p
-              className="
-                text-[12px]
-                font-medium
-              "
-            >
-              Prices are managed per variant
-            </p>
-
-
-            <p
-              className="
-                mt-[4px]
-
-                text-[11px]
-                text-[#777]
-              "
-            >
-              {variantPrices.length
-                ? `$${Math.min(
-                    ...variantPrices
-                  ).toFixed(2)} across ${variants.length} variants`
-                : `${variants.length} variants`}
-            </p>
-
-          </div>
-
-        ) : (
-
-          <div
-            className="
-              grid
-              grid-cols-1
-              md:grid-cols-3
-
-              gap-[12px]
-            "
-          >
-
-            <MoneyInput
-              label="Price"
-
-              value={form.price}
-
-              onChange={(value) =>
-                updateField(
-                  "price",
-                  value
-                )
-              }
-            />
+            onChange={(value) =>
+              updateField(
+                "price",
+                value
+              )
+            }
+          />
 
 
-            <MoneyInput
-              label="Compare-at price"
+          <MoneyInput
+            label="Compare-at price"
 
-              value={
-                form.compare_at_price
-              }
+            value={
+              form.compare_at_price
+            }
 
-              onChange={(value) =>
-                updateField(
-                  "compare_at_price",
-                  value
-                )
-              }
-            />
+            onChange={(value) =>
+              updateField(
+                "compare_at_price",
+                value
+              )
+            }
+          />
 
 
-            <MoneyInput
-              label="Cost per item"
+          <MoneyInput
+            label="Cost per item"
 
-              value={
-                form.cost_per_item
-              }
+            value={
+              form.cost_per_item
+            }
 
-              onChange={(value) =>
-                updateField(
-                  "cost_per_item",
-                  value
-                )
-              }
-            />
+            onChange={(value) =>
+              updateField(
+                "cost_per_item",
+                value
+              )
+            }
+          />
 
-          </div>
-
-        )}
+        </div>
 
       </Card>
 
@@ -300,7 +244,7 @@ const ProductCommerce = ({
         </h2>
 
 
-        {hasVariants && (
+        {hasVariants ? (
 
           <div
             className="
@@ -312,6 +256,8 @@ const ProductCommerce = ({
               border-dashed
               border-[#d4d6da]
 
+              bg-[#fafbfc]
+
               px-[14px]
               py-[14px]
             "
@@ -320,30 +266,44 @@ const ProductCommerce = ({
             <p
               className="
                 text-[12px]
-                font-medium
+                font-semibold
+
+                text-[#2c2c2c]
               "
             >
-              SKU, barcode and quantity are managed per variant
+              Inventory is managed in Variants
             </p>
 
 
             <p
               className="
-                mt-[4px]
+                mt-[5px]
 
                 text-[11px]
+                leading-[1.5]
+
                 text-[#777]
               "
             >
-              Total inventory: {variantInventory} across {variants.length} variant(s).
+              SKU, Barcode and Quantity are edited separately for each variant.
+            </p>
+
+
+            <p
+              className="
+                mt-[5px]
+
+                text-[10px]
+
+                text-[#999]
+              "
+            >
+              Total quantity: {variantInventory} across {variants.length} variant{variants.length === 1 ? "" : "s"}.
             </p>
 
           </div>
 
-        )}
-
-
-        {!hasVariants && (
+        ) : (
 
           <div
             className="
@@ -360,7 +320,9 @@ const ProductCommerce = ({
             <TextInput
               label="SKU"
 
-              value={form.sku}
+              value={
+                form.sku
+              }
 
               onChange={(value) =>
                 updateField(
@@ -374,7 +336,9 @@ const ProductCommerce = ({
             <TextInput
               label="Barcode"
 
-              value={form.barcode}
+              value={
+                form.barcode
+              }
 
               onChange={(value) =>
                 updateField(
@@ -390,7 +354,9 @@ const ProductCommerce = ({
 
               type="number"
 
-              value={form.quantity}
+              value={
+                form.quantity
+              }
 
               onChange={(value) =>
                 updateField(
@@ -493,7 +459,9 @@ const ProductCommerce = ({
 
             type="number"
 
-            value={form.weight}
+            value={
+              form.weight
+            }
 
             onChange={(value) =>
               updateField(
@@ -782,7 +750,9 @@ const TextInput = ({
     <input
       type={type}
 
-      value={value}
+      value={
+        value ?? ""
+      }
 
       placeholder={
         placeholder
@@ -866,7 +836,9 @@ const MoneyInput = ({
         step="0.01"
         min="0"
 
-        value={value}
+        value={
+          value ?? ""
+        }
 
         onChange={(event) =>
           onChange(

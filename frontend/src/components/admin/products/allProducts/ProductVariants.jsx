@@ -24,6 +24,8 @@ import VariantImageUploader from "./VariantImageUploader";
 const ProductVariants = ({
   productId,
 
+  context = "admin",
+
   globalVariants = [],
 
   options = [],
@@ -304,6 +306,20 @@ const ProductVariants = ({
             media:
               existing.media ||
               newVariant.media ||
+              null,
+
+            pending_image_file:
+              existing
+                .pending_image_file ??
+              newVariant
+                .pending_image_file ??
+              null,
+
+            pending_image_preview:
+              existing
+                .pending_image_preview ||
+              newVariant
+                .pending_image_preview ||
               null,
 
 
@@ -1306,6 +1322,10 @@ const ProductVariants = ({
                               resolvedProductId
                             }
 
+                            context={
+                              context
+                            }
+
                             variant={
                               variant
                             }
@@ -1388,7 +1408,7 @@ const ProductVariants = ({
                                 text-[#999]
                               "
                             >
-                              Save product to enable image upload.
+                              Select an image now. It will upload when the product is saved.
                             </p>
 
                           )}

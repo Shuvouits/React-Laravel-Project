@@ -9,6 +9,8 @@ use App\Models\Category;
 use App\Models\Collection;
 use App\Models\GlobalVariant;
 use App\Models\GlobalVariantValue;
+use App\Models\InventoryLevel;
+use App\Models\InventoryLocation;
 
 use App\Models\Product;
 use App\Models\ProductMedia;
@@ -728,6 +730,17 @@ class ProductController extends Controller
                         );
 
 
+                        /*
+                        |--------------------------------------------------------------------------
+                        | INVENTORY LEVELS
+                        |--------------------------------------------------------------------------
+                        */
+
+                        $this->syncInventoryLevelsFromProduct(
+                            $product
+                        );
+
+
                         return $product;
                     }
                 );
@@ -1160,48 +1173,74 @@ private function resolveMediaUrl($media)
     |
     */
 
-    public function update(
-        Request $request,
-        $id
+     public function update(
+    Request $request,
+    $id
+) {
+    /*
+    |--------------------------------------------------------------------------
+    | PRODUCT ACCESS
+    |--------------------------------------------------------------------------
+    */
+
+    $user =
+        $request->user();
+
+    $query =
+        Product::query();
+
+    if (
+        $user?->role === 'vendor'
     ) {
-        $product =
-            Product::findOrFail(
-                $id
+        $query
+            ->where(
+                'source',
+                'vendor'
+            )
+            ->where(
+                'created_by',
+                $user->id
             );
+    }
 
-
-        /*
-        |--------------------------------------------------------------------------
-        | NORMALIZE
-        |--------------------------------------------------------------------------
-        */
-
-        $this->normalizeProductRequest(
-            $request
+    $product =
+        $query->findOrFail(
+            $id
         );
 
 
-        /*
-        |--------------------------------------------------------------------------
-        | VALIDATE
-        |--------------------------------------------------------------------------
-        */
+    /*
+    |--------------------------------------------------------------------------
+    | NORMALIZE
+    |--------------------------------------------------------------------------
+    */
 
-        $validated =
-            $this->validateProduct(
-                $request,
-                $product->id
-            );
+    $this->normalizeProductRequest(
+        $request
+    );
 
 
-        /*
-        |--------------------------------------------------------------------------
-        | SLUG
-        |--------------------------------------------------------------------------
-        */
+    /*
+    |--------------------------------------------------------------------------
+    | VALIDATE
+    |--------------------------------------------------------------------------
+    */
 
-        $slug =
-            $request->filled('slug')
+    $validated =
+        $this->validateProduct(
+            $request,
+            $product->id
+        );
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | SLUG
+    |--------------------------------------------------------------------------
+    */
+
+    $slug =
+        $request->filled('slug')
 
             ? Str::slug(
                 $request->input(
@@ -1214,223 +1253,263 @@ private function resolveMediaUrl($media)
             );
 
 
-        $slug =
-            $this->makeUniqueSlug(
+    $slug =
+        $this->makeUniqueSlug(
+            $slug,
+            $product->id
+        );
+
+
+    $uploadedPaths = [];
+
+
+    try {
+
+        DB::transaction(
+            function () use (
+                $request,
+                $validated,
                 $slug,
-                $product->id
-            );
+                $product,
+                &$uploadedPaths
+            ) {
+
+                /*
+                |--------------------------------------------------------------------------
+                | UPDATE PRODUCT
+                |--------------------------------------------------------------------------
+                */
+
+                $product->update(
+                    $this->productPayload(
+
+                        request:
+                            $request,
+
+                        validated:
+                            $validated,
+
+                        slug:
+                            $slug,
+
+                        product:
+                            $product
+
+                    )
+                );
 
 
-        $uploadedPaths = [];
+                /*
+                |--------------------------------------------------------------------------
+                | COLLECTIONS
+                |--------------------------------------------------------------------------
+                */
+
+                $this->syncCollections(
+
+                    product:
+                        $product,
+
+                    collectionIds:
+                        $validated[
+                            'collection_ids'
+                        ]
+                        ?? []
+
+                );
 
 
-        try {
+                /*
+                |--------------------------------------------------------------------------
+                | DELETE SELECTED MEDIA
+                |--------------------------------------------------------------------------
+                */
 
-            DB::transaction(
-                function () use (
-                    $request,
-                    $validated,
-                    $slug,
-                    $product,
-                    &$uploadedPaths
+                $this->deleteSelectedMedia(
+
+                    product:
+                        $product,
+
+                    mediaIds:
+                        $validated[
+                            'deleted_media_ids'
+                        ]
+                        ?? []
+
+                );
+
+
+                /*
+                |--------------------------------------------------------------------------
+                | UPLOAD NEW MEDIA
+                |--------------------------------------------------------------------------
+                */
+
+                $mediaResult =
+                    $this->uploadNewMedia(
+
+                        product:
+                            $product,
+
+                        request:
+                            $request
+
+                    );
+
+
+                $uploadedPaths =
+                    $mediaResult[
+                        'uploaded_paths'
+                    ];
+
+
+                /*
+                |--------------------------------------------------------------------------
+                | COVER
+                |--------------------------------------------------------------------------
+                */
+
+                if (
+                    $request->filled(
+                        'cover_media_id'
+                    )
                 ) {
 
-                    /*
-                    |--------------------------------------------------------------------------
-                    | UPDATE PRODUCT
-                    |--------------------------------------------------------------------------
-                    */
+                    $this->setCoverMedia(
 
-                    $product->update(
-                        $this->productPayload(
+                        product:
+                            $product,
 
-                            request: $request,
-
-                            validated: $validated,
-
-                            slug: $slug,
-
-                            product: $product
-
-                        )
-                    );
-
-
-                    /*
-                    |--------------------------------------------------------------------------
-                    | COLLECTIONS
-                    |--------------------------------------------------------------------------
-                    */
-
-                    $this->syncCollections(
-
-                        product: $product,
-
-                        collectionIds: $validated['collection_ids']
-                            ?? []
-
-                    );
-
-
-                    /*
-                    |--------------------------------------------------------------------------
-                    | DELETE SELECTED MEDIA
-                    |--------------------------------------------------------------------------
-                    */
-
-                    $this->deleteSelectedMedia(
-
-                        product: $product,
-
-                        mediaIds: $validated['deleted_media_ids']
-                            ?? []
-
-                    );
-
-
-                    /*
-                    |--------------------------------------------------------------------------
-                    | UPLOAD NEW MEDIA
-                    |--------------------------------------------------------------------------
-                    */
-
-                    $mediaResult =
-                        $this->uploadNewMedia(
-
-                            product: $product,
-
-                            request: $request
-
-                        );
-
-
-                    $uploadedPaths =
-                        $mediaResult['uploaded_paths'];
-
-
-                    /*
-                    |--------------------------------------------------------------------------
-                    | COVER
-                    |--------------------------------------------------------------------------
-                    */
-
-                    if (
-                        $request->filled(
-                            'cover_media_id'
-                        )
-                    ) {
-
-                        $this->setCoverMedia(
-
-                            product: $product,
-
-                            mediaId: $request->input(
+                        mediaId:
+                            $request->input(
                                 'cover_media_id'
                             )
 
-                        );
-                    }
-
-
-                    /*
-                    |--------------------------------------------------------------------------
-                    | PRODUCT OPTIONS
-                    |--------------------------------------------------------------------------
-                    */
-
-                    $optionMap =
-                        $this->syncProductOptions(
-
-                            product: $product,
-
-                            options: $validated['options']
-                                ?? []
-
-                        );
-
-
-                    /*
-                    |--------------------------------------------------------------------------
-                    | VARIANTS
-                    |--------------------------------------------------------------------------
-                    |
-                    | Frontend যদি variants field পাঠায়,
-                    | তখন variants sync হবে।
-                    |
-                    */
-
-                    if (
-                        $request->exists(
-                            'variants'
-                        )
-                    ) {
-
-                        $this->syncVariants(
-
-                            product: $product,
-
-                            variants: $validated['variants']
-                                ?? [],
-
-                            optionMap: $optionMap,
-
-                            newMediaMap: $mediaResult['new_media_map']
-
-                        );
-                    }
+                    );
                 }
-            );
 
 
-            return response()->json([
+                /*
+                |--------------------------------------------------------------------------
+                | PRODUCT OPTIONS
+                |--------------------------------------------------------------------------
+                */
 
-                'status' => true,
+                $optionMap =
+                    $this->syncProductOptions(
 
-                'message' =>
+                        product:
+                            $product,
+
+                        options:
+                            $validated[
+                                'options'
+                            ]
+                            ?? []
+
+                    );
+
+
+                /*
+                |--------------------------------------------------------------------------
+                | VARIANTS
+                |--------------------------------------------------------------------------
+                */
+
+                if (
+                    $request->exists(
+                        'variants'
+                    )
+                ) {
+
+                    $this->syncVariants(
+
+                        product:
+                            $product,
+
+                        variants:
+                            $validated[
+                                'variants'
+                            ]
+                            ?? [],
+
+                        optionMap:
+                            $optionMap,
+
+                        newMediaMap:
+                            $mediaResult[
+                                'new_media_map'
+                            ]
+
+                    );
+                }
+
+
+                /*
+                |--------------------------------------------------------------------------
+                | INVENTORY LEVELS
+                |--------------------------------------------------------------------------
+                */
+
+                $this->syncInventoryLevelsFromProduct(
+                    $product
+                );
+
+            }
+        );
+
+
+        return response()->json([
+
+            'status' => true,
+
+            'message' =>
                 'Product updated successfully.',
 
-                'product' =>
+            'product' =>
                 $this->loadProductData(
                     $product->id
                 ),
 
-            ]);
-        } catch (\Throwable $error) {
+        ]);
 
-            foreach (
-                $uploadedPaths
-                as $path
-            ) {
+    } catch (\Throwable $error) {
 
-                $this->deleteFile(
-                    $path
-                );
-            }
+        foreach (
+            $uploadedPaths
+            as $path
+        ) {
 
+            $this->deleteFile(
+                $path
+            );
 
-            if (
-                $error instanceof
-                ValidationException
-            ) {
-
-                throw $error;
-            }
+        }
 
 
-            report($error);
+        if (
+            $error instanceof
+            ValidationException
+        ) {
+
+            throw $error;
+
+        }
 
 
-            return response()->json([
+        report($error);
 
-                'status' => false,
 
-                'message' =>
+        return response()->json([
+
+            'status' => false,
+
+            'message' =>
                 'Unable to update product.',
 
-            ], 500);
-        }
+        ], 500);
     }
-
+}
 
     /*
     |--------------------------------------------------------------------------
@@ -2256,241 +2335,247 @@ private function resolveMediaUrl($media)
     |--------------------------------------------------------------------------
     */
 
-    private function productPayload(
-        Request $request,
-        array $validated,
-        string $slug,
-        ?Product $product = null
-    ): array {
+   private function productPayload(
+    Request $request,
+    array $validated,
+    string $slug,
+    ?Product $product = null
+): array {
 
-        return [
+    $user = $request->user();
 
-            'title' =>
-            trim(
-                $validated['title']
-            ),
+    $source = $product
+        ? $product->source
+        : (
+            $user?->role === 'vendor'
+                ? 'vendor'
+                : 'admin'
+        );
 
-            'slug' =>
-            $slug,
+    return [
 
-            'summary' =>
-            $validated['summary']
-                ?? null,
+        'title' =>
+        trim(
+            $validated['title']
+        ),
 
-            'description' =>
-            $validated['description']
-                ?? null,
+        'slug' =>
+        $slug,
 
-            'specifications' =>
-            $validated['specifications']
-                ?? null,
+        'summary' =>
+        $validated['summary']
+            ?? null,
 
+        'description' =>
+        $validated['description']
+            ?? null,
 
-            /*
-            |--------------------------------------------------------------------------
-            | STATUS
-            |--------------------------------------------------------------------------
-            */
-
-            'status' =>
-            $validated['status'],
-
-            'is_featured' =>
-            $this->toBoolean(
-                $request->input(
-                    'is_featured',
-                    false
-                )
-            ),
+        'specifications' =>
+        $validated['specifications']
+            ?? null,
 
 
-            /*
-            |--------------------------------------------------------------------------
-            | PUBLISHING
-            |--------------------------------------------------------------------------
-            */
+        /*
+        |--------------------------------------------------------------------------
+        | STATUS
+        |--------------------------------------------------------------------------
+        */
 
-            'online_store' =>
-            $this->toBoolean(
-                $request->input(
-                    'online_store',
-                    true
-                )
-            ),
+        'status' =>
+        $validated['status'],
 
-            'point_of_sale' =>
-            $this->toBoolean(
-                $request->input(
-                    'point_of_sale',
-                    true
-                )
-            ),
+        'is_featured' =>
+        $this->toBoolean(
+            $request->input(
+                'is_featured',
+                false
+            )
+        ),
 
 
-            /*
-            |--------------------------------------------------------------------------
-            | ORGANIZATION
-            |--------------------------------------------------------------------------
-            */
+        /*
+        |--------------------------------------------------------------------------
+        | PUBLISHING
+        |--------------------------------------------------------------------------
+        */
 
-            'category_id' =>
-            $validated['category_id'],
+        'online_store' =>
+        $this->toBoolean(
+            $request->input(
+                'online_store',
+                true
+            )
+        ),
 
-            'brand_id' =>
-            $validated['brand_id']
-                ?? null,
-
-            'type' =>
-            $validated['type']
-                ?? null,
-
-            'tags' =>
-            $validated['tags']
-                ?? [],
-
-
-            /*
-            |--------------------------------------------------------------------------
-            | OWNER
-            |--------------------------------------------------------------------------
-            */
-
-            'source' =>
-            $product
-                ? $product->source
-                : 'admin',
-
-            'created_by' =>
-            $product
-                ? $product->created_by
-                : optional(
-                    $request->user()
-                )->id,
+        'point_of_sale' =>
+        $this->toBoolean(
+            $request->input(
+                'point_of_sale',
+                true
+            )
+        ),
 
 
-            /*
-            |--------------------------------------------------------------------------
-            | FORMAT
-            |--------------------------------------------------------------------------
-            */
+        /*
+        |--------------------------------------------------------------------------
+        | ORGANIZATION
+        |--------------------------------------------------------------------------
+        */
 
-            'product_format' =>
-            $validated['product_format']
-                ?? 'physical',
+        'category_id' =>
+        $validated['category_id'],
 
+        'brand_id' =>
+        $validated['brand_id']
+            ?? null,
 
-            /*
-            |--------------------------------------------------------------------------
-            | PREORDER
-            |--------------------------------------------------------------------------
-            */
+        'type' =>
+        $validated['type']
+            ?? null,
 
-            'preorder_enabled' =>
-            $this->toBoolean(
-                $request->input(
-                    'preorder_enabled',
-                    false
-                )
-            ),
+        'tags' =>
+        $validated['tags']
+            ?? [],
 
 
-            /*
-            |--------------------------------------------------------------------------
-            | PRICING
-            |--------------------------------------------------------------------------
-            */
+        /*
+        |--------------------------------------------------------------------------
+        | OWNER
+        |--------------------------------------------------------------------------
+        */
 
-            'price' =>
-            $validated['price']
-                ?? null,
+        'source' =>
+        $source,
 
-            'compare_at_price' =>
-            $validated['compare_at_price']
-                ?? null,
-
-            'cost_per_item' =>
-            $validated['cost_per_item']
-                ?? null,
+        'created_by' =>
+        $product
+            ? $product->created_by
+            : $user?->id,
 
 
-            /*
-            |--------------------------------------------------------------------------
-            | INVENTORY
-            |--------------------------------------------------------------------------
-            */
+        /*
+        |--------------------------------------------------------------------------
+        | FORMAT
+        |--------------------------------------------------------------------------
+        */
 
-            'sku' =>
-            $validated['sku']
-                ?? null,
-
-            'barcode' =>
-            $validated['barcode']
-                ?? null,
-
-            'quantity' =>
-            $validated['quantity']
-                ?? 0,
-
-            'track_quantity' =>
-            $this->toBoolean(
-                $request->input(
-                    'track_quantity',
-                    true
-                )
-            ),
-
-            'continue_selling_when_out_of_stock' =>
-            $this->toBoolean(
-                $request->input(
-                    'continue_selling_when_out_of_stock',
-                    false
-                )
-            ),
+        'product_format' =>
+        $validated['product_format']
+            ?? 'physical',
 
 
-            /*
-            |--------------------------------------------------------------------------
-            | SHIPPING
-            |--------------------------------------------------------------------------
-            */
+        /*
+        |--------------------------------------------------------------------------
+        | PREORDER
+        |--------------------------------------------------------------------------
+        */
 
-            'weight' =>
-            $validated['weight']
-                ?? 0,
-
-            'weight_unit' =>
-            $validated['weight_unit']
-                ?? 'kg',
-
-            'country_of_origin' =>
-            $validated['country_of_origin']
-                ?? null,
-
-            'hs_code' =>
-            $validated['hs_code']
-                ?? null,
-
-            'customs_description' =>
-            $validated['customs_description']
-                ?? null,
+        'preorder_enabled' =>
+        $this->toBoolean(
+            $request->input(
+                'preorder_enabled',
+                false
+            )
+        ),
 
 
-            /*
-            |--------------------------------------------------------------------------
-            | SEO
-            |--------------------------------------------------------------------------
-            */
+        /*
+        |--------------------------------------------------------------------------
+        | PRICING
+        |--------------------------------------------------------------------------
+        */
 
-            'seo_title' =>
-            $validated['seo_title']
-                ?? null,
+        'price' =>
+        $validated['price']
+            ?? null,
 
-            'seo_description' =>
-            $validated['seo_description']
-                ?? null,
+        'compare_at_price' =>
+        $validated['compare_at_price']
+            ?? null,
 
-        ];
-    }
+        'cost_per_item' =>
+        $validated['cost_per_item']
+            ?? null,
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | INVENTORY
+        |--------------------------------------------------------------------------
+        */
+
+        'sku' =>
+        $validated['sku']
+            ?? null,
+
+        'barcode' =>
+        $validated['barcode']
+            ?? null,
+
+        'quantity' =>
+        $validated['quantity']
+            ?? 0,
+
+        'track_quantity' =>
+        $this->toBoolean(
+            $request->input(
+                'track_quantity',
+                true
+            )
+        ),
+
+        'continue_selling_when_out_of_stock' =>
+        $this->toBoolean(
+            $request->input(
+                'continue_selling_when_out_of_stock',
+                false
+            )
+        ),
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | SHIPPING
+        |--------------------------------------------------------------------------
+        */
+
+        'weight' =>
+        $validated['weight']
+            ?? 0,
+
+        'weight_unit' =>
+        $validated['weight_unit']
+            ?? 'kg',
+
+        'country_of_origin' =>
+        $validated['country_of_origin']
+            ?? null,
+
+        'hs_code' =>
+        $validated['hs_code']
+            ?? null,
+
+        'customs_description' =>
+        $validated['customs_description']
+            ?? null,
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | SEO
+        |--------------------------------------------------------------------------
+        */
+
+        'seo_title' =>
+        $validated['seo_title']
+            ?? null,
+
+        'seo_description' =>
+        $validated['seo_description']
+            ?? null,
+
+    ];
+}
 
 
     /*
@@ -4044,6 +4129,242 @@ private function resolveMediaUrl($media)
                 ->point_of_sale,
 
         ];
+    }
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | SYNC INVENTORY LEVELS FROM PRODUCT
+    |--------------------------------------------------------------------------
+    |
+    | Product create/edit stores quantity on products/product_variants.
+    | Inventory screens read from inventory_levels.
+    |
+    | Keep both sources aligned by writing the product/variant quantity to the
+    | default active inventory location after every product create/update.
+    |
+    */
+
+    private function syncInventoryLevelsFromProduct(
+        Product $product
+    ): void {
+        $location = InventoryLocation::query()
+            ->where(
+                'is_active',
+                true
+            )
+            ->orderByDesc(
+                'is_default'
+            )
+            ->orderBy(
+                'id'
+            )
+            ->first();
+
+
+        if (! $location) {
+            return;
+        }
+
+
+        $product->load(
+            'variants'
+        );
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | VARIANT PRODUCT
+        |--------------------------------------------------------------------------
+        */
+
+        if (
+            $product->variants->isNotEmpty()
+        ) {
+            /*
+            | A variant product should not keep a base-product inventory row.
+            */
+
+            InventoryLevel::query()
+                ->where(
+                    'product_id',
+                    $product->id
+                )
+                ->whereNull(
+                    'variant_id'
+                )
+                ->delete();
+
+
+            foreach (
+                $product->variants
+                as $variant
+            ) {
+                $this->syncSingleInventoryLevel(
+                    locationId:
+                        (int) $location->id,
+
+                    productId:
+                        (int) $product->id,
+
+                    variantId:
+                        (int) $variant->id,
+
+                    quantity:
+                        max(
+                            0,
+                            (int) $variant->quantity
+                        ),
+
+                    trackQuantity:
+                        (bool) $product->track_quantity
+                );
+            }
+
+
+            return;
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | SIMPLE PRODUCT
+        |--------------------------------------------------------------------------
+        */
+
+        $this->syncSingleInventoryLevel(
+            locationId:
+                (int) $location->id,
+
+            productId:
+                (int) $product->id,
+
+            variantId:
+                null,
+
+            quantity:
+                max(
+                    0,
+                    (int) $product->quantity
+                ),
+
+            trackQuantity:
+                (bool) $product->track_quantity
+        );
+    }
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | SYNC ONE INVENTORY LEVEL
+    |--------------------------------------------------------------------------
+    */
+
+    private function syncSingleInventoryLevel(
+        int $locationId,
+        int $productId,
+        ?int $variantId,
+        int $quantity,
+        bool $trackQuantity
+    ): void {
+        $query = InventoryLevel::query()
+            ->where(
+                'product_id',
+                $productId
+            );
+
+
+        if ($variantId === null) {
+            $query->whereNull(
+                'variant_id'
+            );
+        } else {
+            $query->where(
+                'variant_id',
+                $variantId
+            );
+        }
+
+
+        /*
+        | Keep tracking preference aligned across any existing locations.
+        */
+
+        (clone $query)->update([
+            'track_quantity' =>
+                $trackQuantity,
+        ]);
+
+
+        $otherLocationQuantity =
+            (int) (clone $query)
+                ->where(
+                    'location_id',
+                    '!=',
+                    $locationId
+                )
+                ->sum(
+                    'on_hand'
+                );
+
+
+        $locationQuantity = max(
+            0,
+            $quantity - $otherLocationQuantity
+        );
+
+
+        $inventoryLevel =
+            (clone $query)
+                ->where(
+                    'location_id',
+                    $locationId
+                )
+                ->first();
+
+
+        if ($inventoryLevel) {
+            $inventoryLevel->update([
+                'on_hand' =>
+                    $locationQuantity,
+
+                'track_quantity' =>
+                    $trackQuantity,
+            ]);
+
+
+            return;
+        }
+
+
+        InventoryLevel::create([
+            'location_id' =>
+                $locationId,
+
+            'product_id' =>
+                $productId,
+
+            'variant_id' =>
+                $variantId,
+
+            'on_hand' =>
+                $locationQuantity,
+
+            'committed' =>
+                0,
+
+            'unavailable' =>
+                0,
+
+            'incoming' =>
+                0,
+
+            'low_stock_threshold' =>
+                10,
+
+            'track_quantity' =>
+                $trackQuantity,
+        ]);
     }
 
 

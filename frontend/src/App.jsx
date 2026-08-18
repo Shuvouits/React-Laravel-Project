@@ -101,6 +101,13 @@ import AdminReviews from "./pages/admin/products/reviews/AdminReviews";
 import AdminProfile from "./pages/admin/profile/AdminProfile";
 import AdminCustomers from "./pages/admin/customers/AdminCustomers";
 import AdminCustomerEdit from "./pages/admin/customers/AdminCustomerEdit";
+import VendorLayout from "./layouts/vendor/VendorLayout";
+import VendorDashboard from "./pages/vendor/VendorDashboard";
+import VendorProducts from "./pages/vendor/product/VendorProducts";
+import VendorProductCreate from "./pages/vendor/product/VendorProductCreate";
+import VendorEditProduct from "./pages/vendor/product/VendorEditProduct";
+import VendorInventory from "./pages/vendor/inventory/VendorInventory";
+
 
 const Home = () => {
     return (
@@ -142,9 +149,9 @@ const App = () => {
 
                         <Route path="/payment/success" element={<PaymentSuccess />} />
                         <Route path="/payment/cancelled" element={<PaymentCancelled />} />
-                        <Route  path="/payment/error"  element={<PaymentError />} />
+                        <Route path="/payment/error" element={<PaymentError />} />
 
-                        
+
 
 
 
@@ -158,8 +165,7 @@ const App = () => {
                     <Route path="/become-vendor" element={<BecomeVendor />} />
 
                     {/* Admin */}
-                    <Route
-                        path="/admin"
+                    <Route path="/admin"
                         element={
                             <RoleRoute allowedRole="admin">
                                 <AdminLayout />
@@ -200,15 +206,15 @@ const App = () => {
 
                         <Route path="orders" element={<AdminOrders />} />
 
-                         <Route path="orders/pre-orders" element={<AdminPreOrders />} />
+                        <Route path="orders/pre-orders" element={<AdminPreOrders />} />
 
-                         
+
 
                         <Route path="orders/create" element={<AdminOrderCreate />} />
 
                         <Route path="orders/:id" element={<AdminOrderDetails />} />
 
-                        
+
                         <Route path="orders/returns" element={<AdminReturns />} />
 
                         <Route path="products/inventory" element={<AdminInventory />} />
@@ -217,13 +223,13 @@ const App = () => {
 
                         <Route path="products/reviews" element={<AdminReviews />} />
 
-                       <Route path="profile" element={<AdminProfile />} />
+                        <Route path="profile" element={<AdminProfile />} />
 
-                       <Route path="customers" element={<AdminCustomers />} />
+                        <Route path="customers" element={<AdminCustomers />} />
 
-                       <Route path="customers/:id/edit" element={<AdminCustomerEdit />} />
+                        <Route path="customers/:id/edit" element={<AdminCustomerEdit />} />
 
-                       
+
 
 
                     </Route>
@@ -241,8 +247,27 @@ const App = () => {
                         <Route path="payments" element={<PaymentSettings />} />
                     </Route>
 
+
+                    {/* Vendor */}
+                    <Route path="/vendor" element={<RoleRoute allowedRole="vendor"><VendorLayout /></RoleRoute>}>
+                        <Route index element={<Navigate to="dashboard" replace />} />
+                        <Route path="dashboard" element={<VendorDashboard />} />
+                        <Route path="products" element={<VendorProducts />} />
+                        <Route path="products/create" element={<VendorProductCreate />} />
+                        <Route path="products/:id/edit" element={<VendorEditProduct />} />
+
+                        <Route path="products/inventory" element={<VendorInventory />} />
+
+
+                    </Route>
+
+
+
                     {/* Fallback */}
                     <Route path="*" element={<Navigate to="/" replace />} />
+
+
+
 
                 </Routes>
             </CartProvider>

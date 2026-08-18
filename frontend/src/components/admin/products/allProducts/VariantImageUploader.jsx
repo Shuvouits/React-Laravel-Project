@@ -2,7 +2,6 @@ import {
   ImagePlus,
   LoaderCircle,
   RefreshCw,
-  Upload,
 } from "lucide-react";
 
 import {
@@ -18,117 +17,66 @@ const VariantImageUploader = ({
   productId,
   variant,
   onUpdated,
+  context = "admin",
   className = "",
 }) => {
+  const fileInputRef = useRef(null);
+  const localPreviewRef = useRef(null);
 
-  /*
-  |--------------------------------------------------------------------------
-  | FILE INPUT
-  |--------------------------------------------------------------------------
-  */
-
-  const fileInputRef =
-    useRef(null);
-
-
-  /*
-  |--------------------------------------------------------------------------
-  | STATE
-  |--------------------------------------------------------------------------
-  */
-
-  const [
-    preview,
-    setPreview,
-  ] = useState(
+  const [preview, setPreview] = useState(
+    variant?.pending_image_preview ||
     variant?.image_url ||
     variant?.media?.image_url ||
     variant?.media?.file_url ||
     null
   );
 
+  const [uploading, setUploading] = useState(false);
+  const [error, setError] = useState("");
 
-  const [
-    uploading,
-    setUploading,
-  ] = useState(false);
+  const isSavedVariant = Boolean(
+    productId &&
+    variant?.id
+  );
 
-
-  const [
-    error,
-    setError,
-  ] = useState("");
-
-
-  /*
-  |--------------------------------------------------------------------------
-  | SYNC VARIANT IMAGE
-  |--------------------------------------------------------------------------
-  */
 
   useEffect(() => {
-
     setPreview(
+      variant?.pending_image_preview ||
       variant?.image_url ||
       variant?.media?.image_url ||
       variant?.media?.file_url ||
       null
     );
-
   }, [
+    variant?.pending_image_preview,
     variant?.image_url,
     variant?.media?.image_url,
     variant?.media?.file_url,
   ]);
 
 
-  /*
-  |--------------------------------------------------------------------------
-  | CAN UPLOAD
-  |--------------------------------------------------------------------------
-  */
-
-  const canUpload =
-    Boolean(
-      productId &&
-      variant?.id
-    );
-
-
-  /*
-  |--------------------------------------------------------------------------
-  | OPEN FILE PICKER
-  |--------------------------------------------------------------------------
-  */
-
-  const openFilePicker =
-    () => {
-
-      if (
-        uploading ||
-        !canUpload
-      ) {
-        return;
+  useEffect(() => {
+    return () => {
+      if (localPreviewRef.current) {
+        URL.revokeObjectURL(
+          localPreviewRef.current
+        );
       }
-
-
-      fileInputRef
-        .current
-        ?.click();
-
     };
+  }, []);
 
 
-  /*
-  |--------------------------------------------------------------------------
-  | VALIDATE FILE
-  |--------------------------------------------------------------------------
-  */
+  const openFilePicker = () => {
+    if (uploading) {
+      return;
+    }
 
-  const validateFile = (
-    file
-  ) => {
+    fileInputRef.current?.click();
+  };
 
+
+  const validateFile = (file) => {
     const allowedTypes = [
       "image/jpeg",
       "image/jpg",
@@ -136,456 +84,270 @@ const VariantImageUploader = ({
       "image/webp",
     ];
 
-
-    if (
-      !allowedTypes.includes(
-        file.type
-      )
-    ) {
-
+    if (!allowedTypes.includes(file.type)) {
       return "Only JPG, JPEG, PNG, and WebP images are allowed.";
-
     }
 
+    const maxSize = 5 * 1024 * 1024;
 
-    const maxSize =
-      5 * 1024 * 1024;
-
-
-    if (
-      file.size >
-      maxSize
-    ) {
-
+    if (file.size > maxSize) {
       return "Image must be smaller than 5MB.";
-
     }
-
 
     return null;
-
   };
 
 
-  /*
-  |--------------------------------------------------------------------------
-  | UPLOAD IMAGE
-  |--------------------------------------------------------------------------
-  */
+  const handleFileChange = async (event) => {
+    const file =
+      event.target.files?.[0];
 
-  const handleFileChange =
-    async (event) => {
+    event.target.value = "";
 
-      const file =
-        event.target
-          .files?.[0];
+    if (!file) {
+      return;
+    }
 
+    const validationError =
+      validateFile(file);
 
-      if (!file) {
-        return;
-      }
+    if (validationError) {
+      setError(validationError);
+      return;
+    }
 
-
-      /*
-      |--------------------------------------------------------------------------
-      | RESET INPUT
-      |--------------------------------------------------------------------------
-      */
-
-      event.target.value =
-        "";
+    setError("");
 
 
-      /*
-      |--------------------------------------------------------------------------
-      | PRODUCT / VARIANT CHECK
-      |--------------------------------------------------------------------------
-      */
+    if (localPreviewRef.current) {
+      URL.revokeObjectURL(
+        localPreviewRef.current
+      );
+    }
+
+    const temporaryPreview =
+      URL.createObjectURL(file);
+
+    localPreviewRef.current =
+      temporaryPreview;
+
+    setPreview(
+      temporaryPreview
+    );
+
+
+    if (!isSavedVariant) {
+      onUpdated?.({
+        ...variant,
+
+        pending_image_file: file,
+
+        pending_image_preview:
+          temporaryPreview,
+
+        image_url:
+          temporaryPreview,
+      });
+
+      return;
+    }
+
+
+    try {
+      setUploading(true);
+
+      const formData =
+        new FormData();
+
+      formData.append(
+        "image",
+        file
+      );
+
+      const prefix =
+        context === "vendor"
+          ? "/vendor"
+          : "/admin";
+
+      const response =
+        await api.post(
+          `${prefix}/products/${productId}/variants/${variant.id}/image`,
+          formData
+        );
+
+      const updatedVariant =
+        response.data?.variant || {};
+
+      const serverImage =
+        updatedVariant.image_url ||
+        temporaryPreview;
+
+      setPreview(
+        serverImage
+      );
+
+      onUpdated?.({
+        ...variant,
+        ...updatedVariant,
+
+        pending_image_file: null,
+
+        pending_image_preview: null,
+
+        image_url:
+          serverImage,
+      });
+
 
       if (
-        !productId ||
-        !variant?.id
+        updatedVariant.image_url &&
+        localPreviewRef.current
       ) {
-
-        setError(
-          "Save the product and variant before uploading a variant image."
+        URL.revokeObjectURL(
+          localPreviewRef.current
         );
 
-        return;
-
+        localPreviewRef.current =
+          null;
       }
 
-
-      /*
-      |--------------------------------------------------------------------------
-      | VALIDATION
-      |--------------------------------------------------------------------------
-      */
-
-      const validationError =
-        validateFile(
-          file
-        );
-
+    } catch (error) {
+      console.error(
+        "Variant image upload error:",
+        error
+      );
 
       if (
-        validationError
+        error.response?.status === 422
       ) {
+        const errors =
+          error.response?.data?.errors ||
+          {};
+
+        const firstError =
+          Object.values(errors)
+            .flat()
+            .find(Boolean);
 
         setError(
-          validationError
+          firstError ||
+          "Unable to upload variant image."
         );
-
-        return;
-
+      } else {
+        setError(
+          error.response?.data?.message ||
+          "Unable to upload variant image."
+        );
       }
-
-
-      /*
-      |--------------------------------------------------------------------------
-      | LOCAL PREVIEW
-      |--------------------------------------------------------------------------
-      */
-
-      const temporaryPreview =
-        URL.createObjectURL(
-          file
-        );
 
 
       setPreview(
-        temporaryPreview
+        variant?.pending_image_preview ||
+        variant?.image_url ||
+        variant?.media?.image_url ||
+        variant?.media?.file_url ||
+        null
       );
 
 
-      setError("");
-
-      setUploading(true);
-
-
-      try {
-
-        /*
-        |--------------------------------------------------------------------------
-        | FORM DATA
-        |--------------------------------------------------------------------------
-        */
-
-        const formData =
-          new FormData();
-
-
-        formData.append(
-          "image",
-          file
-        );
-
-
-        /*
-        |--------------------------------------------------------------------------
-        | API REQUEST
-        |--------------------------------------------------------------------------
-        */
-
-        const response =
-          await api.post(
-
-            `/admin/products/${productId}/variants/${variant.id}/image`,
-
-            formData
-
-          );
-
-
-        /*
-        |--------------------------------------------------------------------------
-        | RESPONSE VARIANT
-        |--------------------------------------------------------------------------
-        */
-
-        const updatedVariant =
-          response.data
-            ?.variant ||
-          {};
-
-
-        /*
-        |--------------------------------------------------------------------------
-        | SERVER IMAGE
-        |--------------------------------------------------------------------------
-        */
-
-        const serverImage =
-          updatedVariant
-            ?.image_url ||
-          temporaryPreview;
-
-
-        setPreview(
-          serverImage
-        );
-
-
-        /*
-        |--------------------------------------------------------------------------
-        | UPDATE PARENT STATE
-        |--------------------------------------------------------------------------
-        */
-
-        onUpdated?.({
-
-          ...variant,
-
-          ...updatedVariant,
-
-          image_url:
-            serverImage,
-
-        });
-
-
-      } catch (error) {
-
-        console.error(
-          "Variant image upload error:",
-          error
-        );
-
-
-        /*
-        |--------------------------------------------------------------------------
-        | VALIDATION ERROR
-        |--------------------------------------------------------------------------
-        */
-
-        if (
-          error.response
-            ?.status === 422
-        ) {
-
-          const errors =
-            error.response
-              ?.data
-              ?.errors ||
-            {};
-
-
-          const firstError =
-            Object.values(
-              errors
-            )
-              .flat()
-              .find(
-                Boolean
-              );
-
-
-          setError(
-            firstError ||
-            "Unable to upload variant image."
-          );
-
-        } else {
-
-          setError(
-            error.response
-              ?.data
-              ?.message ||
-            "Unable to upload variant image."
-          );
-
-        }
-
-
-        /*
-        |--------------------------------------------------------------------------
-        | RESTORE OLD IMAGE
-        |--------------------------------------------------------------------------
-        */
-
-        setPreview(
-          variant?.image_url ||
-          variant?.media
-            ?.image_url ||
-          variant?.media
-            ?.file_url ||
-          null
-        );
-
-
-      } finally {
-
-        setUploading(
-          false
-        );
-
-
+      if (localPreviewRef.current) {
         URL.revokeObjectURL(
-          temporaryPreview
+          localPreviewRef.current
         );
 
+        localPreviewRef.current =
+          null;
       }
 
-    };
+    } finally {
+      setUploading(false);
+    }
+  };
 
-
-  /*
-  |--------------------------------------------------------------------------
-  | UI
-  |--------------------------------------------------------------------------
-  */
 
   return (
-
-    <div
-      className={`
-        ${className}
-      `}
-    >
-
-      {/* =====================================================
-          IMAGE BOX
-      ====================================================== */}
-
+    <div className={className}>
       <button
         type="button"
-
-        onClick={
-          openFilePicker
-        }
-
-        disabled={
-          uploading ||
-          !canUpload
-        }
-
+        onClick={openFilePicker}
+        disabled={uploading}
         title={
           preview
             ? "Change variant image"
-            : "Upload variant image"
+            : "Select variant image"
         }
-
         className="
           group
-
           relative
-
-          w-[64px]
-          h-[64px]
-
-          shrink-0
-
-          overflow-hidden
-
-          rounded-[10px]
-
-          border
-          border-[#dedfe3]
-
-          bg-[#f7f7f8]
-
           flex
+          h-[64px]
+          w-[64px]
+          shrink-0
           items-center
           justify-center
-
+          overflow-hidden
+          rounded-[10px]
+          border
+          border-[#dedfe3]
+          bg-[#f7f7f8]
           transition-all
-
           hover:border-[#b7b9bf]
           hover:bg-[#f3f4f6]
-
           disabled:cursor-not-allowed
           disabled:opacity-60
         "
       >
-
-        {/* =================================================
-            IMAGE EXISTS
-        ================================================== */}
-
         {preview ? (
-
           <>
             <img
-              src={
-                preview
-              }
-
+              src={preview}
               alt={
                 variant?.title ||
                 variant?.name ||
                 "Variant"
               }
-
               className="
-                w-full
                 h-full
-
+                w-full
                 object-contain
-
                 p-[5px]
               "
             />
 
-
-            {/* HOVER OVERLAY */}
-
             {!uploading && (
-
               <div
                 className="
                   absolute
                   inset-0
-
-                  bg-black/45
-
-                  opacity-0
-
-                  group-hover:opacity-100
-
                   flex
                   items-center
                   justify-center
-
+                  bg-black/45
+                  opacity-0
                   transition-opacity
+                  group-hover:opacity-100
                 "
               >
-
                 <RefreshCw
                   size={18}
-
-                  className="
-                    text-white
-                  "
+                  className="text-white"
                 />
-
               </div>
-
             )}
-
           </>
-
         ) : (
-
-          /* =================================================
-             NO IMAGE
-          ================================================== */
-
           <div
             className="
               flex
               flex-col
               items-center
               justify-center
-
               gap-[3px]
-
               text-[#777]
             "
           >
-
             <ImagePlus
               size={20}
-
               strokeWidth={1.7}
             />
 
@@ -597,127 +359,73 @@ const VariantImageUploader = ({
             >
               Image
             </span>
-
           </div>
-
         )}
 
 
-        {/* =================================================
-            UPLOADING
-        ================================================== */}
-
         {uploading && (
-
           <div
             className="
               absolute
               inset-0
-
-              bg-white/85
-
               flex
               items-center
               justify-center
+              bg-white/85
             "
           >
-
             <LoaderCircle
               size={20}
-
               className="
                 animate-spin
-
                 text-[#2065D1]
               "
             />
-
           </div>
-
         )}
-
       </button>
 
 
-      {/* =====================================================
-          HIDDEN INPUT
-      ====================================================== */}
-
       <input
-        ref={
-          fileInputRef
-        }
-
+        ref={fileInputRef}
         type="file"
-
-        accept="
-          image/jpeg,
-          image/jpg,
-          image/png,
-          image/webp
-        "
-
-        onChange={
-          handleFileChange
-        }
-
-        className="
-          hidden
-        "
+        accept="image/jpeg,image/jpg,image/png,image/webp"
+        onChange={handleFileChange}
+        className="hidden"
       />
 
 
-      {/* =====================================================
-          ERROR
-      ====================================================== */}
-
       {error && (
-
         <p
           className="
             mt-[5px]
-
             max-w-[180px]
-
             text-[10px]
             leading-[1.35]
-
             text-red-500
           "
         >
           {error}
         </p>
-
       )}
 
 
-      {/* =====================================================
-          UNSAVED VARIANT
-      ====================================================== */}
-
-      {!canUpload && (
-
-        <p
-          className="
-            mt-[5px]
-
-            max-w-[180px]
-
-            text-[10px]
-            leading-[1.35]
-
-            text-[#999]
-          "
-        >
-          Save variant first to add an image.
-        </p>
-
-      )}
-
+      {!isSavedVariant &&
+        preview && (
+          <p
+            className="
+              mt-[5px]
+              max-w-[180px]
+              text-[9px]
+              leading-[1.35]
+              text-[#28a36a]
+            "
+          >
+            Image selected. It will upload when you save the product.
+          </p>
+        )}
     </div>
-
   );
-
 };
 
 
