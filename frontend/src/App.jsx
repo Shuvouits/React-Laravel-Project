@@ -107,6 +107,7 @@ import VendorProducts from "./pages/vendor/product/VendorProducts";
 import VendorProductCreate from "./pages/vendor/product/VendorProductCreate";
 import VendorEditProduct from "./pages/vendor/product/VendorEditProduct";
 import VendorInventory from "./pages/vendor/inventory/VendorInventory";
+import VendorLocations from "./pages/vendor/locations/VendorLocations";
 
 
 const Home = () => {
@@ -257,6 +258,8 @@ const App = () => {
                         <Route path="products/:id/edit" element={<VendorEditProduct />} />
 
                         <Route path="products/inventory" element={<VendorInventory />} />
+
+                        <Route path="products/locations" element={<VendorLocations />} />
 
 
                     </Route>

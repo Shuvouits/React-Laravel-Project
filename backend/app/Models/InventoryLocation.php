@@ -3,11 +3,13 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class InventoryLocation extends Model
 {
     protected $fillable = [
+        'vendor_id',
         'name',
         'code',
         'phone',
@@ -18,14 +20,28 @@ class InventoryLocation extends Model
         'state',
         'postal_code',
         'country',
+        'pickup_enabled',
+        'shipping_enabled',
+        'shipping_priority',
         'is_default',
         'is_active',
     ];
 
     protected $casts = [
+        'pickup_enabled' => 'boolean',
+        'shipping_enabled' => 'boolean',
+        'shipping_priority' => 'integer',
         'is_default' => 'boolean',
         'is_active' => 'boolean',
     ];
+
+    public function vendor(): BelongsTo
+    {
+        return $this->belongsTo(
+            User::class,
+            'vendor_id'
+        );
+    }
 
     public function inventoryLevels(): HasMany
     {

@@ -11,6 +11,11 @@ return new class extends Migration
         Schema::create('inventory_locations', function (Blueprint $table) {
             $table->id();
 
+            $table->foreignId('vendor_id')
+                ->nullable()
+                ->constrained('users')
+                ->cascadeOnDelete();
+
             $table->string('name');
             $table->string('code')->unique();
 
@@ -25,10 +30,18 @@ return new class extends Migration
             $table->string('postal_code')->nullable();
             $table->string('country')->nullable();
 
+            $table->boolean('pickup_enabled')->default(false);
+            $table->boolean('shipping_enabled')->default(true);
+
+            $table->unsignedInteger('shipping_priority')->default(0);
+
             $table->boolean('is_default')->default(false);
             $table->boolean('is_active')->default(true);
 
             $table->timestamps();
+
+            $table->index('vendor_id');
+            $table->index(['vendor_id', 'is_active']);
 
             $table->index('is_active');
             $table->index('is_default');

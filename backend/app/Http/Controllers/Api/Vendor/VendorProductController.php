@@ -7,6 +7,10 @@ use App\Models\Product;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+
+use App\Models\InventoryLevel;
+use App\Models\InventoryLocation;
+
 use Illuminate\Support\Facades\File;
 
 class VendorProductController extends Controller
@@ -206,13 +210,29 @@ class VendorProductController extends Controller
     }
 
 
+
     public function show(
     Request $request,
     $id
 ): JsonResponse {
+    $user = $request->user();
+
+    if (
+        ! $user ||
+        $user->role !== 'vendor'
+    ) {
+        abort(403);
+    }
+
     $product = Product::query()
-        ->where('source', 'vendor')
-        ->where('created_by', $request->user()->id)
+        ->where(
+            'source',
+            'vendor'
+        )
+        ->where(
+            'created_by',
+            $user->id
+        )
         ->with([
             'category',
             'brand',
@@ -225,201 +245,398 @@ class VendorProductController extends Controller
         ])
         ->findOrFail($id);
 
+    /*
+    |--------------------------------------------------------------------------
+    | INVENTORY BY LOCATION
+    |--------------------------------------------------------------------------
+    */
+
+    $vendorLocationIds =
+        InventoryLocation::query()
+            ->where(
+                'vendor_id',
+                $user->id
+            )
+            ->pluck('id');
+
+    $inventoryByLocation =
+        InventoryLevel::query()
+            ->where(
+                'product_id',
+                $product->id
+            )
+            ->whereNull(
+                'variant_id'
+            )
+            ->whereIn(
+                'location_id',
+                $vendorLocationIds
+            )
+            ->get([
+                'location_id',
+                'on_hand',
+            ])
+            ->map(
+                fn ($item) => [
+                    'location_id' =>
+                        (int)
+                        $item->location_id,
+
+                    'quantity' =>
+                        (int)
+                        $item->on_hand,
+                ]
+            )
+            ->values();
+
     return response()->json([
         'status' => true,
+
         'product' => [
-            'id' => $product->id,
+            'id' =>
+                $product->id,
 
-            'title' => $product->title,
-            'slug' => $product->slug,
-            'summary' => $product->summary,
-            'description' => $product->description,
-            'specifications' => $product->specifications,
+            'title' =>
+                $product->title,
 
-            'status' => $product->status,
-            'is_featured' => (bool) $product->is_featured,
+            'slug' =>
+                $product->slug,
 
-            'online_store' => (bool) $product->online_store,
-            'point_of_sale' => (bool) $product->point_of_sale,
+            'summary' =>
+                $product->summary,
 
-            'category_id' => $product->category_id,
-            'category' => $product->category,
+            'description' =>
+                $product->description,
 
-            'brand_id' => $product->brand_id,
-            'brand' => $product->brand,
+            'specifications' =>
+                $product->specifications,
 
-            'type' => $product->type,
-            'tags' => $product->tags ?? [],
+            'status' =>
+                $product->status,
 
-            'collection_ids' => $product
-                ->collections
-                ->pluck('id')
-                ->map(fn ($id) => (int) $id)
-                ->values(),
+            'is_featured' =>
+                (bool)
+                $product->is_featured,
 
-            'collections' => $product
-                ->collections
-                ->map(fn ($collection) => [
-                    'id' => $collection->id,
-                    'title' => $collection->title,
-                    'slug' => $collection->slug,
-                ])
-                ->values(),
+            'online_store' =>
+                (bool)
+                $product->online_store,
 
-            'source' => $product->source,
-            'created_by' => $product->created_by,
+            'point_of_sale' =>
+                (bool)
+                $product->point_of_sale,
 
-            'product_format' => $product->product_format,
+            'category_id' =>
+                $product->category_id,
 
-            'preorder_enabled' => (bool) $product->preorder_enabled,
+            'category' =>
+                $product->category,
 
-            'price' => $product->price,
-            'compare_at_price' => $product->compare_at_price,
-            'cost_per_item' => $product->cost_per_item,
+            'brand_id' =>
+                $product->brand_id,
 
-            'sku' => $product->sku,
-            'barcode' => $product->barcode,
-            'quantity' => (int) $product->quantity,
+            'brand' =>
+                $product->brand,
 
-            'track_quantity' => (bool) $product->track_quantity,
+            'type' =>
+                $product->type,
+
+            'tags' =>
+                $product->tags ?? [],
+
+            'collection_ids' =>
+                $product
+                    ->collections
+                    ->pluck('id')
+                    ->map(
+                        fn ($id) =>
+                            (int) $id
+                    )
+                    ->values(),
+
+            'collections' =>
+                $product
+                    ->collections
+                    ->map(
+                        fn ($collection) => [
+                            'id' =>
+                                $collection->id,
+
+                            'title' =>
+                                $collection->title,
+
+                            'slug' =>
+                                $collection->slug,
+                        ]
+                    )
+                    ->values(),
+
+            'source' =>
+                $product->source,
+
+            'created_by' =>
+                $product->created_by,
+
+            'product_format' =>
+                $product->product_format,
+
+            'preorder_enabled' =>
+                (bool)
+                $product->preorder_enabled,
+
+            'price' =>
+                $product->price,
+
+            'compare_at_price' =>
+                $product->compare_at_price,
+
+            'cost_per_item' =>
+                $product->cost_per_item,
+
+            'sku' =>
+                $product->sku,
+
+            'barcode' =>
+                $product->barcode,
+
+            'quantity' =>
+                (int)
+                $product->quantity,
+
+            'inventory_by_location' =>
+                $inventoryByLocation,
+
+            'track_quantity' =>
+                (bool)
+                $product->track_quantity,
 
             'continue_selling_when_out_of_stock' =>
-                (bool) $product->continue_selling_when_out_of_stock,
+                (bool)
+                $product
+                    ->continue_selling_when_out_of_stock,
 
-            'weight' => $product->weight,
-            'weight_unit' => $product->weight_unit,
-            'country_of_origin' => $product->country_of_origin,
-            'hs_code' => $product->hs_code,
-            'customs_description' => $product->customs_description,
+            'weight' =>
+                $product->weight,
 
-            'seo_title' => $product->seo_title,
-            'seo_description' => $product->seo_description,
+            'weight_unit' =>
+                $product->weight_unit,
 
-            'media' => $product
-                ->media
-                ->map(fn ($media) => [
-                    'id' => $media->id,
-                    'file_path' => $media->file_path,
-                    'url' => asset($media->file_path),
-                    'media_type' => $media->media_type,
-                    'alt_text' => $media->alt_text,
-                    'is_cover' => (bool) $media->is_cover,
-                    'sort_order' => (int) $media->sort_order,
-                ])
-                ->values(),
+            'country_of_origin' =>
+                $product->country_of_origin,
 
-            'options' => $product
-                ->options
-                ->map(fn ($option) => [
-                    'id' => $option->id,
-                    'global_variant_id' => $option->global_variant_id,
-                    'name' => $option->name,
-                    'sort_order' => (int) $option->sort_order,
+            'hs_code' =>
+                $product->hs_code,
 
-                    'visual_type' =>
-                        $option->globalVariant->visual_type
-                        ?? 'rectangle',
+            'customs_description' =>
+                $product->customs_description,
 
-                    'values' => $option
-                        ->values
-                        ->map(fn ($value) => [
-                            'id' => $value->id,
+            'seo_title' =>
+                $product->seo_title,
 
-                            'global_variant_value_id' =>
-                                $value->global_variant_value_id,
+            'seo_description' =>
+                $product->seo_description,
 
-                            'value' => $value->value,
-                            'color_code' => $value->color_code,
-                            'sort_order' => (int) $value->sort_order,
-                        ])
-                        ->values(),
-                ])
-                ->values(),
+            'media' =>
+                $product
+                    ->media
+                    ->map(
+                        fn ($media) => [
+                            'id' =>
+                                $media->id,
 
-            'variants' => $product
-                ->variants
-                ->map(function ($variant) {
-                    return [
-                        'id' => $variant->id,
-                        'title' => $variant->title,
+                            'file_path' =>
+                                $media->file_path,
 
-                        'combination_key' =>
-                            $variant->combination_key,
+                            'url' =>
+                                asset(
+                                    $media->file_path
+                                ),
 
-                        'product_media_id' =>
-                            $variant->product_media_id,
+                            'media_type' =>
+                                $media->media_type,
 
-                        'image_url' =>
-                            $variant->media
-                                ? asset(
-                                    $variant->media->file_path
-                                )
-                                : null,
+                            'alt_text' =>
+                                $media->alt_text,
 
-                        'price' => $variant->price,
+                            'is_cover' =>
+                                (bool)
+                                $media->is_cover,
 
-                        'compare_at_price' =>
-                            $variant->compare_at_price,
+                            'sort_order' =>
+                                (int)
+                                $media->sort_order,
+                        ]
+                    )
+                    ->values(),
 
-                        'cost_per_item' =>
-                            $variant->cost_per_item,
+            'options' =>
+                $product
+                    ->options
+                    ->map(
+                        fn ($option) => [
+                            'id' =>
+                                $option->id,
 
-                        'sku' => $variant->sku,
-                        'barcode' => $variant->barcode,
+                            'global_variant_id' =>
+                                $option
+                                    ->global_variant_id,
 
-                        'quantity' =>
-                            (int) $variant->quantity,
+                            'name' =>
+                                $option->name,
 
-                        'is_active' =>
-                            (bool) $variant->is_active,
+                            'sort_order' =>
+                                (int)
+                                $option->sort_order,
 
-                        'sort_order' =>
-                            (int) $variant->sort_order,
+                            'visual_type' =>
+                                $option
+                                    ->globalVariant
+                                    ->visual_type
+                                ?? 'rectangle',
 
-                        'global_variant_value_ids' =>
-                            $variant
-                                ->optionValues
-                                ->pluck(
-                                    'global_variant_value_id'
-                                )
-                                ->filter()
-                                ->map(
-                                    fn ($id) =>
-                                        (int) $id
-                                )
-                                ->values(),
+                            'values' =>
+                                $option
+                                    ->values
+                                    ->map(
+                                        fn ($value) => [
+                                            'id' =>
+                                                $value->id,
 
-                        'option_values' =>
-                            $variant
-                                ->optionValues
-                                ->map(
-                                    fn ($value) => [
-                                        'id' => $value->id,
+                                            'global_variant_value_id' =>
+                                                $value
+                                                    ->global_variant_value_id,
 
-                                        'global_variant_value_id' =>
-                                            $value->global_variant_value_id,
+                                            'value' =>
+                                                $value->value,
 
-                                        'value' =>
-                                            $value->value,
+                                            'color_code' =>
+                                                $value->color_code,
 
-                                        'color_code' =>
-                                            $value->color_code,
+                                            'sort_order' =>
+                                                (int)
+                                                $value
+                                                    ->sort_order,
+                                        ]
+                                    )
+                                    ->values(),
+                        ]
+                    )
+                    ->values(),
 
-                                        'option_name' =>
-                                            $value->option->name
-                                            ?? null,
-                                    ]
-                                )
-                                ->values(),
-                    ];
-                })
-                ->values(),
+            'variants' =>
+                $product
+                    ->variants
+                    ->map(
+                        function ($variant) {
+                            return [
+                                'id' =>
+                                    $variant->id,
 
-            'created_at' => $product->created_at,
-            'updated_at' => $product->updated_at,
+                                'title' =>
+                                    $variant->title,
+
+                                'combination_key' =>
+                                    $variant
+                                        ->combination_key,
+
+                                'product_media_id' =>
+                                    $variant
+                                        ->product_media_id,
+
+                                'image_url' =>
+                                    $variant->media
+                                        ? asset(
+                                            $variant
+                                                ->media
+                                                ->file_path
+                                        )
+                                        : null,
+
+                                'price' =>
+                                    $variant->price,
+
+                                'compare_at_price' =>
+                                    $variant
+                                        ->compare_at_price,
+
+                                'cost_per_item' =>
+                                    $variant
+                                        ->cost_per_item,
+
+                                'sku' =>
+                                    $variant->sku,
+
+                                'barcode' =>
+                                    $variant->barcode,
+
+                                'quantity' =>
+                                    (int)
+                                    $variant->quantity,
+
+                                'is_active' =>
+                                    (bool)
+                                    $variant->is_active,
+
+                                'sort_order' =>
+                                    (int)
+                                    $variant->sort_order,
+
+                                'global_variant_value_ids' =>
+                                    $variant
+                                        ->optionValues
+                                        ->pluck(
+                                            'global_variant_value_id'
+                                        )
+                                        ->filter()
+                                        ->map(
+                                            fn ($id) =>
+                                                (int) $id
+                                        )
+                                        ->values(),
+
+                                'option_values' =>
+                                    $variant
+                                        ->optionValues
+                                        ->map(
+                                            fn ($value) => [
+                                                'id' =>
+                                                    $value->id,
+
+                                                'global_variant_value_id' =>
+                                                    $value
+                                                        ->global_variant_value_id,
+
+                                                'value' =>
+                                                    $value->value,
+
+                                                'color_code' =>
+                                                    $value->color_code,
+
+                                                'option_name' =>
+                                                    $value
+                                                        ->option
+                                                        ->name
+                                                    ?? null,
+                                            ]
+                                        )
+                                        ->values(),
+                            ];
+                        }
+                    )
+                    ->values(),
+
+            'created_at' =>
+                $product->created_at,
+
+            'updated_at' =>
+                $product->updated_at,
         ],
     ]);
 }
+
+
+
+
 
     public function destroy(
         Request $request,

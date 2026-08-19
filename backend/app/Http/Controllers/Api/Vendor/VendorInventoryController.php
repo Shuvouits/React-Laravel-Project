@@ -12,46 +12,31 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
-
 class VendorInventoryController extends Controller
 {
-    public function index(
-        Request $request
-    ): JsonResponse {
+    public function index(Request $request): JsonResponse
+    {
         $user = $request->user();
 
         $search = trim(
-            (string) $request->query(
-                'search',
-                ''
-            )
+            (string) $request->query('search', '')
         );
 
         $tab = strtolower(
             trim(
-                (string) $request->query(
-                    'tab',
-                    'all'
-                )
+                (string) $request->query('tab', 'all')
             )
         );
 
-        $locationId =
-            $request->query(
-                'location_id'
-            );
+        $locationId = $request->query('location_id');
 
         $perPage = min(
             max(
-                (int) $request->query(
-                    'per_page',
-                    15
-                ),
+                (int) $request->query('per_page', 15),
                 1
             ),
             100
         );
-
 
         $allowedTabs = [
             'all',
@@ -60,16 +45,24 @@ class VendorInventoryController extends Controller
             'out_of_stock',
         ];
 
-        if (
-            ! in_array(
-                $tab,
-                $allowedTabs,
-                true
-            )
-        ) {
+        if (!in_array($tab, $allowedTabs, true)) {
             $tab = 'all';
         }
 
+        /*
+        |--------------------------------------------------------------------------
+        | VENDOR LOCATIONS
+        |--------------------------------------------------------------------------
+        */
+
+        $hasVendorLocations = InventoryLocation::query()
+            ->where('vendor_id', $user->id)
+            ->exists();
+
+        $vendorLocationIds = InventoryLocation::query()
+            ->where('vendor_id', $user->id)
+            ->where('is_active', true)
+            ->pluck('id');
 
         /*
         |--------------------------------------------------------------------------
@@ -104,10 +97,9 @@ class VendorInventoryController extends Controller
                 'COUNT(DISTINCT location_id) as locations_count'
             );
 
-
         /*
         |--------------------------------------------------------------------------
-        | VENDOR OWNERSHIP
+        | VENDOR PRODUCT OWNERSHIP
         |--------------------------------------------------------------------------
         */
 
@@ -115,31 +107,55 @@ class VendorInventoryController extends Controller
             'product',
             function ($productQuery) use ($user) {
                 $productQuery
-                    ->where(
-                        'source',
-                        'vendor'
-                    )
-                    ->where(
-                        'created_by',
-                        $user->id
-                    );
+                    ->where('source', 'vendor')
+                    ->where('created_by', $user->id);
             }
         );
 
+        /*
+        |--------------------------------------------------------------------------
+        | VENDOR LOCATION OWNERSHIP
+        |--------------------------------------------------------------------------
+        |
+        | Before the vendor creates their first location, existing inventory
+        | can continue using the previous global location temporarily.
+        |
+        | Once at least one vendor location exists, only active locations
+        | belonging to this vendor are included.
+        |
+        */
+
+        if ($hasVendorLocations) {
+            $query->whereIn(
+                'location_id',
+                $vendorLocationIds
+            );
+        }
 
         /*
         |--------------------------------------------------------------------------
-        | LOCATION
+        | LOCATION FILTER
         |--------------------------------------------------------------------------
         */
 
         if ($locationId) {
+            if (
+                !$vendorLocationIds->contains(
+                    (int) $locationId
+                )
+            ) {
+                return response()->json([
+                    'success' => false,
+                    'message' =>
+                        'The selected location does not belong to this vendor or is inactive.',
+                ], 422);
+            }
+
             $query->where(
                 'location_id',
-                $locationId
+                (int) $locationId
             );
         }
-
 
         /*
         |--------------------------------------------------------------------------
@@ -202,7 +218,6 @@ class VendorInventoryController extends Controller
             );
         }
 
-
         /*
         |--------------------------------------------------------------------------
         | GROUP
@@ -213,7 +228,6 @@ class VendorInventoryController extends Controller
             'product_id',
             'variant_id',
         ]);
-
 
         /*
         |--------------------------------------------------------------------------
@@ -249,7 +263,6 @@ class VendorInventoryController extends Controller
             );
         }
 
-
         /*
         |--------------------------------------------------------------------------
         | PAGINATION
@@ -257,13 +270,8 @@ class VendorInventoryController extends Controller
         */
 
         $inventory = $query
-            ->orderBy(
-                'product_id'
-            )
-            ->paginate(
-                $perPage
-            );
-
+            ->orderBy('product_id')
+            ->paginate($perPage);
 
         /*
         |--------------------------------------------------------------------------
@@ -274,9 +282,7 @@ class VendorInventoryController extends Controller
         $productIds = collect(
             $inventory->items()
         )
-            ->pluck(
-                'product_id'
-            )
+            ->pluck('product_id')
             ->filter()
             ->unique()
             ->values();
@@ -284,63 +290,32 @@ class VendorInventoryController extends Controller
         $variantIds = collect(
             $inventory->items()
         )
-            ->pluck(
-                'variant_id'
-            )
+            ->pluck('variant_id')
             ->filter()
             ->unique()
             ->values();
 
-
         $products = Product::query()
-            ->with(
-                'media'
-            )
-            ->where(
-                'source',
-                'vendor'
-            )
-            ->where(
-                'created_by',
-                $user->id
-            )
-            ->whereIn(
-                'id',
-                $productIds
-            )
+            ->with('media')
+            ->where('source', 'vendor')
+            ->where('created_by', $user->id)
+            ->whereIn('id', $productIds)
             ->get()
-            ->keyBy(
-                'id'
-            );
-
+            ->keyBy('id');
 
         $variants = ProductVariant::query()
-            ->with(
-                'media'
-            )
-            ->whereIn(
-                'id',
-                $variantIds
-            )
+            ->with('media')
+            ->whereIn('id', $variantIds)
             ->whereHas(
                 'product',
                 function ($productQuery) use ($user) {
                     $productQuery
-                        ->where(
-                            'source',
-                            'vendor'
-                        )
-                        ->where(
-                            'created_by',
-                            $user->id
-                        );
+                        ->where('source', 'vendor')
+                        ->where('created_by', $user->id);
                 }
             )
             ->get()
-            ->keyBy(
-                'id'
-            );
-
+            ->keyBy('id');
 
         /*
         |--------------------------------------------------------------------------
@@ -355,26 +330,19 @@ class VendorInventoryController extends Controller
                     $products,
                     $variants
                 ) {
-                    $product =
-                        $products->get(
-                            $row->product_id
-                        );
+                    $product = $products->get(
+                        $row->product_id
+                    );
 
-                    $variant =
-                        $row->variant_id
-                            ? $variants->get(
-                                $row->variant_id
-                            )
-                            : null;
+                    $variant = $row->variant_id
+                        ? $variants->get(
+                            $row->variant_id
+                        )
+                        : null;
 
-                    $onHand =
-                        (int) $row->on_hand;
-
-                    $committed =
-                        (int) $row->committed;
-
-                    $unavailable =
-                        (int) $row->unavailable;
+                    $onHand = (int) $row->on_hand;
+                    $committed = (int) $row->committed;
+                    $unavailable = (int) $row->unavailable;
 
                     $available = max(
                         0,
@@ -393,13 +361,11 @@ class VendorInventoryController extends Controller
                         ?? true
                     );
 
-                    $status =
-                        $this->getInventoryStatus(
-                            $available,
-                            $threshold,
-                            $trackQuantity
-                        );
-
+                    $status = $this->getInventoryStatus(
+                        $available,
+                        $threshold,
+                        $trackQuantity
+                    );
 
                     return [
                         'product_id' =>
@@ -466,7 +432,6 @@ class VendorInventoryController extends Controller
                 }
             );
 
-
         /*
         |--------------------------------------------------------------------------
         | RESPONSE
@@ -485,7 +450,9 @@ class VendorInventoryController extends Controller
                 $inventory,
 
             'locations' =>
-                $this->getLocations(),
+                $this->getLocations(
+                    $user->id
+                ),
 
             'filters' => [
                 'tab' =>
@@ -500,7 +467,6 @@ class VendorInventoryController extends Controller
         ]);
     }
 
-
     /*
     |--------------------------------------------------------------------------
     | STATS
@@ -510,107 +476,114 @@ class VendorInventoryController extends Controller
     private function getInventoryStats(
         int $userId
     ): array {
-        $summaryQuery =
-            InventoryLevel::query()
-                ->select([
-                    'product_id',
-                    'variant_id',
-                ])
-                ->selectRaw(
-                    'SUM(on_hand) as on_hand'
-                )
-                ->selectRaw(
-                    'SUM(committed) as committed'
-                )
-                ->selectRaw(
-                    'SUM(unavailable) as unavailable'
-                )
-                ->selectRaw(
-                    'MAX(low_stock_threshold) as low_stock_threshold'
-                )
-                ->selectRaw(
-                    'MAX(track_quantity) as track_quantity'
-                )
-                ->selectRaw(
-                    '
+        $hasVendorLocations = InventoryLocation::query()
+            ->where('vendor_id', $userId)
+            ->exists();
+
+        $vendorLocationIds = InventoryLocation::query()
+            ->where('vendor_id', $userId)
+            ->where('is_active', true)
+            ->pluck('id');
+
+        $summaryQuery = InventoryLevel::query()
+            ->select([
+                'product_id',
+                'variant_id',
+            ])
+            ->selectRaw(
+                'SUM(on_hand) as on_hand'
+            )
+            ->selectRaw(
+                'SUM(committed) as committed'
+            )
+            ->selectRaw(
+                'SUM(unavailable) as unavailable'
+            )
+            ->selectRaw(
+                'MAX(low_stock_threshold) as low_stock_threshold'
+            )
+            ->selectRaw(
+                'MAX(track_quantity) as track_quantity'
+            )
+            ->selectRaw(
+                '
+                CASE
+                    WHEN SUM(on_hand)
+                        > SUM(committed) + SUM(unavailable)
+                    THEN
+                        SUM(on_hand)
+                        - SUM(committed)
+                        - SUM(unavailable)
+                    ELSE 0
+                END as available
+                '
+            )
+            ->whereHas(
+                'product',
+                function ($productQuery) use ($userId) {
+                    $productQuery
+                        ->where('source', 'vendor')
+                        ->where('created_by', $userId);
+                }
+            );
+
+        if ($hasVendorLocations) {
+            $summaryQuery->whereIn(
+                'location_id',
+                $vendorLocationIds
+            );
+        }
+
+        $summaryQuery->groupBy([
+            'product_id',
+            'variant_id',
+        ]);
+
+        $summary = DB::query()
+            ->fromSub(
+                $summaryQuery,
+                'inventory_summary'
+            )
+            ->selectRaw(
+                '
+                SUM(
                     CASE
-                        WHEN SUM(on_hand)
-                            > SUM(committed) + SUM(unavailable)
-                        THEN
-                            SUM(on_hand)
-                            - SUM(committed)
-                            - SUM(unavailable)
+                        WHEN track_quantity = 1
+                        THEN 1
                         ELSE 0
-                    END as available
-                    '
-                )
-                ->whereHas(
-                    'product',
-                    function ($productQuery) use ($userId) {
-                        $productQuery
-                            ->where(
-                                'source',
-                                'vendor'
-                            )
-                            ->where(
-                                'created_by',
-                                $userId
-                            );
-                    }
-                )
-                ->groupBy([
-                    'product_id',
-                    'variant_id',
-                ]);
-
-
-        $summary =
-            DB::query()
-                ->fromSub(
-                    $summaryQuery,
-                    'inventory_summary'
-                )
-                ->selectRaw(
-                    '
-                    SUM(
-                        CASE
-                            WHEN track_quantity = 1
-                            THEN 1
-                            ELSE 0
-                        END
-                    ) as tracked_skus
-                    '
-                )
-                ->selectRaw(
-                    '
-                    SUM(
-                        CASE
-                            WHEN track_quantity = 1
-                                AND available > 0
-                                AND available <= low_stock_threshold
-                            THEN 1
-                            ELSE 0
-                        END
-                    ) as low_stock_skus
-                    '
-                )
-                ->selectRaw(
-                    '
-                    SUM(
-                        CASE
-                            WHEN track_quantity = 1
-                                AND available <= 0
-                            THEN 1
-                            ELSE 0
-                        END
-                    ) as out_of_stock_skus
-                    '
-                )
-                ->selectRaw(
-                    'SUM(on_hand) as on_hand_units'
-                )
-                ->first();
-
+                    END
+                ) as tracked_skus
+                '
+            )
+            ->selectRaw(
+                '
+                SUM(
+                    CASE
+                        WHEN track_quantity = 1
+                            AND available > 0
+                            AND available <= low_stock_threshold
+                        THEN 1
+                        ELSE 0
+                    END
+                ) as low_stock_skus
+                '
+            )
+            ->selectRaw(
+                '
+                SUM(
+                    CASE
+                        WHEN track_quantity = 1
+                            AND available <= 0
+                        THEN 1
+                        ELSE 0
+                    END
+                ) as out_of_stock_skus
+                '
+            )
+            ->selectRaw(
+                'SUM(on_hand) as on_hand_units'
+            )
+            ->first();
 
         return [
             'tracked_skus' =>
@@ -640,6 +613,10 @@ class VendorInventoryController extends Controller
             'active_locations' =>
                 InventoryLocation::query()
                     ->where(
+                        'vendor_id',
+                        $userId
+                    )
+                    ->where(
                         'is_active',
                         true
                     )
@@ -647,22 +624,29 @@ class VendorInventoryController extends Controller
         ];
     }
 
-
     /*
     |--------------------------------------------------------------------------
     | LOCATIONS
     |--------------------------------------------------------------------------
     */
 
-    private function getLocations()
-    {
+    private function getLocations(
+        int $userId
+    ) {
         return InventoryLocation::query()
+            ->where(
+                'vendor_id',
+                $userId
+            )
             ->where(
                 'is_active',
                 true
             )
             ->orderByDesc(
                 'is_default'
+            )
+            ->orderBy(
+                'shipping_priority'
             )
             ->orderBy(
                 'name'
@@ -672,9 +656,11 @@ class VendorInventoryController extends Controller
                 'name',
                 'code',
                 'is_default',
+                'pickup_enabled',
+                'shipping_enabled',
+                'shipping_priority',
             ]);
     }
-
 
     /*
     |--------------------------------------------------------------------------
@@ -687,7 +673,7 @@ class VendorInventoryController extends Controller
         int $threshold,
         bool $trackQuantity
     ): string {
-        if (! $trackQuantity) {
+        if (!$trackQuantity) {
             return 'not_tracked';
         }
 
@@ -701,7 +687,6 @@ class VendorInventoryController extends Controller
 
         return 'in_stock';
     }
-
 
     /*
     |--------------------------------------------------------------------------
@@ -723,26 +708,24 @@ class VendorInventoryController extends Controller
         }
 
         if (
-            ! $product ||
-            ! $product->media ||
+            !$product ||
+            !$product->media ||
             $product->media->isEmpty()
         ) {
             return null;
         }
 
-        $cover =
-            $product
-                ->media
-                ->firstWhere(
-                    'is_cover',
-                    true
-                );
+        $cover = $product
+            ->media
+            ->firstWhere(
+                'is_cover',
+                true
+            );
 
-        $media =
-            $cover
+        $media = $cover
             ?? $product->media->first();
 
-        if (! $media) {
+        if (!$media) {
             return null;
         }
 
@@ -750,7 +733,6 @@ class VendorInventoryController extends Controller
             $media->file_path
         );
     }
-
 
     /*
     |--------------------------------------------------------------------------
@@ -761,42 +743,39 @@ class VendorInventoryController extends Controller
     public function updateOnHand(
         Request $request
     ): JsonResponse {
-        $user =
-            $request->user();
+        $user = $request->user();
 
-        $validated =
-            $request->validate([
-                'location_id' => [
-                    'required',
-                    'integer',
-                    'exists:inventory_locations,id',
-                ],
+        $validated = $request->validate([
+            'location_id' => [
+                'required',
+                'integer',
+                'exists:inventory_locations,id',
+            ],
 
-                'product_id' => [
-                    'required',
-                    'integer',
-                    'exists:products,id',
-                ],
+            'product_id' => [
+                'required',
+                'integer',
+                'exists:products,id',
+            ],
 
-                'variant_id' => [
-                    'nullable',
-                    'integer',
-                    'exists:product_variants,id',
-                ],
+            'variant_id' => [
+                'nullable',
+                'integer',
+                'exists:product_variants,id',
+            ],
 
-                'on_hand' => [
-                    'required',
-                    'integer',
-                    'min:0',
-                ],
+            'on_hand' => [
+                'required',
+                'integer',
+                'min:0',
+            ],
 
-                'note' => [
-                    'nullable',
-                    'string',
-                    'max:500',
-                ],
-            ]);
-
+            'note' => [
+                'nullable',
+                'string',
+                'max:500',
+            ],
+        ]);
 
         /*
         |--------------------------------------------------------------------------
@@ -804,22 +783,18 @@ class VendorInventoryController extends Controller
         |--------------------------------------------------------------------------
         */
 
-        $product =
-            Product::query()
-                ->where(
-                    'source',
-                    'vendor'
-                )
-                ->where(
-                    'created_by',
-                    $user->id
-                )
-                ->findOrFail(
-                    $validated[
-                        'product_id'
-                    ]
-                );
-
+        $product = Product::query()
+            ->where(
+                'source',
+                'vendor'
+            )
+            ->where(
+                'created_by',
+                $user->id
+            )
+            ->findOrFail(
+                $validated['product_id']
+            );
 
         /*
         |--------------------------------------------------------------------------
@@ -828,62 +803,58 @@ class VendorInventoryController extends Controller
         */
 
         if (
-            ! empty(
-                $validated[
-                    'variant_id'
-                ]
+            !empty(
+                $validated['variant_id']
             )
         ) {
-            $variantExists =
-                ProductVariant::query()
-                    ->whereKey(
-                        $validated[
-                            'variant_id'
-                        ]
-                    )
-                    ->where(
-                        'product_id',
-                        $product->id
-                    )
-                    ->exists();
+            $variantExists = ProductVariant::query()
+                ->whereKey(
+                    $validated['variant_id']
+                )
+                ->where(
+                    'product_id',
+                    $product->id
+                )
+                ->exists();
 
-            if (! $variantExists) {
+            if (!$variantExists) {
                 return response()->json([
                     'success' => false,
+
                     'message' =>
                         'The selected variant does not belong to this product.',
                 ], 422);
             }
         }
 
-
         /*
         |--------------------------------------------------------------------------
-        | ACTIVE LOCATION
+        | LOCATION OWNERSHIP
         |--------------------------------------------------------------------------
         */
 
-        $locationExists =
-            InventoryLocation::query()
-                ->whereKey(
-                    $validated[
-                        'location_id'
-                    ]
-                )
-                ->where(
-                    'is_active',
-                    true
-                )
-                ->exists();
+        $locationExists = InventoryLocation::query()
+            ->whereKey(
+                $validated['location_id']
+            )
+            ->where(
+                'vendor_id',
+                $user->id
+            )
+            ->where(
+                'is_active',
+                true
+            )
+            ->exists();
 
-        if (! $locationExists) {
+        if (!$locationExists) {
             return response()->json([
                 'success' => false,
+
                 'message' =>
-                    'The selected inventory location is not active.',
+                    'The selected inventory location does not belong to this vendor or is inactive.',
             ], 422);
         }
-
 
         /*
         |--------------------------------------------------------------------------
@@ -891,125 +862,94 @@ class VendorInventoryController extends Controller
         |--------------------------------------------------------------------------
         */
 
-        $result =
-            DB::transaction(
-                function () use (
-                    $validated,
-                    $user
-                ) {
-                    $inventoryLevel =
-                        InventoryLevel::query()
-                            ->where(
-                                'location_id',
-                                $validated[
-                                    'location_id'
-                                ]
-                            )
-                            ->where(
-                                'product_id',
-                                $validated[
-                                    'product_id'
-                                ]
-                            )
-                            ->where(
-                                'variant_id',
-                                $validated[
-                                    'variant_id'
-                                ]
-                                ?? null
-                            )
-                            ->lockForUpdate()
-                            ->first();
+        $result = DB::transaction(
+            function () use (
+                $validated,
+                $user
+            ) {
+                $inventoryLevel = InventoryLevel::query()
+                    ->where(
+                        'location_id',
+                        $validated['location_id']
+                    )
+                    ->where(
+                        'product_id',
+                        $validated['product_id']
+                    )
+                    ->where(
+                        'variant_id',
+                        $validated['variant_id']
+                        ?? null
+                    )
+                    ->lockForUpdate()
+                    ->first();
 
-                    if (! $inventoryLevel) {
-                        return null;
-                    }
-
-
-                    $before =
-                        (int) $inventoryLevel
-                            ->on_hand;
-
-                    $after =
-                        (int) $validated[
-                            'on_hand'
-                        ];
-
-                    $change =
-                        $after -
-                        $before;
-
-
-                    if ($change !== 0) {
-                        $inventoryLevel->update([
-                            'on_hand' =>
-                                $after,
-                        ]);
-
-
-                        InventoryMovement::create([
-                            'location_id' =>
-                                $inventoryLevel
-                                    ->location_id,
-
-                            'product_id' =>
-                                $inventoryLevel
-                                    ->product_id,
-
-                            'variant_id' =>
-                                $inventoryLevel
-                                    ->variant_id,
-
-                            'type' =>
-                                'adjustment',
-
-                            'quantity_change' =>
-                                $change,
-
-                            'quantity_before' =>
-                                $before,
-
-                            'quantity_after' =>
-                                $after,
-
-                            'reference_type' =>
-                                'manual_adjustment',
-
-                            'reference_id' =>
-                                $inventoryLevel
-                                    ->id,
-
-                            'reason' =>
-                                'Vendor inventory adjustment',
-
-                            'note' =>
-                                $validated[
-                                    'note'
-                                ]
-                                ?? null,
-
-                            'created_by' =>
-                                $user->id,
-                        ]);
-                    }
-
-
-                    $this->syncLegacyQuantity(
-                        $inventoryLevel
-                            ->product_id,
-
-                        $inventoryLevel
-                            ->variant_id
-                    );
-
-
-                    return $inventoryLevel
-                        ->fresh();
+                if (!$inventoryLevel) {
+                    return null;
                 }
-            );
 
+                $before = (int) $inventoryLevel->on_hand;
 
-        if (! $result) {
+                $after = (int) $validated['on_hand'];
+
+                $change = $after - $before;
+
+                if ($change !== 0) {
+                    $inventoryLevel->update([
+                        'on_hand' =>
+                            $after,
+                    ]);
+
+                    InventoryMovement::create([
+                        'location_id' =>
+                            $inventoryLevel->location_id,
+
+                        'product_id' =>
+                            $inventoryLevel->product_id,
+
+                        'variant_id' =>
+                            $inventoryLevel->variant_id,
+
+                        'type' =>
+                            'adjustment',
+
+                        'quantity_change' =>
+                            $change,
+
+                        'quantity_before' =>
+                            $before,
+
+                        'quantity_after' =>
+                            $after,
+
+                        'reference_type' =>
+                            'manual_adjustment',
+
+                        'reference_id' =>
+                            $inventoryLevel->id,
+
+                        'reason' =>
+                            'Vendor inventory adjustment',
+
+                        'note' =>
+                            $validated['note']
+                            ?? null,
+
+                        'created_by' =>
+                            $user->id,
+                    ]);
+                }
+
+                $this->syncLegacyQuantity(
+                    $inventoryLevel->product_id,
+                    $inventoryLevel->variant_id
+                );
+
+                return $inventoryLevel->fresh();
+            }
+        );
+
+        if (!$result) {
             return response()->json([
                 'success' => false,
 
@@ -1017,7 +957,6 @@ class VendorInventoryController extends Controller
                     'Inventory level was not found for this location.',
             ], 404);
         }
-
 
         return response()->json([
             'success' => true,
@@ -1058,7 +997,6 @@ class VendorInventoryController extends Controller
         ]);
     }
 
-
     /*
     |--------------------------------------------------------------------------
     | SYNC LEGACY QUANTITY
@@ -1070,16 +1008,14 @@ class VendorInventoryController extends Controller
         ?int $variantId
     ): void {
         if ($variantId) {
-            $variantQuantity =
-                InventoryLevel::query()
-                    ->where(
-                        'variant_id',
-                        $variantId
-                    )
-                    ->sum(
-                        'on_hand'
-                    );
-
+            $variantQuantity = InventoryLevel::query()
+                ->where(
+                    'variant_id',
+                    $variantId
+                )
+                ->sum(
+                    'on_hand'
+                );
 
             ProductVariant::query()
                 ->whereKey(
@@ -1095,44 +1031,38 @@ class VendorInventoryController extends Controller
                 ]);
         }
 
+        $productHasVariants = ProductVariant::query()
+            ->where(
+                'product_id',
+                $productId
+            )
+            ->exists();
 
-        $productHasVariants =
-            ProductVariant::query()
+        if ($productHasVariants) {
+            $productQuantity = InventoryLevel::query()
                 ->where(
                     'product_id',
                     $productId
                 )
-                ->exists();
-
-
-        if ($productHasVariants) {
-            $productQuantity =
-                InventoryLevel::query()
-                    ->where(
-                        'product_id',
-                        $productId
-                    )
-                    ->whereNotNull(
-                        'variant_id'
-                    )
-                    ->sum(
-                        'on_hand'
-                    );
+                ->whereNotNull(
+                    'variant_id'
+                )
+                ->sum(
+                    'on_hand'
+                );
         } else {
-            $productQuantity =
-                InventoryLevel::query()
-                    ->where(
-                        'product_id',
-                        $productId
-                    )
-                    ->whereNull(
-                        'variant_id'
-                    )
-                    ->sum(
-                        'on_hand'
-                    );
+            $productQuantity = InventoryLevel::query()
+                ->where(
+                    'product_id',
+                    $productId
+                )
+                ->whereNull(
+                    'variant_id'
+                )
+                ->sum(
+                    'on_hand'
+                );
         }
-
 
         Product::query()
             ->whereKey(

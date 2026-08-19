@@ -381,158 +381,179 @@ class ProductController extends Controller
     |
     */
 
-    public function formOptions()
-    {
-        /*
-        |--------------------------------------------------------------------------
-        | CATEGORIES
-        |--------------------------------------------------------------------------
-        */
+   public function formOptions(Request $request)
+{
+    $user = $request->user();
 
-        $categories =
-            Category::query()
-            ->where(
-                'status',
-                'active'
-            )
-            ->orderBy('name')
-            ->get([
-                'id',
-                'name',
-            ]);
+    /*
+    |--------------------------------------------------------------------------
+    | CATEGORIES
+    |--------------------------------------------------------------------------
+    */
 
+    $categories = Category::query()
+        ->where('status', 'active')
+        ->orderBy('name')
+        ->get([
+            'id',
+            'name',
+        ]);
 
-        /*
-        |--------------------------------------------------------------------------
-        | BRANDS
-        |--------------------------------------------------------------------------
-        */
+    /*
+    |--------------------------------------------------------------------------
+    | BRANDS
+    |--------------------------------------------------------------------------
+    */
 
-        $brands =
-            Brand::query()
-            ->where(
-                'status',
-                'active'
-            )
-            ->orderBy('name')
-            ->get([
-                'id',
-                'name',
-            ]);
+    $brands = Brand::query()
+        ->where('status', 'active')
+        ->orderBy('name')
+        ->get([
+            'id',
+            'name',
+        ]);
 
+    /*
+    |--------------------------------------------------------------------------
+    | COLLECTIONS
+    |--------------------------------------------------------------------------
+    */
 
-        /*
-        |--------------------------------------------------------------------------
-        | COLLECTIONS
-        |--------------------------------------------------------------------------
-        */
+    $collections = Collection::query()
+        ->where('status', 'active')
+        ->orderBy('display_position')
+        ->orderBy('title')
+        ->get([
+            'id',
+            'title',
+            'slug',
+        ]);
 
-        $collections =
-            Collection::query()
-            ->where(
-                'status',
-                'active'
-            )
-            ->orderBy(
-                'display_position'
-            )
-            ->orderBy('title')
-            ->get([
-                'id',
-                'title',
-                'slug',
-            ]);
+    /*
+    |--------------------------------------------------------------------------
+    | GLOBAL VARIANTS
+    |--------------------------------------------------------------------------
+    */
 
+    $globalVariants = GlobalVariant::with([
+        'values',
+    ])
+        ->ordered()
+        ->get()
+        ->map(function ($variant) {
+            return [
+                'id' =>
+                    $variant->id,
 
-        /*
-        |--------------------------------------------------------------------------
-        | GLOBAL VARIANTS
-        |--------------------------------------------------------------------------
-        */
+                'name' =>
+                    $variant->name,
 
-        $globalVariants =
-            GlobalVariant::with([
-                'values',
-            ])
-            ->ordered()
-            ->get()
-            ->map(
-                function ($variant) {
+                'visual_type' =>
+                    $variant->visual_type,
 
-                    return [
-
-                        'id' =>
-                        $variant->id,
-
-                        'name' =>
-                        $variant->name,
-
-                        'visual_type' =>
-                        $variant->visual_type,
-
-                        'is_color' =>
-                        in_array(
-                            strtolower(
-                                trim(
-                                    $variant->name
-                                )
-                            ),
-                            [
-                                'color',
-                                'colour',
-                            ],
-                            true
+                'is_color' =>
+                    in_array(
+                        strtolower(
+                            trim(
+                                $variant->name
+                            )
                         ),
+                        [
+                            'color',
+                            'colour',
+                        ],
+                        true
+                    ),
 
-                        'values' =>
-                        $variant
-                            ->values
-                            ->map(
-                                fn($value) => [
-
-                                    'id' =>
+                'values' =>
+                    $variant
+                        ->values
+                        ->map(
+                            fn($value) => [
+                                'id' =>
                                     $value->id,
 
-                                    'value' =>
+                                'value' =>
                                     $value->value,
 
-                                    'color_code' =>
-                                    $value
-                                        ->color_code,
+                                'color_code' =>
+                                    $value->color_code,
 
-                                    'sort_order' =>
-                                    (int)
-                                    $value
-                                        ->sort_order,
+                                'sort_order' =>
+                                    (int) $value->sort_order,
+                            ]
+                        )
+                        ->values(),
+            ];
+        })
+        ->values();
 
-                                ]
-                            )
-                            ->values(),
+    /*
+    |--------------------------------------------------------------------------
+    | INVENTORY LOCATIONS
+    |--------------------------------------------------------------------------
+    */
 
-                    ];
-                }
-            )
-            ->values();
+    $locationQuery = InventoryLocation::query()
+        ->where('is_active', true);
 
+    if (
+        $user &&
+        $user->role === 'vendor'
+    ) {
+        $locationQuery->where(
+            'vendor_id',
+            $user->id
+        );
+    } else {
+        $locationQuery->whereNull(
+            'vendor_id'
+        );
+    }
 
-        return response()->json([
+    $locations = $locationQuery
+        ->orderByDesc('is_default')
+        ->orderBy('shipping_priority')
+        ->orderBy('name')
+        ->get([
+            'id',
+            'name',
+            'code',
+            'address_line1',
+            'city',
+            'state',
+            'country',
+            'is_default',
+            'pickup_enabled',
+            'shipping_enabled',
+            'shipping_priority',
+        ]);
 
-            'status' => true,
+    /*
+    |--------------------------------------------------------------------------
+    | RESPONSE
+    |--------------------------------------------------------------------------
+    */
 
-            'categories' =>
+    return response()->json([
+        'status' => true,
+
+        'categories' =>
             $categories,
 
-            'brands' =>
+        'brands' =>
             $brands,
 
-            'collections' =>
+        'collections' =>
             $collections,
 
-            'global_variants' =>
+        'global_variants' =>
             $globalVariants,
 
-        ]);
-    }
+        'locations' =>
+            $locations,
+    ]);
+}
 
 
     /*
@@ -737,7 +758,14 @@ class ProductController extends Controller
                         */
 
                         $this->syncInventoryLevelsFromProduct(
-                            $product
+                            product:
+                                $product,
+
+                            inventoryByLocation:
+                                $validated[
+                                    'inventory_by_location'
+                                ]
+                                ?? null
                         );
 
 
@@ -1452,8 +1480,15 @@ private function resolveMediaUrl($media)
                 */
 
                 $this->syncInventoryLevelsFromProduct(
-                    $product
-                );
+                            product:
+                                $product,
+
+                            inventoryByLocation:
+                                $validated[
+                                    'inventory_by_location'
+                                ]
+                                ?? null
+                        );
 
             }
         );
@@ -2066,6 +2101,24 @@ private function resolveMediaUrl($media)
                 'integer',
             ],
 
+            'inventory_by_location' => [
+                'nullable',
+                'array',
+            ],
+
+            'inventory_by_location.*.location_id' => [
+                'required',
+                'integer',
+                'distinct',
+                'exists:inventory_locations,id',
+            ],
+
+            'inventory_by_location.*.quantity' => [
+                'required',
+                'integer',
+                'min:0',
+            ],
+
             'track_quantity' => [
                 'nullable',
             ],
@@ -2584,82 +2637,62 @@ private function resolveMediaUrl($media)
     |--------------------------------------------------------------------------
     */
 
-    private function normalizeProductRequest(
-        Request $request
-    ): void {
+   private function normalizeProductRequest(
+    Request $request
+): void {
+    $jsonFields = [
+        'tags',
+        'collection_ids',
+        'options',
+        'variants',
+        'inventory_by_location',
+        'media_alt_texts',
+        'deleted_media_ids',
+    ];
 
-        $jsonFields = [
-
-            'tags',
-
-            'collection_ids',
-
-            'options',
-
-            'variants',
-
-            'media_alt_texts',
-
-            'deleted_media_ids',
-
-        ];
-
-
-        foreach (
-            $jsonFields
-            as $field
+    foreach (
+        $jsonFields
+        as $field
+    ) {
+        if (
+            ! $request->has($field)
         ) {
+            continue;
+        }
 
-            if (
-                ! $request->has($field)
-            ) {
+        $value =
+            $request->input(
+                $field
+            );
 
-                continue;
-            }
+        if (
+            is_array($value)
+        ) {
+            continue;
+        }
 
-
-            $value =
-                $request->input(
-                    $field
+        if (
+            is_string($value)
+        ) {
+            $decoded =
+                json_decode(
+                    $value,
+                    true
                 );
 
-
             if (
-                is_array($value)
+                json_last_error()
+                === JSON_ERROR_NONE &&
+                is_array($decoded)
             ) {
-
-                continue;
-            }
-
-
-            if (
-                is_string($value)
-            ) {
-
-                $decoded =
-                    json_decode(
-                        $value,
-                        true
-                    );
-
-
-                if (
-                    json_last_error()
-                    ===
-                    JSON_ERROR_NONE &&
-                    is_array(
-                        $decoded
-                    )
-                ) {
-
-                    $request->merge([
-                        $field =>
+                $request->merge([
+                    $field =>
                         $decoded,
-                    ]);
-                }
+                ]);
             }
         }
     }
+}
 
 
     /*
@@ -4145,113 +4178,395 @@ private function resolveMediaUrl($media)
     |
     */
 
-    private function syncInventoryLevelsFromProduct(
-        Product $product
-    ): void {
-        $location = InventoryLocation::query()
+   private function syncInventoryLevelsFromProduct(
+    Product $product,
+    ?array $inventoryByLocation = null
+): void {
+    $isVendorProduct =
+        $product->source === 'vendor' &&
+        ! empty(
+            $product->created_by
+        );
+
+    /*
+    |--------------------------------------------------------------------------
+    | OWNER LOCATIONS
+    |--------------------------------------------------------------------------
+    */
+
+    $locationQuery =
+        InventoryLocation::query()
             ->where(
                 'is_active',
                 true
-            )
+            );
+
+    if ($isVendorProduct) {
+        $locationQuery->where(
+            'vendor_id',
+            $product->created_by
+        );
+    } else {
+        $locationQuery->whereNull(
+            'vendor_id'
+        );
+    }
+
+    $locations =
+        $locationQuery
             ->orderByDesc(
                 'is_default'
             )
             ->orderBy(
+                'shipping_priority'
+            )
+            ->orderBy(
                 'id'
             )
-            ->first();
+            ->get()
+            ->keyBy('id');
 
+    /*
+    |--------------------------------------------------------------------------
+    | LOAD VARIANTS
+    |--------------------------------------------------------------------------
+    */
 
-        if (! $location) {
-            return;
-        }
+    $product->load(
+        'variants'
+    );
 
+    /*
+    |--------------------------------------------------------------------------
+    | LOCATION INVENTORY
+    |--------------------------------------------------------------------------
+    */
 
-        $product->load(
-            'variants'
-        );
+    if (
+        $product
+            ->variants
+            ->isEmpty() &&
+        $inventoryByLocation !== null &&
+        $locations->isNotEmpty()
+    ) {
+        $requestedInventory =
+            collect(
+                $inventoryByLocation
+            )
+            ->mapWithKeys(
+                function ($item) {
+                    $locationId =
+                        (int) (
+                            $item[
+                                'location_id'
+                            ]
+                            ?? 0
+                        );
 
-
-        /*
-        |--------------------------------------------------------------------------
-        | VARIANT PRODUCT
-        |--------------------------------------------------------------------------
-        */
-
-        if (
-            $product->variants->isNotEmpty()
-        ) {
-            /*
-            | A variant product should not keep a base-product inventory row.
-            */
-
-            InventoryLevel::query()
-                ->where(
-                    'product_id',
-                    $product->id
-                )
-                ->whereNull(
-                    'variant_id'
-                )
-                ->delete();
-
-
-            foreach (
-                $product->variants
-                as $variant
-            ) {
-                $this->syncSingleInventoryLevel(
-                    locationId:
-                        (int) $location->id,
-
-                    productId:
-                        (int) $product->id,
-
-                    variantId:
-                        (int) $variant->id,
-
-                    quantity:
+                    $quantity =
                         max(
                             0,
-                            (int) $variant->quantity
-                        ),
+                            (int) (
+                                $item[
+                                    'quantity'
+                                ]
+                                ?? 0
+                            )
+                        );
 
-                    trackQuantity:
-                        (bool) $product->track_quantity
-                );
-            }
+                    return [
+                        $locationId =>
+                            $quantity,
+                    ];
+                }
+            );
 
+        $invalidLocationIds =
+            $requestedInventory
+                ->keys()
+                ->filter(
+                    fn($locationId) =>
+                        ! $locations
+                            ->has(
+                                (int) $locationId
+                            )
+                )
+                ->values();
 
-            return;
+        if (
+            $invalidLocationIds
+                ->isNotEmpty()
+        ) {
+            throw ValidationException::withMessages([
+                'inventory_by_location' => [
+                    'One or more inventory locations are invalid or do not belong to this product owner.',
+                ],
+            ]);
         }
 
+        $ownerLocationQuery =
+            InventoryLocation::query();
 
-        /*
-        |--------------------------------------------------------------------------
-        | SIMPLE PRODUCT
-        |--------------------------------------------------------------------------
-        */
+        if ($isVendorProduct) {
+            $ownerLocationQuery->where(
+                'vendor_id',
+                $product->created_by
+            );
+        } else {
+            $ownerLocationQuery
+                ->whereNull(
+                    'vendor_id'
+                );
+        }
 
-        $this->syncSingleInventoryLevel(
-            locationId:
-                (int) $location->id,
+        $ownerLocationIds =
+            $ownerLocationQuery
+                ->pluck('id');
 
-            productId:
-                (int) $product->id,
+        InventoryLevel::query()
+            ->where(
+                'product_id',
+                $product->id
+            )
+            ->whereNull(
+                'variant_id'
+            )
+            ->whereNotIn(
+                'location_id',
+                $ownerLocationIds
+            )
+            ->delete();
 
-            variantId:
-                null,
+        foreach (
+            $locations
+            as $location
+        ) {
+            $quantity =
+                (int) (
+                    $requestedInventory
+                        ->get(
+                            $location->id,
+                            0
+                        )
+                );
 
-            quantity:
-                max(
-                    0,
-                    (int) $product->quantity
-                ),
+            InventoryLevel::updateOrCreate(
+                [
+                    'location_id' =>
+                        $location->id,
 
-            trackQuantity:
-                (bool) $product->track_quantity
-        );
+                    'product_id' =>
+                        $product->id,
+
+                    'variant_id' =>
+                        null,
+                ],
+                [
+                    'on_hand' =>
+                        $quantity,
+
+                    'committed' =>
+                        0,
+
+                    'unavailable' =>
+                        0,
+
+                    'incoming' =>
+                        0,
+
+                    'low_stock_threshold' =>
+                        10,
+
+                    'track_quantity' =>
+                        (bool)
+                        $product
+                            ->track_quantity,
+                ]
+            );
+        }
+
+        $totalQuantity =
+            $locations
+                ->sum(
+                    function ($location) use (
+                        $requestedInventory
+                    ) {
+                        return (int)
+                            $requestedInventory
+                                ->get(
+                                    $location->id,
+                                    0
+                                );
+                    }
+                );
+
+        $product->update([
+            'quantity' =>
+                $totalQuantity,
+        ]);
+
+        return;
     }
+
+    /*
+    |--------------------------------------------------------------------------
+    | EXISTING DEFAULT LOCATION BEHAVIOR
+    |--------------------------------------------------------------------------
+    */
+
+    $location =
+        $locations
+            ->first();
+
+    if (
+        ! $location &&
+        $isVendorProduct
+    ) {
+        $location =
+            InventoryLocation::query()
+                ->whereNull(
+                    'vendor_id'
+                )
+                ->where(
+                    'is_active',
+                    true
+                )
+                ->orderByDesc(
+                    'is_default'
+                )
+                ->orderBy(
+                    'id'
+                )
+                ->first();
+    }
+
+    if (! $location) {
+        return;
+    }
+
+    if (
+        $isVendorProduct &&
+        $location->vendor_id
+            !== null
+    ) {
+        $allowedLocationIds =
+            InventoryLocation::query()
+                ->where(
+                    'vendor_id',
+                    $product->created_by
+                )
+                ->pluck('id');
+
+        InventoryLevel::query()
+            ->where(
+                'product_id',
+                $product->id
+            )
+            ->whereNotIn(
+                'location_id',
+                $allowedLocationIds
+            )
+            ->delete();
+    }
+
+    if (
+        ! $isVendorProduct
+    ) {
+        $allowedLocationIds =
+            InventoryLocation::query()
+                ->whereNull(
+                    'vendor_id'
+                )
+                ->pluck('id');
+
+        InventoryLevel::query()
+            ->where(
+                'product_id',
+                $product->id
+            )
+            ->whereNotIn(
+                'location_id',
+                $allowedLocationIds
+            )
+            ->delete();
+    }
+
+    if (
+        $product
+            ->variants
+            ->isNotEmpty()
+    ) {
+        InventoryLevel::query()
+            ->where(
+                'product_id',
+                $product->id
+            )
+            ->whereNull(
+                'variant_id'
+            )
+            ->delete();
+
+        foreach (
+            $product->variants
+            as $variant
+        ) {
+            $this->syncSingleInventoryLevel(
+                locationId:
+                    (int)
+                    $location->id,
+
+                productId:
+                    (int)
+                    $product->id,
+
+                variantId:
+                    (int)
+                    $variant->id,
+
+                quantity:
+                    max(
+                        0,
+                        (int)
+                        $variant
+                            ->quantity
+                    ),
+
+                trackQuantity:
+                    (bool)
+                    $product
+                        ->track_quantity
+            );
+        }
+
+        return;
+    }
+
+    $this->syncSingleInventoryLevel(
+        locationId:
+            (int)
+            $location->id,
+
+        productId:
+            (int)
+            $product->id,
+
+        variantId:
+            null,
+
+        quantity:
+            max(
+                0,
+                (int)
+                $product
+                    ->quantity
+            ),
+
+        trackQuantity:
+            (bool)
+            $product
+                ->track_quantity
+    );
+}
 
 
     /*
@@ -4374,7 +4689,74 @@ private function resolveMediaUrl($media)
     |--------------------------------------------------------------------------
     */
 
-    private function loadProductData(
+    private function getProductInventoryByLocation(
+    Product $product
+): array {
+    $locationQuery =
+        InventoryLocation::query();
+
+    if (
+        $product->source ===
+            'vendor' &&
+        ! empty(
+            $product->created_by
+        )
+    ) {
+        $locationQuery->where(
+            'vendor_id',
+            $product->created_by
+        );
+    } else {
+        $locationQuery
+            ->whereNull(
+                'vendor_id'
+            );
+    }
+
+    $locationIds =
+        $locationQuery
+            ->pluck('id');
+
+    if (
+        $locationIds
+            ->isEmpty()
+    ) {
+        return [];
+    }
+
+    return InventoryLevel::query()
+        ->where(
+            'product_id',
+            $product->id
+        )
+        ->whereNull(
+            'variant_id'
+        )
+        ->whereIn(
+            'location_id',
+            $locationIds
+        )
+        ->get([
+            'location_id',
+            'on_hand',
+        ])
+        ->map(
+            fn($item) => [
+                'location_id' =>
+                    (int)
+                    $item->location_id,
+
+                'quantity' =>
+                    (int)
+                    $item->on_hand,
+            ]
+        )
+        ->values()
+        ->all();
+}
+
+
+private function loadProductData(
         $id
     ): array {
 
@@ -4599,6 +4981,11 @@ private function resolveMediaUrl($media)
             'quantity' =>
             (int)
             $product->quantity,
+
+            'inventory_by_location' =>
+            $this->getProductInventoryByLocation(
+                $product
+            ),
 
             'track_quantity' =>
             (bool)

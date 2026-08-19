@@ -47,6 +47,8 @@ use App\Http\Controllers\Api\Admin\AdminProfileController;
 use App\Http\Controllers\Api\Admin\AdminCustomerController;
 use App\Http\Controllers\Api\Vendor\VendorProductController;
 
+use App\Http\Controllers\Api\Vendor\VendorInventoryLocationController;
+
 use App\Http\Controllers\Api\Vendor\VendorInventoryController;
 
 
@@ -140,6 +142,18 @@ Route::prefix('vendor')->middleware(['auth:sanctum', 'vendor'])->group(function 
 Route::get('/inventory', [VendorInventoryController::class, 'index']);
 
 Route::post('/inventory/on-hand', [VendorInventoryController::class, 'updateOnHand']);
+
+// Inventory Locations
+Route::get('/inventory/locations', [VendorInventoryLocationController::class, 'index']);
+Route::post('/inventory/locations', [VendorInventoryLocationController::class, 'store']);
+Route::get('/inventory/locations/{id}', [VendorInventoryLocationController::class, 'show']);
+Route::put('/inventory/locations/{id}', [VendorInventoryLocationController::class, 'update']);
+Route::post('/inventory/locations/{id}/default', [VendorInventoryLocationController::class, 'setDefault']);
+Route::post('/inventory/locations/{id}/toggle-status', [VendorInventoryLocationController::class, 'toggleStatus']);
+Route::post('/inventory/locations/{id}/ship-sooner', [VendorInventoryLocationController::class, 'shipSooner']);
+Route::delete('/inventory/locations/{id}', [VendorInventoryLocationController::class, 'destroy']);
+
+
 
 });
 

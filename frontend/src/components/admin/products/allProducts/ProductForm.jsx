@@ -118,7 +118,14 @@ const ProductForm = ({
     brands: [],
     collections: [],
     global_variants: [],
+    locations: [],
   });
+
+
+  const [
+    inventoryByLocation,
+    setInventoryByLocation,
+  ] = useState({});
 
 
   const [
@@ -253,6 +260,12 @@ const ProductForm = ({
             );
 
 
+          const locations =
+            response.data
+              ?.locations ||
+            [];
+
+
           setFormOptions({
             categories:
               response.data
@@ -273,7 +286,28 @@ const ProductForm = ({
               response.data
                 ?.global_variants ||
               [],
+
+            locations,
           });
+
+
+          if (
+            mode === "create"
+          ) {
+            const locationInventory = {};
+
+            locations.forEach(
+              (location) => {
+                locationInventory[
+                  location.id
+                ] = 0;
+              }
+            );
+
+            setInventoryByLocation(
+              locationInventory
+            );
+          }
 
         } catch (error) {
 
@@ -459,6 +493,35 @@ const ProductForm = ({
           .seo_description ||
         "",
     });
+
+
+    const existingLocationInventory =
+      Array.isArray(
+        initialData
+          .inventory_by_location
+      )
+        ? initialData
+            .inventory_by_location
+        : [];
+
+    const locationInventory = {};
+
+    existingLocationInventory.forEach(
+      (item) => {
+        locationInventory[
+          item.location_id
+        ] =
+          Number(
+            item.quantity ??
+            item.on_hand ??
+            0
+          );
+      }
+    );
+
+    setInventoryByLocation(
+      locationInventory
+    );
 
 
     setOptions(
@@ -678,6 +741,64 @@ const ProductForm = ({
         return next;
 
       }
+    );
+
+  };
+
+
+  /*
+  |--------------------------------------------------------------------------
+  | LOCATION INVENTORY
+  |--------------------------------------------------------------------------
+  */
+
+  const updateLocationQuantity = (
+    locationId,
+    value
+  ) => {
+
+    const quantity =
+      Math.max(
+        0,
+        parseInt(
+          value,
+          10
+        ) || 0
+      );
+
+
+    const nextInventory = {
+      ...inventoryByLocation,
+
+      [locationId]:
+        quantity,
+    };
+
+
+    setInventoryByLocation(
+      nextInventory
+    );
+
+
+    const totalQuantity =
+      Object.values(
+        nextInventory
+      ).reduce(
+        (
+          total,
+          item
+        ) =>
+          total +
+          Number(
+            item || 0
+          ),
+        0
+      );
+
+
+    updateField(
+      "quantity",
+      totalQuantity
     );
 
   };
@@ -1083,6 +1204,36 @@ const ProductForm = ({
         );
 
 
+        if (
+          variants.length === 0
+        ) {
+
+          append(
+            "inventory_by_location",
+            JSON.stringify(
+              formOptions
+                .locations
+                .map(
+                  (location) => ({
+                    location_id:
+                      Number(
+                        location.id
+                      ),
+
+                    quantity:
+                      Number(
+                        inventoryByLocation[
+                          location.id
+                        ] || 0
+                      ),
+                  })
+                )
+            )
+          );
+
+        }
+
+
         append(
           "track_quantity",
           form.track_quantity
@@ -1461,78 +1612,92 @@ const ProductForm = ({
             ?.product;
 
 
-      
-
-
-
-
-
         if (
-  mode === "create" &&
-  saved?.id
-) {
+          mode === "create" &&
+          saved?.id
+        ) {
 
-  /*
-  |--------------------------------------------------------------------------
-  | VENDOR CREATE
-  |--------------------------------------------------------------------------
-  */
+          /*
+          |--------------------------------------------------------------------------
+          | VENDOR CREATE
+          |--------------------------------------------------------------------------
+          */
 
-  if (isVendor) {
+          if (isVendor) {
 
-    setForm({
-      ...EMPTY_PRODUCT,
+            setForm({
+              ...EMPTY_PRODUCT,
 
-      tags: [],
-      collection_ids: [],
-    });
+              tags: [],
+              collection_ids: [],
+            });
 
-    setOptions([]);
-    setVariants([]);
-
-    setExistingMedia([]);
-    setNewMedia([]);
-    setDeletedMediaIds([]);
-
-    setCover(null);
-
-    setSlugEdited(false);
-    setSeoTitleEdited(false);
-    setSeoDescriptionEdited(false);
-
-    setErrors({});
-    setAiError("");
-
-    setMessage(
-      "Product created successfully."
-    );
-
-    window.scrollTo({
-      top: 0,
-      behavior: "smooth",
-    });
-
-    return;
-  }
+            setOptions([]);
+            setVariants([]);
 
 
-  /*
-  |--------------------------------------------------------------------------
-  | ADMIN CREATE
-  |--------------------------------------------------------------------------
-  */
+            const resetLocationInventory = {};
 
-  navigate(
-    productRoutes.edit(
-      saved.id
-    ),
-    {
-      replace: true,
-    }
-  );
 
-  return;
-}
+            formOptions.locations.forEach(
+              (location) => {
+
+                resetLocationInventory[
+                  location.id
+                ] = 0;
+
+              }
+            );
+
+
+            setInventoryByLocation(
+              resetLocationInventory
+            );
+
+
+            setExistingMedia([]);
+            setNewMedia([]);
+            setDeletedMediaIds([]);
+
+            setCover(null);
+
+            setSlugEdited(false);
+            setSeoTitleEdited(false);
+            setSeoDescriptionEdited(false);
+
+            setErrors({});
+            setAiError("");
+
+            setMessage(
+              "Product created successfully."
+            );
+
+            window.scrollTo({
+              top: 0,
+              behavior: "smooth",
+            });
+
+            return;
+          }
+
+
+          /*
+          |--------------------------------------------------------------------------
+          | ADMIN CREATE
+          |--------------------------------------------------------------------------
+          */
+
+          navigate(
+            productRoutes.edit(
+              saved.id
+            ),
+            {
+              replace: true,
+            }
+          );
+
+          return;
+        }
 
 
         if (
@@ -1551,6 +1716,38 @@ const ProductForm = ({
 
           setNewMedia([]);
           setDeletedMediaIds([]);
+
+
+          if (
+            Array.isArray(
+              saved.inventory_by_location
+            )
+          ) {
+
+            const savedLocationInventory = {};
+
+            saved
+              .inventory_by_location
+              .forEach(
+                (item) => {
+
+                  savedLocationInventory[
+                    item.location_id
+                  ] =
+                    Number(
+                      item.quantity ??
+                      item.on_hand ??
+                      0
+                    );
+
+                }
+              );
+
+            setInventoryByLocation(
+              savedLocationInventory
+            );
+
+          }
 
 
           setOptions(
@@ -2048,6 +2245,18 @@ const ProductForm = ({
               variants={
                 variants
               }
+
+              locations={
+                formOptions.locations
+              }
+
+              inventoryByLocation={
+                inventoryByLocation
+              }
+
+              updateLocationQuantity={
+                updateLocationQuantity
+              }
             />
 
 
@@ -2081,42 +2290,44 @@ const ProductForm = ({
               }
 
               cover={cover}
-              setCover={setCover}
+
+              setCover={
+                setCover
+              }
             />
 
 
-            
             <ProductVariants
-  productId={
-    initialData?.id ||
-    null
-  }
+              productId={
+                initialData?.id ||
+                null
+              }
 
-  context={
-    context
-  }
+              context={
+                context
+              }
 
-  globalVariants={
-    formOptions
-      .global_variants
-  }
+              globalVariants={
+                formOptions
+                  .global_variants
+              }
 
-  options={
-    options
-  }
+              options={
+                options
+              }
 
-  setOptions={
-    setOptions
-  }
+              setOptions={
+                setOptions
+              }
 
-  variants={
-    variants
-  }
+              variants={
+                variants
+              }
 
-  setVariants={
-    setVariants
-  }
-/>
+              setVariants={
+                setVariants
+              }
+            />
 
 
             <ProductSEO

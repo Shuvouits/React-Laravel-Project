@@ -32,6 +32,7 @@ class AdminInventoryLocationController extends Controller
         );
 
         $query = InventoryLocation::query()
+            ->whereNull('vendor_id')
             ->withCount([
                 'inventoryLevels',
             ])
@@ -85,10 +86,12 @@ class AdminInventoryLocationController extends Controller
             'stats' => [
                 'total' =>
                     InventoryLocation::query()
+                        ->whereNull('vendor_id')
                         ->count(),
 
                 'active' =>
                     InventoryLocation::query()
+                        ->whereNull('vendor_id')
                         ->where(
                             'is_active',
                             true
@@ -97,6 +100,7 @@ class AdminInventoryLocationController extends Controller
 
                 'inactive' =>
                     InventoryLocation::query()
+                        ->whereNull('vendor_id')
                         ->where(
                             'is_active',
                             false
@@ -194,6 +198,7 @@ class AdminInventoryLocationController extends Controller
 
                 if ($isDefault) {
                     InventoryLocation::query()
+                        ->whereNull('vendor_id')
                         ->update([
                             'is_default' => false,
                         ]);
@@ -255,8 +260,10 @@ class AdminInventoryLocationController extends Controller
 
         return response()->json([
             'success' => true,
+
             'message' =>
                 'Inventory location created successfully.',
+
             'location' =>
                 $location,
         ], 201);
@@ -265,6 +272,10 @@ class AdminInventoryLocationController extends Controller
     public function show(
         InventoryLocation $inventoryLocation
     ): JsonResponse {
+        if ($inventoryLocation->vendor_id !== null) {
+            abort(404);
+        }
+
         $inventoryLocation->loadCount([
             'inventoryLevels',
         ]);
@@ -276,6 +287,7 @@ class AdminInventoryLocationController extends Controller
 
         return response()->json([
             'success' => true,
+
             'location' =>
                 $inventoryLocation,
         ]);
@@ -285,6 +297,10 @@ class AdminInventoryLocationController extends Controller
         Request $request,
         InventoryLocation $inventoryLocation
     ): JsonResponse {
+        if ($inventoryLocation->vendor_id !== null) {
+            abort(404);
+        }
+
         $validated = $request->validate([
             'name' => [
                 'required',
@@ -376,6 +392,7 @@ class AdminInventoryLocationController extends Controller
 
                 if ($isDefault) {
                     InventoryLocation::query()
+                        ->whereNull('vendor_id')
                         ->whereKeyNot(
                             $inventoryLocation->id
                         )
@@ -440,8 +457,10 @@ class AdminInventoryLocationController extends Controller
 
         return response()->json([
             'success' => true,
+
             'message' =>
                 'Inventory location updated successfully.',
+
             'location' =>
                 $inventoryLocation->fresh(),
         ]);
@@ -450,9 +469,14 @@ class AdminInventoryLocationController extends Controller
     public function setDefault(
         InventoryLocation $inventoryLocation
     ): JsonResponse {
+        if ($inventoryLocation->vendor_id !== null) {
+            abort(404);
+        }
+
         if (!$inventoryLocation->is_active) {
             return response()->json([
                 'success' => false,
+
                 'message' =>
                     'An inactive location cannot be set as default.',
             ], 422);
@@ -463,6 +487,7 @@ class AdminInventoryLocationController extends Controller
                 $inventoryLocation
             ) {
                 InventoryLocation::query()
+                    ->whereNull('vendor_id')
                     ->update([
                         'is_default' => false,
                     ]);
@@ -475,8 +500,10 @@ class AdminInventoryLocationController extends Controller
 
         return response()->json([
             'success' => true,
+
             'message' =>
                 'Default inventory location updated successfully.',
+
             'location' =>
                 $inventoryLocation->fresh(),
         ]);
@@ -485,12 +512,17 @@ class AdminInventoryLocationController extends Controller
     public function toggleStatus(
         InventoryLocation $inventoryLocation
     ): JsonResponse {
+        if ($inventoryLocation->vendor_id !== null) {
+            abort(404);
+        }
+
         if (
             $inventoryLocation->is_default &&
             $inventoryLocation->is_active
         ) {
             return response()->json([
                 'success' => false,
+
                 'message' =>
                     'The default inventory location cannot be deactivated.',
             ], 422);
@@ -517,9 +549,14 @@ class AdminInventoryLocationController extends Controller
     public function destroy(
         InventoryLocation $inventoryLocation
     ): JsonResponse {
+        if ($inventoryLocation->vendor_id !== null) {
+            abort(404);
+        }
+
         if ($inventoryLocation->is_default) {
             return response()->json([
                 'success' => false,
+
                 'message' =>
                     'The default inventory location cannot be deleted.',
             ], 422);
@@ -532,6 +569,7 @@ class AdminInventoryLocationController extends Controller
         ) {
             return response()->json([
                 'success' => false,
+
                 'message' =>
                     'This location has inventory and cannot be deleted. Deactivate it instead.',
             ], 422);
@@ -541,6 +579,7 @@ class AdminInventoryLocationController extends Controller
 
         return response()->json([
             'success' => true,
+
             'message' =>
                 'Inventory location deleted successfully.',
         ]);
