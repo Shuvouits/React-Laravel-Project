@@ -37,10 +37,38 @@ import {
 const BrandForm = ({
   mode = "create",
   initialData = null,
+  context = "admin",
 }) => {
 
   const navigate =
     useNavigate();
+
+
+  const isVendor =
+    context === "vendor";
+
+
+  const brandApi = {
+    ai: isVendor
+      ? "/vendor/ai/brand-content"
+      : "/admin/ai/brand-content",
+
+    create: isVendor
+      ? "/vendor/brands"
+      : "/admin/brands",
+
+    update: (id) =>
+      isVendor
+        ? `/vendor/brands/${id}/update`
+        : `/admin/brands/${id}/update`,
+  };
+
+
+  const brandRoutes = {
+    index: isVendor
+      ? "/vendor/brands"
+      : "/admin/products/brands",
+  };
 
 
   const logoInputRef =
@@ -95,6 +123,11 @@ const BrandForm = ({
   const [
     errorMessage,
     setErrorMessage,
+  ] = useState("");
+
+  const [
+    successMessage,
+    setSuccessMessage,
   ] = useState("");
 
 
@@ -496,7 +529,7 @@ const BrandForm = ({
 
       const response =
         await api.post(
-          "/admin/ai/brand-content",
+          brandApi.ai,
           {
             name:
               form.name.trim(),
@@ -824,6 +857,8 @@ const BrandForm = ({
 
         setErrorMessage("");
 
+        setSuccessMessage("");
+
 
         const data =
           new FormData();
@@ -874,7 +909,9 @@ const BrandForm = ({
         ) {
 
           await api.post(
-            `/admin/brands/${initialData.id}/update`,
+            brandApi.update(
+              initialData.id
+            ),
             data,
             {
               headers: {
@@ -887,7 +924,7 @@ const BrandForm = ({
         } else {
 
           await api.post(
-            "/admin/brands",
+            brandApi.create,
             data,
             {
               headers: {
@@ -900,9 +937,18 @@ const BrandForm = ({
         }
 
 
-        navigate(
-          "/admin/products/brands"
-        );
+       if (isVendor) {
+  setSuccessMessage(
+    mode === "edit"
+      ? "Brand updated successfully."
+      : "Brand submitted successfully."
+  );
+} else {
+  navigate(
+    brandRoutes.index
+  );
+}
+
 
       } catch (error) {
 
@@ -1094,7 +1140,7 @@ const BrandForm = ({
 
                 onClick={() =>
                   navigate(
-                    "/admin/products/brands"
+                    brandRoutes.index
                   )
                 }
 
@@ -1135,6 +1181,15 @@ const BrandForm = ({
               error
               text={
                 errorMessage
+              }
+            />
+          )}
+
+
+          {successMessage && (
+            <Message
+              text={
+                successMessage
               }
             />
           )}
@@ -2213,146 +2268,7 @@ const BrandForm = ({
                 </select>
 
 
-                <div
-                  className="
-                    mt-[16px]
-
-                    rounded-[12px]
-
-                    border
-                    border-[#dedfe2]
-
-                    p-[13px]
-
-                    flex
-                    items-center
-                    justify-between
-                  "
-                >
-
-                  <div>
-
-                    <p
-                      className="
-                        text-[13px]
-                        font-medium
-                      "
-                    >
-                      Featured brand
-                    </p>
-
-                    <p
-                      className="
-                        mt-1
-
-                        text-[11px]
-                        text-[#777]
-                      "
-                    >
-                      Highlight this brand on the storefront.
-                    </p>
-
-                  </div>
-
-
-                  <button
-                    type="button"
-
-                    onClick={() =>
-                      handleChange(
-                        "is_featured",
-                        !form.is_featured
-                      )
-                    }
-
-                    className={`
-                      relative
-
-                      w-[36px]
-                      h-[20px]
-
-                      rounded-full
-
-                      ${
-                        form.is_featured
-                          ? "bg-[#2065D1]"
-                          : "bg-[#dddfe3]"
-                      }
-                    `}
-                  >
-
-                    <span
-                      className={`
-                        absolute
-                        top-[3px]
-
-                        w-[14px]
-                        h-[14px]
-
-                        rounded-full
-
-                        bg-white
-
-                        transition-all
-
-                        ${
-                          form.is_featured
-                            ? "left-[19px]"
-                            : "left-[3px]"
-                        }
-                      `}
-                    />
-
-                  </button>
-
-                </div>
-
-              </Card>
-
-
-              <Card>
-
-                <Title>
-                  Organization
-                </Title>
-
-
-                <Label>
-                  Display order
-                </Label>
-
-
-                <Input
-                  type="number"
-
-                  min="0"
-
-                  value={
-                    form.display_order
-                  }
-
-                  onChange={(e) =>
-                    handleChange(
-                      "display_order",
-                      e.target.value
-                    )
-                  }
-                />
-
-
-                <p
-                  className="
-                    mt-[7px]
-                    text-[11px]
-                    text-[#777]
-                  "
-                >
-                  Lower numbers appear first.
-                </p>
-
-
-                {mode === "edit" && (
-
+                {!isVendor && (
                   <div
                     className="
                       mt-[16px]
@@ -2365,6 +2281,7 @@ const BrandForm = ({
                       p-[13px]
 
                       flex
+                      items-center
                       justify-between
                     "
                   >
@@ -2377,9 +2294,8 @@ const BrandForm = ({
                           font-medium
                         "
                       >
-                        Products
+                        Featured brand
                       </p>
-
 
                       <p
                         className="
@@ -2389,29 +2305,180 @@ const BrandForm = ({
                           text-[#777]
                         "
                       >
-                        Products assigned to this brand.
+                        Highlight this brand on the storefront.
                       </p>
 
                     </div>
 
 
-                    <strong
-                      className="
-                        text-[13px]
-                      "
-                    >
-                      {
-                        initialData
-                          ?.products_count ??
-                        0
+                    <button
+                      type="button"
+
+                      onClick={() =>
+                        handleChange(
+                          "is_featured",
+                          !form.is_featured
+                        )
                       }
-                    </strong>
+
+                      className={`
+                        relative
+
+                        w-[36px]
+                        h-[20px]
+
+                        rounded-full
+
+                        ${
+                          form.is_featured
+                            ? "bg-[#2065D1]"
+                            : "bg-[#dddfe3]"
+                        }
+                      `}
+                    >
+
+                      <span
+                        className={`
+                          absolute
+                          top-[3px]
+
+                          w-[14px]
+                          h-[14px]
+
+                          rounded-full
+
+                          bg-white
+
+                          transition-all
+
+                          ${
+                            form.is_featured
+                              ? "left-[19px]"
+                              : "left-[3px]"
+                          }
+                        `}
+                      />
+
+                    </button>
 
                   </div>
-
                 )}
 
               </Card>
+
+
+              {(!isVendor || mode === "edit") && (
+                <Card>
+
+                  <Title>
+                    Organization
+                  </Title>
+
+
+                  {!isVendor && (
+                    <>
+                      <Label>
+                        Display order
+                      </Label>
+
+
+                      <Input
+                        type="number"
+
+                        min="0"
+
+                        value={
+                          form.display_order
+                        }
+
+                        onChange={(e) =>
+                          handleChange(
+                            "display_order",
+                            e.target.value
+                          )
+                        }
+                      />
+
+
+                      <p
+                        className="
+                          mt-[7px]
+                          text-[11px]
+                          text-[#777]
+                        "
+                      >
+                        Lower numbers appear first.
+                      </p>
+                    </>
+                  )}
+
+
+                  {mode === "edit" && (
+
+                    <div
+                      className={`
+                        ${
+                          isVendor
+                            ? ""
+                            : "mt-[16px]"
+                        }
+
+                        rounded-[12px]
+
+                        border
+                        border-[#dedfe2]
+
+                        p-[13px]
+
+                        flex
+                        justify-between
+                      `}
+                    >
+
+                      <div>
+
+                        <p
+                          className="
+                            text-[13px]
+                            font-medium
+                          "
+                        >
+                          Products
+                        </p>
+
+
+                        <p
+                          className="
+                            mt-1
+
+                            text-[11px]
+                            text-[#777]
+                          "
+                        >
+                          Products assigned to this brand.
+                        </p>
+
+                      </div>
+
+
+                      <strong
+                        className="
+                          text-[13px]
+                        "
+                      >
+                        {
+                          initialData
+                            ?.products_count ??
+                          0
+                        }
+                      </strong>
+
+                    </div>
+
+                  )}
+
+                </Card>
+              )}
 
             </div>
 

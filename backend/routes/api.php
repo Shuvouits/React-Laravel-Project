@@ -50,6 +50,7 @@ use App\Http\Controllers\Api\Vendor\VendorProductController;
 use App\Http\Controllers\Api\Vendor\VendorInventoryLocationController;
 
 use App\Http\Controllers\Api\Vendor\VendorInventoryController;
+use App\Http\Controllers\Api\Vendor\VendorBrandController;
 
 
 use Illuminate\Support\Facades\Route;
@@ -152,6 +153,16 @@ Route::post('/inventory/locations/{id}/default', [VendorInventoryLocationControl
 Route::post('/inventory/locations/{id}/toggle-status', [VendorInventoryLocationController::class, 'toggleStatus']);
 Route::post('/inventory/locations/{id}/ship-sooner', [VendorInventoryLocationController::class, 'shipSooner']);
 Route::delete('/inventory/locations/{id}', [VendorInventoryLocationController::class, 'destroy']);
+
+
+// Brands
+Route::get('/brands', [VendorBrandController::class, 'index']);
+Route::post('/brands', [VendorBrandController::class, 'store']);
+Route::get('/brands/{id}', [VendorBrandController::class, 'show']);
+Route::post('/brands/{id}/update', [VendorBrandController::class, 'update']);
+
+// Brand AI
+    Route::post('/ai/brand-content', [BrandAIController::class, 'generate']);
 
 
 

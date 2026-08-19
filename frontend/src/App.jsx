@@ -108,6 +108,9 @@ import VendorProductCreate from "./pages/vendor/product/VendorProductCreate";
 import VendorEditProduct from "./pages/vendor/product/VendorEditProduct";
 import VendorInventory from "./pages/vendor/inventory/VendorInventory";
 import VendorLocations from "./pages/vendor/locations/VendorLocations";
+import VendorBrands from "./pages/vendor/brands/VendorBrands";
+import VendorBrandCreate from "./pages/vendor/brands/VendorBrandCreate";
+import VendorBrandEdit from "./pages/vendor/brands/VendorBrandEdit";
 
 
 const Home = () => {
@@ -260,6 +263,10 @@ const App = () => {
                         <Route path="products/inventory" element={<VendorInventory />} />
 
                         <Route path="products/locations" element={<VendorLocations />} />
+
+                        <Route path="products/brands" element={<VendorBrands />} />
+                        <Route path="products/brands/new" element={<VendorBrandCreate />} />
+                        <Route path="products/brands/:id/edit" element={<VendorBrandEdit />} />
 
 
                     </Route>
