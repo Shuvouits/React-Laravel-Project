@@ -21,6 +21,7 @@ import {
     useLocation,
 } from "react-router-dom";
 
+
 const productMenu = [
     {
         label: "All Products",
@@ -40,17 +41,28 @@ const productMenu = [
     },
 ];
 
+
+const orderMenu = [
+    {
+        label: "All Orders",
+        to: "/vendor/orders",
+    },
+    {
+        label: "Pre-orders",
+        to: "/vendor/preorders",
+    },
+    {
+        label: "Returns",
+        to: "/vendor/returns",
+    },
+];
+
+
 const menuItems = [
     {
         label: "Dashboard",
         to: "/vendor/dashboard",
         icon: LayoutDashboard,
-    },
-    {
-        label: "Orders",
-        to: "/vendor/orders",
-        icon: ShoppingCart,
-        hasArrow: true,
     },
     {
         label: "Finances",
@@ -85,15 +97,28 @@ const menuItems = [
     },
 ];
 
+
 const VendorSidebar = () => {
     const location = useLocation();
 
     const productRouteActive =
         location.pathname === "/vendor/products" ||
-        location.pathname.startsWith("/vendor/products/");
+        location.pathname.startsWith(
+            "/vendor/products/"
+        );
+
+    const orderRouteActive =
+        location.pathname === "/vendor/orders" ||
+        location.pathname.startsWith(
+            "/vendor/orders/"
+        );
 
     const [productsOpen, setProductsOpen] =
-        useState(true);
+        useState(productRouteActive);
+
+    const [ordersOpen, setOrdersOpen] =
+        useState(orderRouteActive);
+
 
     useEffect(() => {
         if (productRouteActive) {
@@ -101,10 +126,78 @@ const VendorSidebar = () => {
         }
     }, [productRouteActive]);
 
+
+    useEffect(() => {
+        if (orderRouteActive) {
+            setOrdersOpen(true);
+        }
+    }, [orderRouteActive]);
+
+
+    const isProductChildActive = (item) => {
+        if (
+            item.to ===
+            "/vendor/products"
+        ) {
+            return (
+                location.pathname ===
+                item.to
+            );
+        }
+
+        return (
+            location.pathname ===
+                item.to ||
+            location.pathname.startsWith(
+                `${item.to}/`
+            )
+        );
+    };
+
+
+    const isOrderChildActive = (item) => {
+        if (
+            item.to ===
+            "/vendor/orders"
+        ) {
+            const isPreOrder =
+                location.pathname ===
+                    "/vendor/orders/preorders" ||
+                location.pathname.startsWith(
+                    "/vendor/orders/preorders/"
+                );
+
+            const isReturn =
+                location.pathname ===
+                    "/vendor/orders/returns" ||
+                location.pathname.startsWith(
+                    "/vendor/orders/returns/"
+                );
+
+            return (
+                orderRouteActive &&
+                !isPreOrder &&
+                !isReturn
+            );
+        }
+
+        return (
+            location.pathname ===
+                item.to ||
+            location.pathname.startsWith(
+                `${item.to}/`
+            )
+        );
+    };
+
+
     return (
         <aside className="sticky top-0 flex h-screen w-[246px] shrink-0 flex-col border-r border-[#e8e8ee] bg-white">
+
             <div className="flex h-[74px] items-center border-b border-[#eeeeee] px-7">
+
                 <div className="flex items-center gap-2">
+
                     <div className="flex h-[31px] w-[31px] items-center justify-center rounded-[8px] bg-[#2563eb] text-white">
                         <Store
                             size={18}
@@ -115,11 +208,16 @@ const VendorSidebar = () => {
                     <span className="text-[21px] font-bold tracking-[-0.03em] text-[#2563eb]">
                         Storify
                     </span>
+
                 </div>
+
             </div>
 
+
             <div className="flex-1 overflow-y-auto px-4 py-4">
+
                 <nav className="space-y-1">
+
                     <SidebarLink
                         label="Dashboard"
                         to="/vendor/dashboard"
@@ -127,7 +225,9 @@ const VendorSidebar = () => {
                         location={location}
                     />
 
+
                     <div>
+
                         <button
                             type="button"
                             onClick={() =>
@@ -141,7 +241,9 @@ const VendorSidebar = () => {
                                     : "text-[#292929] hover:bg-[#f8f8fa]"
                             }`}
                         >
+
                             <div className="flex items-center gap-3">
+
                                 <Package
                                     size={18}
                                     strokeWidth={1.7}
@@ -150,6 +252,7 @@ const VendorSidebar = () => {
                                 <span>
                                     Products
                                 </span>
+
                             </div>
 
                             <ChevronDown
@@ -161,53 +264,129 @@ const VendorSidebar = () => {
                                         : "-rotate-90"
                                 }`}
                             />
+
                         </button>
+
 
                         {productsOpen && (
                             <div className="ml-[21px] mt-1">
-                                {productMenu.map(
-                                    (item) => {
-                                        const childActive =
-                                            item.to ===
-                                            "/vendor/products"
-                                                ? location.pathname ===
-                                                  item.to
-                                                : location.pathname ===
-                                                      item.to ||
-                                                  location.pathname.startsWith(
-                                                      `${item.to}/`
-                                                  );
 
-                                        return (
-                                            <div
-                                                key={
+                                {productMenu.map(
+                                    (item) => (
+                                        <div
+                                            key={
+                                                item.to
+                                            }
+                                            className="relative border-l border-[#dfe2e8] pl-[16px]"
+                                        >
+                                            <span className="absolute left-0 top-1/2 h-px w-[12px] bg-[#dfe2e8]" />
+
+                                            <NavLink
+                                                to={
                                                     item.to
                                                 }
-                                                className="relative border-l border-[#dfe2e8] pl-[16px]"
+                                                className={`flex min-h-[36px] items-center rounded-[10px] px-2 text-[13px] transition ${
+                                                    isProductChildActive(
+                                                        item
+                                                    )
+                                                        ? "bg-[#f1f1f2] font-semibold text-[#202020]"
+                                                        : "text-[#696969] hover:bg-[#f7f7f8] hover:text-[#222222]"
+                                                }`}
                                             >
-                                                <span className="absolute left-0 top-1/2 h-px w-[12px] bg-[#dfe2e8]" />
-
-                                                <NavLink
-                                                    to={
-                                                        item.to
-                                                    }
-                                                    className={`flex min-h-[36px] items-center rounded-[10px] px-2 text-[13px] transition ${
-                                                        childActive
-                                                            ? "bg-[#f1f1f2] font-semibold text-[#202020]"
-                                                            : "text-[#696969] hover:bg-[#f7f7f8] hover:text-[#222222]"
-                                                    }`}
-                                                >
-                                                    {
-                                                        item.label
-                                                    }
-                                                </NavLink>
-                                            </div>
-                                        );
-                                    }
+                                                {
+                                                    item.label
+                                                }
+                                            </NavLink>
+                                        </div>
+                                    )
                                 )}
+
                             </div>
                         )}
+
                     </div>
+
+
+                    <div>
+
+                        <button
+                            type="button"
+                            onClick={() =>
+                                setOrdersOpen(
+                                    (prev) => !prev
+                                )
+                            }
+                            className={`flex h-[42px] w-full items-center justify-between rounded-[12px] px-3 text-[14px] transition ${
+                                orderRouteActive
+                                    ? "bg-[#f5f7fb] font-medium text-[#2563eb]"
+                                    : "text-[#292929] hover:bg-[#f8f8fa]"
+                            }`}
+                        >
+
+                            <div className="flex items-center gap-3">
+
+                                <ShoppingCart
+                                    size={18}
+                                    strokeWidth={1.7}
+                                />
+
+                                <span>
+                                    Orders
+                                </span>
+
+                            </div>
+
+                            <ChevronDown
+                                size={17}
+                                strokeWidth={1.8}
+                                className={`transition-transform duration-200 ${
+                                    ordersOpen
+                                        ? "rotate-0"
+                                        : "-rotate-90"
+                                }`}
+                            />
+
+                        </button>
+
+
+                        {ordersOpen && (
+                            <div className="ml-[21px] mt-1">
+
+                                {orderMenu.map(
+                                    (item) => (
+                                        <div
+                                            key={
+                                                item.to
+                                            }
+                                            className="relative border-l border-[#dfe2e8] pl-[16px]"
+                                        >
+                                            <span className="absolute left-0 top-1/2 h-px w-[12px] bg-[#dfe2e8]" />
+
+                                            <NavLink
+                                                to={
+                                                    item.to
+                                                }
+                                                className={`flex min-h-[36px] items-center rounded-[10px] px-2 text-[13px] transition ${
+                                                    isOrderChildActive(
+                                                        item
+                                                    )
+                                                        ? "bg-[#f1f1f2] font-semibold text-[#202020]"
+                                                        : "text-[#696969] hover:bg-[#f7f7f8] hover:text-[#222222]"
+                                                }`}
+                                            >
+                                                {
+                                                    item.label
+                                                }
+                                            </NavLink>
+                                        </div>
+                                    )
+                                )}
+
+                            </div>
+                        )}
+
+                    </div>
+
 
                     {menuItems
                         .filter(
@@ -231,10 +410,14 @@ const VendorSidebar = () => {
                                 }
                             />
                         ))}
+
                 </nav>
+
             </div>
 
+
             <div className="border-t border-[#eeeeee] p-4">
+
                 <NavLink
                     to="/vendor/settings"
                     className={({ isActive }) =>
@@ -245,6 +428,7 @@ const VendorSidebar = () => {
                         }`
                     }
                 >
+
                     <Settings
                         size={18}
                         strokeWidth={1.7}
@@ -253,11 +437,15 @@ const VendorSidebar = () => {
                     <span>
                         Settings
                     </span>
+
                 </NavLink>
+
             </div>
+
         </aside>
     );
 };
+
 
 const SidebarLink = ({
     label,
@@ -281,7 +469,9 @@ const SidebarLink = ({
                     : "text-[#4d4d4d] hover:bg-[#f8f8fa] hover:text-[#222222]"
             }`}
         >
+
             <div className="flex items-center gap-3">
+
                 <Icon
                     size={18}
                     strokeWidth={1.7}
@@ -290,6 +480,7 @@ const SidebarLink = ({
                 <span>
                     {label}
                 </span>
+
             </div>
 
             {hasArrow && (
@@ -299,8 +490,10 @@ const SidebarLink = ({
                     className="text-[#888888]"
                 />
             )}
+
         </NavLink>
     );
 };
+
 
 export default VendorSidebar;

@@ -102,4 +102,32 @@ class User extends Authenticatable
             Wishlist::class
         );
     }
+
+
+    public function customerConversations(): HasMany
+{
+    return $this->hasMany(
+        Conversation::class,
+        'customer_id'
+    );
+}
+
+public function sentConversationMessages(): HasMany
+{
+    return $this->hasMany(
+        ConversationMessage::class,
+        'sender_user_id'
+    );
+}
+
+public function assignedConversations(): HasMany
+{
+    return $this->hasMany(
+        Conversation::class,
+        'assigned_to'
+    );
+}
+
+
+
 }

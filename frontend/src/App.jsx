@@ -111,6 +111,14 @@ import VendorLocations from "./pages/vendor/locations/VendorLocations";
 import VendorBrands from "./pages/vendor/brands/VendorBrands";
 import VendorBrandCreate from "./pages/vendor/brands/VendorBrandCreate";
 import VendorBrandEdit from "./pages/vendor/brands/VendorBrandEdit";
+import VendorOrders from "./pages/vendor/orders/VendorOrders";
+import VendorOrderCreate from "./pages/vendor/orders/VendorOrderCreate";
+import VendorOrderDetails from "./pages/vendor/orders/VendorOrderDetails";
+import VendorPreOrders from "./pages/admin/vendors/preorders/VendorPreorders";
+import VendorReturns from "./pages/admin/vendors/returns/VendorReturns";
+import VendorProfile from "./pages/vendor/profile/VendorProfile";
+import VendorInbox from "./pages/vendor/inbox/VendorInbox";
+import CustomerInbox from "./components/frontend/customer/inbox/CustomerInbox";
 
 
 const Home = () => {
@@ -154,6 +162,11 @@ const App = () => {
                         <Route path="/payment/success" element={<PaymentSuccess />} />
                         <Route path="/payment/cancelled" element={<PaymentCancelled />} />
                         <Route path="/payment/error" element={<PaymentError />} />
+
+
+                        <Route path="/account/inbox" element={<CustomerInbox />} />
+
+                        
 
 
 
@@ -267,6 +280,18 @@ const App = () => {
                         <Route path="products/brands" element={<VendorBrands />} />
                         <Route path="products/brands/new" element={<VendorBrandCreate />} />
                         <Route path="products/brands/:id/edit" element={<VendorBrandEdit />} />
+
+                        <Route path="orders" element={<VendorOrders />} />
+<Route path="orders/create" element={<VendorOrderCreate />} />
+<Route path="orders/:id" element={<VendorOrderDetails />} />
+
+<Route path="preorders" element={<VendorPreOrders />} />
+
+<Route path="returns" element={<VendorReturns />} />
+<Route path="profile" element={<VendorProfile />} />
+<Route path="inbox" element={<VendorInbox />} />
+
+
 
 
                     </Route>

@@ -51,11 +51,17 @@ use App\Http\Controllers\Api\Vendor\VendorInventoryLocationController;
 
 use App\Http\Controllers\Api\Vendor\VendorInventoryController;
 use App\Http\Controllers\Api\Vendor\VendorBrandController;
+use App\Http\Controllers\Api\Vendor\VendorInboxController;
+use App\Http\Controllers\Api\Vendor\VendorOrderController;
+use App\Http\Controllers\Api\Vendor\VendorPreOrderController;
+use App\Http\Controllers\Api\Vendor\VendorReturnController;
+use App\Http\Controllers\Api\Vendor\VendorProfileController;
 
+use App\Http\Controllers\Api\Customer\CustomerMessageController;
 
 use Illuminate\Support\Facades\Route;
 
-Route::get('/payments/stripe/success', [StripePaymentController::class,'success']);
+Route::get('/payments/stripe/success', [StripePaymentController::class, 'success']);
 
 // Storefront Home
 Route::get('/home/hero-slides', [HeroSlideController::class, 'index']);
@@ -117,6 +123,39 @@ Route::prefix('customer')->middleware(['auth:sanctum', 'customer'])->group(funct
     Route::get('/orders', [OrderController::class, 'index']);
     Route::post('/orders', [OrderController::class, 'store']);
     Route::get('/orders/{order}', [OrderController::class, 'show']);
+
+
+    // Customer Messages
+   Route::get('/messages/vendors', [CustomerMessageController::class, 'vendors']);
+   Route::get('/messages', [CustomerMessageController::class, 'index']);
+   Route::post('/messages', [CustomerMessageController::class, 'start']);
+   Route::get('/messages/{id}', [CustomerMessageController::class, 'show'])->whereNumber('id');
+   Route::post('/messages/{id}/send', [CustomerMessageController::class, 'send'])->whereNumber('id');
+   Route::post('/messages/{id}/messages', [CustomerMessageController::class, 'sendMessage'])->whereNumber('id');
+
+
+
+});
+
+
+Route::middleware(['auth:sanctum', 'customer'])->prefix('account')->group(function () {
+
+    Route::get('/preferences', [PreferenceController::class, 'show']);
+
+    Route::put('/preferences', [PreferenceController::class, 'update']);
+
+    Route::get('/profile', [ProfileController::class, 'show']);
+    Route::put('/profile', [ProfileController::class, 'update']);
+
+    Route::get('/wishlist', [WishlistController::class, 'index']);
+
+    Route::post('/wishlist/{product}', [WishlistController::class, 'store']);
+
+    Route::delete('/wishlist/{product}', [WishlistController::class, 'destroy']);
+
+    Route::get('/wishlist/{product}/check', [WishlistController::class, 'check']);
+
+    Route::get('/overview', [CustomerDashboardController::class, 'overview']);
 });
 
 
@@ -140,53 +179,78 @@ Route::prefix('vendor')->middleware(['auth:sanctum', 'vendor'])->group(function 
     Route::post('/products/{productId}/variants/{variantId}/image', [VendorProductController::class, 'uploadVariantImage']);
 
     // Inventory
-Route::get('/inventory', [VendorInventoryController::class, 'index']);
+    Route::get('/inventory', [VendorInventoryController::class, 'index']);
 
-Route::post('/inventory/on-hand', [VendorInventoryController::class, 'updateOnHand']);
+    Route::post('/inventory/on-hand', [VendorInventoryController::class, 'updateOnHand']);
 
-// Inventory Locations
-Route::get('/inventory/locations', [VendorInventoryLocationController::class, 'index']);
-Route::post('/inventory/locations', [VendorInventoryLocationController::class, 'store']);
-Route::get('/inventory/locations/{id}', [VendorInventoryLocationController::class, 'show']);
-Route::put('/inventory/locations/{id}', [VendorInventoryLocationController::class, 'update']);
-Route::post('/inventory/locations/{id}/default', [VendorInventoryLocationController::class, 'setDefault']);
-Route::post('/inventory/locations/{id}/toggle-status', [VendorInventoryLocationController::class, 'toggleStatus']);
-Route::post('/inventory/locations/{id}/ship-sooner', [VendorInventoryLocationController::class, 'shipSooner']);
-Route::delete('/inventory/locations/{id}', [VendorInventoryLocationController::class, 'destroy']);
+    // Inventory Locations
+    Route::get('/inventory/locations', [VendorInventoryLocationController::class, 'index']);
+    Route::post('/inventory/locations', [VendorInventoryLocationController::class, 'store']);
+    Route::get('/inventory/locations/{id}', [VendorInventoryLocationController::class, 'show']);
+    Route::put('/inventory/locations/{id}', [VendorInventoryLocationController::class, 'update']);
+    Route::post('/inventory/locations/{id}/default', [VendorInventoryLocationController::class, 'setDefault']);
+    Route::post('/inventory/locations/{id}/toggle-status', [VendorInventoryLocationController::class, 'toggleStatus']);
+    Route::post('/inventory/locations/{id}/ship-sooner', [VendorInventoryLocationController::class, 'shipSooner']);
+    Route::delete('/inventory/locations/{id}', [VendorInventoryLocationController::class, 'destroy']);
 
 
-// Brands
-Route::get('/brands', [VendorBrandController::class, 'index']);
-Route::post('/brands', [VendorBrandController::class, 'store']);
-Route::get('/brands/{id}', [VendorBrandController::class, 'show']);
-Route::post('/brands/{id}/update', [VendorBrandController::class, 'update']);
+    // Brands
+    Route::get('/brands', [VendorBrandController::class, 'index']);
+    Route::post('/brands', [VendorBrandController::class, 'store']);
+    Route::get('/brands/{id}', [VendorBrandController::class, 'show']);
+    Route::post('/brands/{id}/update', [VendorBrandController::class, 'update']);
 
-// Brand AI
+    // Brand AI
     Route::post('/ai/brand-content', [BrandAIController::class, 'generate']);
 
+    // Orders
+    Route::get('/orders', [VendorOrderController::class, 'index']);
+    Route::get('/orders/create/products', [VendorOrderController::class, 'createProducts']);
+    Route::get('/orders/create/customers', [VendorOrderController::class, 'createCustomers']);
+    Route::post('/orders/manual', [VendorOrderController::class, 'storeManual']);
+    Route::get('/orders/{id}', [VendorOrderController::class, 'show']);
+    Route::post('/orders/create/customer', [VendorOrderController::class, 'storeCustomer']);
+
+    // Pre-orders
+    Route::get('/preorders', [VendorPreOrderController::class, 'index']);
+
+    // Returns
+Route::get('/returns', [VendorReturnController::class, 'index']);
+Route::get('/returns/{id}', [VendorReturnController::class, 'show']);
+
+// Vendor Profile
+Route::get('/profile', [VendorProfileController::class, 'show']);
+Route::post('/profile', [VendorProfileController::class, 'update']);
+
+// Vendor Security
+Route::get('/security', [CustomerSecurityController::class, 'index']);
+Route::put('/security/password', [CustomerSecurityController::class, 'updatePassword']);
+
+// Two-Factor Authentication
+Route::post('/security/two-factor/setup', [CustomerSecurityController::class, 'setupTwoFactor']);
+Route::post('/security/two-factor/confirm', [CustomerSecurityController::class, 'confirmTwoFactor']);
+Route::post('/security/two-factor/disable', [CustomerSecurityController::class, 'disableTwoFactor']);
+Route::post('/security/two-factor/recovery-codes', [CustomerSecurityController::class, 'regenerateRecoveryCodes']);
+
+// Logout Other Sessions
+Route::post('/security/logout-other-sessions', [CustomerSecurityController::class, 'logoutOtherSessions']);
+
+
+// Inbox
+   Route::get('/inbox', [VendorInboxController::class, 'index']);
+Route::get('/inbox/{id}', [VendorInboxController::class, 'show']);
+Route::post('/inbox/{id}/messages', [VendorInboxController::class, 'sendMessage']);
+Route::post('/inbox/{id}/status', [VendorInboxController::class, 'updateStatus']);
+
+
+
+
+
 
 
 });
 
-Route::middleware(['auth:sanctum', 'customer'])->prefix('account')->group(function () {
 
-    Route::get('/preferences', [PreferenceController::class, 'show']);
-
-    Route::put('/preferences', [PreferenceController::class, 'update']);
-
-    Route::get('/profile', [ProfileController::class, 'show']);
-    Route::put('/profile', [ProfileController::class, 'update']);
-
-    Route::get('/wishlist', [WishlistController::class, 'index']);
-
-    Route::post('/wishlist/{product}', [WishlistController::class, 'store']);
-
-    Route::delete('/wishlist/{product}', [WishlistController::class, 'destroy']);
-
-    Route::get('/wishlist/{product}/check', [WishlistController::class, 'check']);
-
-    Route::get('/overview', [CustomerDashboardController::class, 'overview']);
-});
 
 // Vendor Registration
 Route::prefix('vendor-registration')->group(function () {
@@ -371,7 +435,7 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'admin'])->group(function ()
     // Vendor Account Activation
     Route::get('/vendor/activate/{user}', [VendorActivationController::class, 'activate'])
         ->middleware('signed')
-            ->name('vendor.activate');
+        ->name('vendor.activate');
 
     // Vendor Plans
     Route::get('/vendor-plans', [VendorPlanController::class, 'index']);

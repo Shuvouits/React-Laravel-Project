@@ -24,6 +24,7 @@ const VendorOrderCreate = () => {
     const [selectedCustomer, setSelectedCustomer] = useState(null);
     const [customerOpen, setCustomerOpen] = useState(false);
     const [customerLoading, setCustomerLoading] = useState(false);
+    const [customerModalOpen, setCustomerModalOpen] = useState(false);
 
     const [discount, setDiscount] = useState(0);
     const [shipping, setShipping] = useState(0);
@@ -736,8 +737,11 @@ const VendorOrderCreate = () => {
 
                                         <button
                                             type="button"
-                                            disabled
-                                            className="flex w-full items-center gap-[8px] border-b border-[#eeeeee] px-[14px] py-[11px] text-left text-[13px] font-medium text-[#999]"
+                                            onClick={() => {
+                                                setCustomerOpen(false);
+                                                setCustomerModalOpen(true);
+                                            }}
+                                            className="flex w-full items-center gap-[8px] border-b border-[#eeeeee] px-[14px] py-[11px] text-left text-[13px] font-medium text-[#333] transition hover:bg-[#f7f7f7]"
                                         >
                                             <Plus size={16} />
                                             Create a new customer
@@ -859,6 +863,344 @@ const VendorOrderCreate = () => {
                 onAdd={handleAddProducts}
             />
 
+            <NewCustomerModal
+                open={customerModalOpen}
+                onClose={() => {
+                    setCustomerModalOpen(false);
+                }}
+                onCreated={(customer) => {
+                    setSelectedCustomer(customer);
+                    setCustomerSearch("");
+                    setCustomerOpen(false);
+                    setCustomerModalOpen(false);
+                }}
+            />
+
+        </div>
+    );
+};
+
+const NewCustomerModal = ({
+    open,
+    onClose,
+    onCreated,
+}) => {
+    const [form, setForm] = useState({
+        first_name: "",
+        last_name: "",
+        email: "",
+        phone: "",
+        shipping_phone: "",
+        address_line1: "",
+        address_line2: "",
+        city: "",
+        state: "",
+        postal_code: "",
+        country: "United States",
+        tags: "",
+        notes: "",
+    });
+
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState("");
+
+    useEffect(() => {
+        if (!open) {
+            return;
+        }
+
+        setForm({
+            first_name: "",
+            last_name: "",
+            email: "",
+            phone: "",
+            shipping_phone: "",
+            address_line1: "",
+            address_line2: "",
+            city: "",
+            state: "",
+            postal_code: "",
+            country: "United States",
+            tags: "",
+            notes: "",
+        });
+
+        setError("");
+    }, [open]);
+
+    if (!open) {
+        return null;
+    }
+
+    const updateField = (field, value) => {
+        setForm((current) => ({
+            ...current,
+            [field]: value,
+        }));
+    };
+
+    const handleSubmit = async (event) => {
+        event.preventDefault();
+
+        if (!form.first_name.trim()) {
+            setError("First name is required.");
+            return;
+        }
+
+        if (!form.email.trim()) {
+            setError("Email is required.");
+            return;
+        }
+
+        try {
+            setLoading(true);
+            setError("");
+
+            const response = await api.post(
+                "/vendor/orders/create/customer",
+                {
+                    ...form,
+                    first_name: form.first_name.trim(),
+                    last_name: form.last_name.trim() || null,
+                    email: form.email.trim(),
+                    phone: form.phone.trim() || null,
+                    shipping_phone: form.shipping_phone.trim() || null,
+                    address_line1: form.address_line1.trim() || null,
+                    address_line2: form.address_line2.trim() || null,
+                    city: form.city.trim() || null,
+                    state: form.state.trim() || null,
+                    postal_code: form.postal_code.trim() || null,
+                    country: form.country.trim() || null,
+                    tags: form.tags.trim() || null,
+                    notes: form.notes.trim() || null,
+                }
+            );
+
+            const customer = response.data?.customer;
+
+            if (!customer?.id) {
+                throw new Error("Created customer was not returned.");
+            }
+
+            onCreated(customer);
+        } catch (err) {
+            console.error(
+                "Create customer error:",
+                err.response?.data || err.message
+            );
+
+            const validationErrors = err.response?.data?.errors;
+            const firstError = validationErrors
+                ? Object.values(validationErrors).flat().find(Boolean)
+                : null;
+
+            setError(
+                firstError ||
+                err.response?.data?.message ||
+                err.message ||
+                "Unable to create customer."
+            );
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    return (
+        <div
+            className="fixed inset-0 z-[500] flex items-center justify-center bg-black/45 px-[20px] py-[24px]"
+            onMouseDown={(event) => {
+                if (
+                    event.target === event.currentTarget &&
+                    !loading
+                ) {
+                    onClose();
+                }
+            }}
+        >
+            <form
+                onSubmit={handleSubmit}
+                className="flex max-h-[92vh] w-full max-w-[760px] flex-col overflow-hidden rounded-[18px] bg-white shadow-[0_24px_80px_rgba(0,0,0,0.28)]"
+            >
+                <div className="flex items-center justify-between border-b border-[#e8e8e8] px-[24px] py-[18px]">
+                    <h2 className="text-[18px] font-semibold text-[#171717]">
+                        New customer
+                    </h2>
+
+                    <button
+                        type="button"
+                        onClick={onClose}
+                        disabled={loading}
+                        className="flex h-[32px] w-[32px] items-center justify-center rounded-[8px] text-[#666] transition hover:bg-[#f5f5f5] disabled:opacity-50"
+                    >
+                        <X size={18} />
+                    </button>
+                </div>
+
+                <div className="overflow-y-auto px-[24px] py-[18px]">
+                    <div className="grid grid-cols-1 gap-x-[16px] gap-y-[15px] md:grid-cols-2">
+                        <CustomerField
+                            label="First name"
+                            value={form.first_name}
+                            onChange={(value) => updateField("first_name", value)}
+                            placeholder="First name"
+                            required
+                        />
+
+                        <CustomerField
+                            label="Last name"
+                            value={form.last_name}
+                            onChange={(value) => updateField("last_name", value)}
+                            placeholder="Last name"
+                        />
+
+                        <CustomerField
+                            label="Email"
+                            type="email"
+                            value={form.email}
+                            onChange={(value) => updateField("email", value)}
+                            placeholder="customer@example.com"
+                            required
+                        />
+
+                        <CustomerField
+                            label="Phone number"
+                            value={form.phone}
+                            onChange={(value) => updateField("phone", value)}
+                            placeholder="+880..."
+                        />
+
+                        <CustomerField
+                            label="Shipping street"
+                            value={form.address_line1}
+                            onChange={(value) => updateField("address_line1", value)}
+                            placeholder="House, road, area"
+                        />
+
+                        <CustomerField
+                            label="Apartment, suite, etc."
+                            value={form.address_line2}
+                            onChange={(value) => updateField("address_line2", value)}
+                            placeholder="Optional"
+                        />
+
+                        <CustomerField
+                            label="Shipping city"
+                            value={form.city}
+                            onChange={(value) => updateField("city", value)}
+                            placeholder="City"
+                        />
+
+                        <CustomerField
+                            label="Shipping state"
+                            value={form.state}
+                            onChange={(value) => updateField("state", value)}
+                            placeholder="State"
+                        />
+
+                        <CustomerField
+                            label="Postal code"
+                            value={form.postal_code}
+                            onChange={(value) => updateField("postal_code", value)}
+                            placeholder="Postal code"
+                        />
+
+                        <CustomerField
+                            label="Country"
+                            value={form.country}
+                            onChange={(value) => updateField("country", value)}
+                            placeholder="Country"
+                        />
+
+                        <CustomerField
+                            label="Shipping phone"
+                            value={form.shipping_phone}
+                            onChange={(value) => updateField("shipping_phone", value)}
+                            placeholder="+880..."
+                        />
+
+                        <CustomerField
+                            label="Tags"
+                            value={form.tags}
+                            onChange={(value) => updateField("tags", value)}
+                            placeholder="vip, wholesale"
+                        />
+
+                        <div className="md:col-span-2">
+                            <label className="mb-[7px] block text-[13px] font-medium text-[#333]">
+                                Notes
+                            </label>
+
+                            <textarea
+                                rows="4"
+                                value={form.notes}
+                                onChange={(event) => updateField("notes", event.target.value)}
+                                placeholder="Private internal notes"
+                                className="w-full resize-none rounded-[10px] border border-[#dedede] px-[13px] py-[10px] text-[13px] text-[#222] outline-none transition focus:border-[#2467d5] focus:ring-2 focus:ring-blue-100"
+                            />
+                        </div>
+                    </div>
+
+                    {error && (
+                        <div className="mt-[16px] rounded-[10px] border border-red-200 bg-red-50 px-[13px] py-[10px] text-[12px] text-red-600">
+                            {error}
+                        </div>
+                    )}
+                </div>
+
+                <div className="flex items-center justify-end gap-[10px] border-t border-[#e8e8e8] px-[24px] py-[15px]">
+                    <button
+                        type="button"
+                        onClick={onClose}
+                        disabled={loading}
+                        className="h-[38px] rounded-[10px] border border-[#dedede] bg-white px-[16px] text-[13px] font-semibold text-[#333] transition hover:bg-[#f7f7f7] disabled:opacity-50"
+                    >
+                        Cancel
+                    </button>
+
+                    <button
+                        type="submit"
+                        disabled={loading}
+                        className="flex h-[38px] items-center gap-[7px] rounded-[10px] bg-[#2467d5] px-[17px] text-[13px] font-semibold text-white transition hover:bg-[#1e59ba] disabled:cursor-not-allowed disabled:bg-[#9bbceb]"
+                    >
+                        {loading && (
+                            <LoaderCircle
+                                size={16}
+                                className="animate-spin"
+                            />
+                        )}
+
+                        {loading
+                            ? "Creating..."
+                            : "Create customer"}
+                    </button>
+                </div>
+            </form>
+        </div>
+    );
+};
+
+const CustomerField = ({
+    label,
+    type = "text",
+    value,
+    onChange,
+    placeholder,
+    required = false,
+}) => {
+    return (
+        <div>
+            <label className="mb-[7px] block text-[13px] font-medium text-[#333]">
+                {label}
+            </label>
+
+            <input
+                type={type}
+                value={value}
+                required={required}
+                onChange={(event) => onChange(event.target.value)}
+                placeholder={placeholder}
+                className="h-[40px] w-full rounded-[10px] border border-[#dedede] px-[13px] text-[13px] text-[#222] outline-none transition focus:border-[#2467d5] focus:ring-2 focus:ring-blue-100"
+            />
         </div>
     );
 };

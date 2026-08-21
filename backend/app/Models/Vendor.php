@@ -77,4 +77,13 @@ class Vendor extends Model
     {
         return $query->where('status', 'suspended');
     }
+
+    public function conversations(): HasMany
+{
+    return $this->hasMany(
+        Conversation::class
+    );
+}
+
+
 }
