@@ -6,15 +6,10 @@ import {
 
 import api from "../../../api/axios";
 
-
 import InboxSidebar from "../../../components/inbox/InboxSidebar";
-
 import ConversationHeader from "../../../components/inbox/ConversationHeader";
-
 import MessageThread from "../../../components/inbox/MessageThread";
-
 import ConversationComposer from "../../../components/inbox/ConversationComposer";
-
 import ContextPanel from "../../../components/inbox/ContextPanel";
 
 
@@ -65,6 +60,12 @@ const VendorInbox = () => {
         useRef(null);
 
 
+    const activeConversationId =
+        selectedConversation?.id;
+
+
+
+
 
     const loadConversations = async () => {
 
@@ -73,15 +74,13 @@ const VendorInbox = () => {
             setLoading(true);
 
 
-            const response =
-                await api.get(
-                    "/vendor/inbox"
-                );
+            const response = await api.get(
+                "/vendor/inbox"
+            );
 
 
             setConversations(
-                response.data.conversations ||
-                []
+                response.data.conversations?.data || []
             );
 
 
@@ -99,13 +98,15 @@ const VendorInbox = () => {
 
 
 
-    const loadMessages = async (
-        conversation
-    ) => {
 
+
+
+    const loadMessages = async (conversation) => {
 
         if(!conversation){
+
             return;
+
         }
 
 
@@ -114,20 +115,19 @@ const VendorInbox = () => {
             setLoadingMessages(true);
 
 
-            const response =
-                await api.get(
-                    `/vendor/inbox/${conversation.id}`
-                );
-
-
-            setSelectedConversation(
-                response.data.conversation
+            const response = await api.get(
+                `/vendor/inbox/${conversation.id}`
             );
 
 
+            setSelectedConversation(prev => ({
+                ...prev,
+                ...response.data.conversation
+            }));
+
+
             setMessages(
-                response.data.messages ||
-                []
+                response.data.conversation?.messages || []
             );
 
 
@@ -145,6 +145,52 @@ const VendorInbox = () => {
 
 
 
+
+
+
+
+    const refreshMessages = async () => {
+
+        if(!activeConversationId){
+
+            return;
+
+        }
+
+
+        try {
+
+
+            const response = await api.get(
+                `/vendor/inbox/${activeConversationId}`
+            );
+
+
+            setMessages(
+                response.data.conversation?.messages || []
+            );
+
+
+            setSelectedConversation(prev => ({
+                ...prev,
+                ...response.data.conversation
+            }));
+
+
+        } catch(error){
+
+            console.error(error);
+
+        }
+
+    };
+
+
+
+
+
+
+
     useEffect(()=>{
 
         loadConversations();
@@ -153,7 +199,12 @@ const VendorInbox = () => {
 
 
 
+
+
+
+
     useEffect(()=>{
+
 
         if(selectedConversation){
 
@@ -163,17 +214,64 @@ const VendorInbox = () => {
 
         }
 
+
     },[
         selectedConversation?.id
     ]);
 
 
 
+
+
+
+
+    // realtime silent refresh
+
     useEffect(()=>{
 
+
+        if(!activeConversationId){
+
+            return;
+
+        }
+
+
+        const interval = setInterval(()=>{
+
+            refreshMessages();
+
+        },3000);
+
+
+
+        return ()=>{
+
+            clearInterval(interval);
+
+        };
+
+
+    },[
+        activeConversationId
+    ]);
+
+
+
+
+
+
+
+
+    useEffect(()=>{
+
+
         messagesEndRef.current?.scrollIntoView({
-            behavior:"smooth",
+
+            behavior:"smooth"
+
         });
+
 
     },[
         messages
@@ -181,156 +279,197 @@ const VendorInbox = () => {
 
 
 
-    const handleSelectConversation =
-        (conversation)=>{
 
-            setSelectedConversation(
-                conversation
+
+
+
+
+    const handleSelectConversation = (conversation)=>{
+
+
+        setSelectedConversation(
+            conversation
+        );
+
+
+    };
+
+
+
+
+
+
+
+    const handleFileSelect = (event)=>{
+
+
+        const file =
+            event.target.files[0];
+
+
+        if(!file){
+
+            return;
+
+        }
+
+
+
+        if(
+            file.size >
+            5 * 1024 * 1024
+        ){
+
+            setError(
+                "File size must be below 5MB."
             );
 
-        };
+            return;
+
+        }
 
 
 
-    const handleFileSelect =
-        (event)=>{
+        setSelectedFile(
+            file
+        );
 
 
-            const file =
-                event.target.files[0];
+    };
 
 
-            if(!file){
-                return;
-            }
 
 
-            if(
-                file.size >
-                5 * 1024 * 1024
-            ){
-
-                setError(
-                    "File size must be below 5MB."
-                );
-
-                return;
-
-            }
 
 
-            setSelectedFile(
-                file
+
+
+    const handleSend = async ()=>{
+
+
+        if(
+            sending ||
+            (
+                !message.trim() &&
+                !selectedFile
+            ) ||
+            !selectedConversation
+        ){
+
+            return;
+
+        }
+
+
+
+        try {
+
+
+            setSending(true);
+
+
+
+            const formData =
+                new FormData();
+
+
+
+
+            formData.append(
+                "message",
+                message || "Attachment"
             );
 
-        };
 
 
 
-    const handleSend =
-        async ()=>{
-
-
-            if(
-                sending ||
-                (
-                    !message.trim() &&
-                    !selectedFile
-                ) ||
-                !selectedConversation
-            ){
-
-                return;
-
-            }
-
-
-
-            try {
-
-
-                setSending(true);
-
-
-                const formData =
-                    new FormData();
-
-
+            if(selectedFile){
 
                 formData.append(
-                    "message",
-                    message ||
-                    "Attachment"
+                    "attachment",
+                    selectedFile
                 );
 
+            }
 
 
-                if(selectedFile){
 
-                    formData.append(
-                        "attachment",
-                        selectedFile
-                    );
+
+
+
+            await api.post(
+
+                `/vendor/inbox/${selectedConversation.id}/messages`,
+
+                formData,
+
+                {
+
+                    headers:{
+
+                        "Content-Type":
+                        "multipart/form-data",
+
+                    },
 
                 }
 
-
-
-                await api.post(
-
-                    `/vendor/inbox/${selectedConversation.id}/messages`,
-
-                    formData,
-
-                    {
-                        headers:{
-                            "Content-Type":
-                            "multipart/form-data",
-                        },
-                    }
-
-                );
+            );
 
 
 
-                setMessage("");
-
-                setSelectedFile(null);
 
 
 
-                await loadMessages(
-                    selectedConversation
-                );
+            setMessage("");
 
-
-                await loadConversations();
+            setSelectedFile(null);
 
 
 
-            } catch(error){
 
-                console.error(error);
 
-            } finally {
+            await loadMessages(
+                selectedConversation
+            );
 
-                setSending(false);
 
-            }
+            await loadConversations();
 
-        };
+
+
+
+        } catch(error){
+
+            console.error(error);
+
+        } finally {
+
+            setSending(false);
+
+        }
+
+
+    };
+
+
+
+
+
 
 
 
     return (
 
         <div
+
             className="
             flex
             h-[calc(100vh-74px)]
             overflow-hidden
             bg-[#f7f8fa]
             "
+
         >
 
 
@@ -364,14 +503,19 @@ const VendorInbox = () => {
 
 
 
+
+
             <div
+
                 className="
                 flex
                 flex-1
                 flex-col
                 bg-white
                 "
+
             >
+
 
 
                 <ConversationHeader
@@ -381,6 +525,8 @@ const VendorInbox = () => {
                     }
 
                 />
+
+
 
 
 
@@ -407,6 +553,8 @@ const VendorInbox = () => {
                     }
 
                 />
+
+
 
 
 
@@ -443,7 +591,10 @@ const VendorInbox = () => {
                 />
 
 
+
             </div>
+
+
 
 
 
@@ -454,6 +605,7 @@ const VendorInbox = () => {
                 }
 
             />
+
 
 
         </div>

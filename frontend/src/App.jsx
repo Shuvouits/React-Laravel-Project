@@ -119,6 +119,7 @@ import VendorReturns from "./pages/admin/vendors/returns/VendorReturns";
 import VendorProfile from "./pages/vendor/profile/VendorProfile";
 import VendorInbox from "./pages/vendor/inbox/VendorInbox";
 import CustomerInbox from "./components/frontend/customer/inbox/CustomerInbox";
+import CustomerOrders from "./pages/frontend/account/CustomerOrders";
 
 
 const Home = () => {
@@ -165,6 +166,8 @@ const App = () => {
 
 
                         <Route path="/account/inbox" element={<CustomerInbox />} />
+
+                        <Route path="/account/orders" element={<CustomerOrders />} />
 
                         
 

@@ -5,6 +5,8 @@ namespace App\Http\Controllers\Api\Account;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\File;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 
 class ProfileController extends Controller
@@ -23,59 +25,251 @@ class ProfileController extends Controller
                 'phone' => $user->phone,
                 'birthdate' => $user->birthdate,
                 'gender' => $user->gender,
+                'photo' => $user->photo
+                    ? asset($user->photo)
+                    : null,
             ],
         ]);
     }
+
 
     public function update(Request $request): JsonResponse
     {
         $user = $request->user();
 
+
         $validated = $request->validate([
-            'first_name' => ['required', 'string', 'max:100'],
-            'last_name' => ['required', 'string', 'max:100'],
+
+            'first_name' => [
+                'required',
+                'string',
+                'max:100'
+            ],
+
+            'last_name' => [
+                'required',
+                'string',
+                'max:100'
+            ],
+
 
             'email' => [
                 'required',
                 'email',
                 'max:255',
-                Rule::unique('users', 'email')->ignore($user->id),
+                Rule::unique(
+                    'users',
+                    'email'
+                )->ignore($user->id),
             ],
 
-            'phone' => ['nullable', 'string', 'max:30'],
-            'birthdate' => ['nullable', 'date', 'before:today'],
-            'gender' => ['nullable', Rule::in([
-                'male',
-                'female',
-                'other',
-            ])],
+
+            'phone' => [
+                'nullable',
+                'string',
+                'max:30'
+            ],
+
+
+            'birthdate' => [
+                'nullable',
+                'date',
+                'before:today'
+            ],
+
+
+            'gender' => [
+                'nullable',
+                Rule::in([
+                    'male',
+                    'female',
+                    'other',
+                    'prefer_not_to_say',
+                ])
+            ],
+
+
+            'photo' => [
+                'nullable',
+                'image',
+                'mimes:jpg,jpeg,png,webp',
+                'max:5120',
+            ],
+
         ]);
+
+
+
+        $photoPath = $user->photo;
+
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Upload Profile Photo
+        |--------------------------------------------------------------------------
+        */
+
+
+        if ($request->hasFile('photo')) {
+
+
+            // Delete old photo
+
+            if ($user->photo) {
+
+                $oldPhoto = public_path(
+                    $user->photo
+                );
+
+
+                if (File::exists($oldPhoto)) {
+
+                    File::delete(
+                        $oldPhoto
+                    );
+
+                }
+
+            }
+
+
+
+            $uploadPath = public_path(
+                'uploads/users'
+            );
+
+
+
+            if (!File::exists($uploadPath)) {
+
+                File::makeDirectory(
+                    $uploadPath,
+                    0755,
+                    true
+                );
+
+            }
+
+
+
+            $fileName =
+                time()
+                . '-'
+                . Str::random(20)
+                . '.'
+                . $request
+                    ->file('photo')
+                    ->getClientOriginalExtension();
+
+
+
+            $request
+                ->file('photo')
+                ->move(
+                    $uploadPath,
+                    $fileName
+                );
+
+
+
+            $photoPath =
+                'uploads/users/' . $fileName;
+
+        }
+
+
 
         $user->update([
-            'first_name' => $validated['first_name'],
-            'last_name' => $validated['last_name'],
-            'name' => trim(
-                $validated['first_name'] . ' ' . $validated['last_name']
-            ),
-            'email' => $validated['email'],
-            'phone' => $validated['phone'] ?? null,
-            'birthdate' => $validated['birthdate'] ?? null,
-            'gender' => $validated['gender'] ?? null,
+
+            'first_name' =>
+                $validated['first_name'],
+
+
+            'last_name' =>
+                $validated['last_name'],
+
+
+            'name' =>
+                trim(
+                    $validated['first_name']
+                    . ' '
+                    . $validated['last_name']
+                ),
+
+
+            'email' =>
+                $validated['email'],
+
+
+            'phone' =>
+                $validated['phone'] ?? null,
+
+
+            'birthdate' =>
+                $validated['birthdate'] ?? null,
+
+
+            'gender' =>
+                $validated['gender'] ?? null,
+
+
+            'photo' =>
+                $photoPath,
+
         ]);
 
+
+
         return response()->json([
+
             'success' => true,
-            'message' => 'Profile updated successfully.',
+
+            'message' =>
+                'Profile updated successfully.',
+
+
             'user' => [
-                'id' => $user->id,
-                'first_name' => $user->first_name,
-                'last_name' => $user->last_name,
-                'name' => $user->name,
-                'email' => $user->email,
-                'phone' => $user->phone,
-                'birthdate' => $user->birthdate,
-                'gender' => $user->gender,
+
+                'id' =>
+                    $user->id,
+
+
+                'first_name' =>
+                    $user->first_name,
+
+
+                'last_name' =>
+                    $user->last_name,
+
+
+                'name' =>
+                    $user->name,
+
+
+                'email' =>
+                    $user->email,
+
+
+                'phone' =>
+                    $user->phone,
+
+
+                'birthdate' =>
+                    $user->birthdate,
+
+
+                'gender' =>
+                    $user->gender,
+
+
+                'photo' =>
+                    $user->photo
+                        ? asset($user->photo)
+                        : null,
+
             ],
+
         ]);
     }
 }

@@ -79,7 +79,9 @@ const CustomerInbox = () => {
     const messagesEndRef =
         useRef(null);
 
-
+   
+        const activeConversationId =
+    selectedConversation?.id;
 
 
 
@@ -251,6 +253,62 @@ setConversations(
 
 
 
+const refreshMessages = async()=>{
+
+
+    if(!activeConversationId){
+
+        return;
+
+    }
+
+
+
+    try{
+
+
+        const response =
+            await api.get(
+                `/customer/messages/${activeConversationId}`
+            );
+
+
+
+        setMessages(
+
+            response.data?.conversation?.messages || []
+
+        );
+
+
+
+        setSelectedConversation(prev => ({
+
+            ...prev,
+
+            ...response.data?.conversation
+
+        }));
+
+
+
+    }catch(error){
+
+
+        console.log(
+            "Refresh messages error:",
+            error.response?.data ||
+            error.message
+        );
+
+
+    }
+
+
+};
+
+
+
 
 
 
@@ -303,6 +361,42 @@ setConversations(
     },[
         selectedConversation?.id
     ]);
+
+
+    useEffect(()=>{
+
+
+    if(!activeConversationId){
+
+        return;
+
+    }
+
+
+
+    const interval = setInterval(()=>{
+
+
+        refreshMessages();
+
+
+    },3000);
+
+
+
+
+    return ()=>{
+
+
+        clearInterval(interval);
+
+
+    };
+
+
+},[
+    activeConversationId
+]);
 
 
 
@@ -812,7 +906,7 @@ setConversations(
                                  min-h-0
     flex-1
     overflow-hidden
-    
+
                                 "
 
                             >

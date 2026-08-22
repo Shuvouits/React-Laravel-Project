@@ -680,6 +680,60 @@ class OrderController extends Controller
         ]);
     }
 
+
+    public function cancel(Request $request, Order $order): JsonResponse
+{
+    if ((int) $order->user_id !== (int) $request->user()->id) {
+
+        return response()->json([
+            'success' => false,
+            'message' => 'Order not found.',
+        ], 404);
+
+    }
+
+
+    if (
+        in_array($order->status, [
+            'delivered',
+            'cancelled'
+        ])
+    ) {
+
+        return response()->json([
+            'success' => false,
+            'message' => 'Order cannot be cancelled.',
+        ], 422);
+
+    }
+
+
+    $order->update([
+        'status' => 'cancelled',
+    ]);
+
+
+    return response()->json([
+
+        'success' => true,
+
+        'message' =>
+            'Order cancelled successfully.',
+
+        'order' => [
+
+            'id' =>
+                $order->id,
+
+            'status' =>
+                $order->status,
+
+        ],
+
+    ]);
+
+}
+
     private function generateOrderNumber(): string
     {
         do {

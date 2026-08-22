@@ -345,20 +345,35 @@ class AuthController extends Controller
     }
 
     // Complete login
-    private function completeLogin(User $user)
-    {
-        $token = $user
-            ->createToken('auth-token')
-            ->plainTextToken;
+    // Complete login
+private function completeLogin(User $user)
+{
+    $token = $user
+        ->createToken('auth-token')
+        ->plainTextToken;
 
-        return response()->json([
-            'status' => true,
-            'requires_two_factor' => false,
-            'message' => 'Login successful.',
-            'token' => $token,
-            'user' => $user,
-        ]);
-    }
+
+    return response()->json([
+        'status' => true,
+        'requires_two_factor' => false,
+        'message' => 'Login successful.',
+        'token' => $token,
+
+        'user' => [
+            'id' => $user->id,
+            'name' => $user->name,
+            'first_name' => $user->first_name,
+            'last_name' => $user->last_name,
+            'email' => $user->email,
+            'phone' => $user->phone,
+            'role' => $user->role,
+
+            'photo' => $user->photo
+                ? asset($user->photo)
+                : null,
+        ],
+    ]);
+}
 
     // Challenge cache key
     private function twoFactorChallengeKey(string $token): string

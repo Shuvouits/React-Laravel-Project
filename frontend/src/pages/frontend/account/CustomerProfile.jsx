@@ -114,6 +114,12 @@ const CustomerProfile = () => {
                     "user",
                     JSON.stringify(user)
                 );
+
+                window.dispatchEvent(
+                    new Event("user-updated")
+                );
+
+
             }
 
             setMessage(

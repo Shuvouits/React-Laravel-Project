@@ -106,25 +106,36 @@ const Navbar = () => {
     };
 
     // Dashboard path
-    const getDashboardPath = () => {
-        if (!user) {
-            return "/login";
-        }
+   const getDashboardPath = () => {
 
-        if (user.role === "admin") {
-            return "/admin/dashboard";
-        }
+    if (
+        user?.role === "admin" ||
+        user?.user_role === "admin"
+    ) {
+        return "/admin";
+    }
 
-        if (user.role === "vendor") {
-            return "/vendor/dashboard";
-        }
 
-        if (user.role === "customer") {
-            return "/account";
-        }
+    if (
+        user?.role === "vendor" ||
+        user?.user_role === "vendor"
+    ) {
+        return "/vendor";
+    }
 
-        return "/";
-    };
+
+    if (
+        user?.role === "customer" ||
+        user?.user_role === "customer" ||
+        user?.account_status
+    ) {
+        return "/account";
+    }
+
+
+    return "/";
+
+};
 
     // Settings path
     const getSettingsPath = () => {
@@ -839,12 +850,17 @@ const GuestAccountMenu = () => {
 };
 
 // User avatar
+
+
 const UserAvatar = ({ user }) => {
-    if (user?.avatar) {
+
+    const image = user?.photo || user?.avatar;
+
+    if (image) {
         return (
             <div className="h-[34px] w-[34px] shrink-0 overflow-hidden rounded-full border border-[#e7e7e7] bg-[#eeeeee]">
                 <img
-                    src={user.avatar}
+                    src={image}
                     alt={user?.name || "User"}
                     className="h-full w-full object-cover"
                 />
@@ -852,7 +868,8 @@ const UserAvatar = ({ user }) => {
         );
     }
 
-    const initial = user?.name?.charAt(0)?.toUpperCase() || "U";
+    const initial =
+        user?.name?.charAt(0)?.toUpperCase() || "U";
 
     return (
         <div className="flex h-[34px] w-[34px] shrink-0 items-center justify-center rounded-full border border-[#e7e7e7] bg-[#eeeeee] text-[14px] font-semibold text-[#333333]">
@@ -860,6 +877,10 @@ const UserAvatar = ({ user }) => {
         </div>
     );
 };
+
+
+
+
 
 // Dropdown item
 const DropdownItem = ({ to, children }) => {
@@ -960,18 +981,23 @@ const CartButton = () => {
 };
 
 // Stored user
+
 const getStoredUser = () => {
-    try {
-        const storedUser = localStorage.getItem("user");
 
-        if (!storedUser) {
-            return null;
-        }
+    const user = localStorage.getItem("user");
 
-        return JSON.parse(storedUser);
-    } catch {
-        return null;
+    if (user) {
+        return JSON.parse(user);
     }
+
+    const authUser = localStorage.getItem("storyfy_auth_user");
+
+    if (authUser) {
+        return JSON.parse(authUser);
+    }
+
+    return null;
+
 };
 
 // Image URL

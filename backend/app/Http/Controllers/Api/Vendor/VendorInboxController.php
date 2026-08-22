@@ -11,6 +11,10 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
+
+use App\Models\MessageAttachment;
+use Illuminate\Support\Facades\File;
+
 use Illuminate\Support\Str;
 
 class VendorInboxController extends Controller
@@ -227,108 +231,318 @@ class VendorInboxController extends Controller
 
 
     public function sendMessage(
-        Request $request,
-        int $id
-    ): JsonResponse {
-        $vendor = $this->vendor($request);
+    Request $request,
+    int $id
+): JsonResponse {
 
-        $validated = $request->validate([
-            'message' => [
-                'required',
-                'string',
-                'max:10000',
-            ],
-        ]);
+    $vendor = $this->vendor($request);
 
 
-        $conversation = Conversation::query()
-            ->where(
-                'vendor_id',
-                $vendor->id
-            )
-            ->findOrFail($id);
+    $validated = $request->validate([
+
+        'message' => [
+            'nullable',
+            'string',
+            'max:10000',
+        ],
 
 
-        $message = DB::transaction(
-            function () use (
-                $request,
-                $validated,
-                $conversation
-            ) {
-                $message =
-                    ConversationMessage::create([
-                        'conversation_id' =>
-                            $conversation->id,
+        'attachment' => [
+            'nullable',
+            'file',
+            'max:10240',
+        ],
 
-                        'sender_user_id' =>
-                            $request->user()->id,
-
-                        'message' =>
-                            trim(
-                                $validated['message']
-                            ),
-
-                        'message_type' =>
-                            'text',
-
-                        'read_at' =>
-                            null,
-                    ]);
+    ]);
 
 
-                $conversation->update([
-                    'customer_unread_count' =>
-                        $conversation
-                            ->customer_unread_count
-                        + 1,
-
-                    'last_message_at' =>
-                        now(),
-
-                    /*
-                    |--------------------------------------------------------------------------
-                    | REOPEN IF VENDOR REPLIES TO A RESOLVED THREAD
-                    |--------------------------------------------------------------------------
-                    */
-
-                    'status' =>
-                        $conversation->status ===
-                        'resolved'
-                            ? 'open'
-                            : $conversation->status,
-
-                    'resolved_at' =>
-                        $conversation->status ===
-                        'resolved'
-                            ? null
-                            : $conversation
-                                ->resolved_at,
-                ]);
 
 
-                return $message;
-            }
-        );
+
+    $conversation = Conversation::query()
+        ->where(
+            'vendor_id',
+            $vendor->id
+        )
+        ->findOrFail($id);
 
 
-        $message->load([
-            'sender:id,name,first_name,last_name,email,role,photo',
-            'attachments',
-        ]);
 
+
+
+    $hasFile = $request->hasFile(
+        'attachment'
+    );
+
+
+
+
+
+    if(
+        !$hasFile &&
+        empty(trim($validated['message'] ?? ''))
+    ){
 
         return response()->json([
-            'success' => true,
 
-            'message' =>
-                'Message sent successfully.',
+            'success' => false,
 
-            'conversation_message' =>
-                $this->formatMessage(
-                    $message
-                ),
-        ], 201);
+            'message' => 'Message or attachment required.'
+
+        ],422);
+
     }
+
+
+
+
+
+
+    $message = DB::transaction(
+
+        function () use (
+            $request,
+            $validated,
+            $conversation,
+            $hasFile
+        ) {
+
+
+            $message = ConversationMessage::create([
+
+
+                'conversation_id' =>
+
+                    $conversation->id,
+
+
+                'sender_user_id' =>
+
+                    $request->user()->id,
+
+
+                'message' =>
+
+                    $hasFile
+
+                        ? 'Attachment'
+
+                        : trim(
+                            $validated['message']
+                        ),
+
+
+
+                'message_type' =>
+
+                    $hasFile
+
+                        ? 'attachment'
+
+                        : 'text',
+
+
+
+                'read_at' => null,
+
+
+            ]);
+
+
+
+
+
+
+            if($hasFile){
+
+
+                $file = $request->file(
+                    'attachment'
+                );
+
+
+
+                $uploadPath = public_path(
+                    'uploads/messages'
+                );
+
+
+
+                if(!File::exists($uploadPath)){
+
+
+                    File::makeDirectory(
+
+                        $uploadPath,
+
+                        0755,
+
+                        true
+
+                    );
+
+                }
+
+
+
+
+                $fileName =
+
+                    time()
+                    . '-'
+                    . Str::random(12)
+                    . '.'
+                    . $file->getClientOriginalExtension();
+
+
+
+
+                $fileType =
+
+                    $file->getClientMimeType();
+
+
+
+                $fileSize =
+
+                    $file->getSize();
+
+
+
+
+                $file->move(
+
+                    $uploadPath,
+
+                    $fileName
+
+                );
+
+
+
+
+
+                MessageAttachment::create([
+
+
+                    'conversation_message_id' =>
+
+                        $message->id,
+
+
+                    'file_name' =>
+
+                        $file->getClientOriginalName(),
+
+
+                    'file_path' =>
+
+                        'uploads/messages/'.$fileName,
+
+
+                    'file_type' =>
+
+                        $fileType,
+
+
+                    'file_size' =>
+
+                        $fileSize,
+
+
+                ]);
+
+            }
+
+
+
+
+
+
+            $conversation->update([
+
+
+                'customer_unread_count' =>
+
+                    $conversation
+                        ->customer_unread_count + 1,
+
+
+
+                'last_message_at' =>
+
+                    now(),
+
+
+                'status' =>
+
+                    $conversation->status === 'resolved'
+
+                        ? 'open'
+
+                        : $conversation->status,
+
+
+                'resolved_at' =>
+
+                    $conversation->status === 'resolved'
+
+                        ? null
+
+                        : $conversation->resolved_at,
+
+
+            ]);
+
+
+
+
+
+
+            return $message;
+
+        }
+
+    );
+
+
+
+
+
+
+    $message->load([
+
+        'sender:id,name,first_name,last_name,email,role,photo',
+
+        'attachments',
+
+    ]);
+
+
+
+
+
+
+    return response()->json([
+
+        'success' => true,
+
+
+        'message' =>
+
+            'Message sent successfully.',
+
+
+        'conversation_message' =>
+
+            $this->formatMessage(
+                $message
+            ),
+
+
+    ],201);
+
+}
 
 
     public function updateStatus(

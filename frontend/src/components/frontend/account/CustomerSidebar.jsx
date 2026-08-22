@@ -91,6 +91,68 @@ const CustomerSidebar = ({
         }
     };
 
+
+    useEffect(() => {
+
+        const savedUser = localStorage.getItem(
+            "user"
+        );
+
+
+        if (savedUser) {
+
+            setUser(
+                JSON.parse(savedUser)
+            );
+
+        }
+
+
+    }, []);
+
+
+    useEffect(() => {
+
+    const updateUser = () => {
+
+        const savedUser = localStorage.getItem(
+            "user"
+        );
+
+        if(savedUser){
+
+            setUser(
+                JSON.parse(savedUser)
+            );
+
+        }
+
+    };
+
+
+    updateUser();
+
+
+    window.addEventListener(
+        "user-updated",
+        updateUser
+    );
+
+
+    return () => {
+
+        window.removeEventListener(
+            "user-updated",
+            updateUser
+        );
+
+    };
+
+
+}, []);
+
+
+
     const handleLogout = async () => {
         if (loggingOut) {
             return;
@@ -134,6 +196,7 @@ const CustomerSidebar = ({
 
             <CustomerProfile
                 user={user}
+                setUser={setUser}
             />
 
             <div className="mt-[17px] border-t border-[#dedede] pt-[14px]">
@@ -151,7 +214,7 @@ const CustomerSidebar = ({
                         end
                     />
 
-                   
+
 
                     <SidebarItem
                         to="/account/notifications"
@@ -248,54 +311,308 @@ const CustomerSidebar = ({
 // Customer profile
 const CustomerProfile = ({
     user,
+    setUser,
 }) => {
+
+
+    const [uploading, setUploading] = useState(false);
+
+
     const name = getCustomerName(user);
+
     const initials = getInitials(user);
 
+
+
+
+    const handlePhotoUpload = async (event) => {
+
+        const file = event.target.files[0];
+
+
+        if (!file) {
+            return;
+        }
+
+
+        if (file.size > 5 * 1024 * 1024) {
+
+            alert(
+                "Image size must be below 5MB."
+            );
+
+            return;
+        }
+
+
+
+        const formData = new FormData();
+
+
+        formData.append(
+            "first_name",
+            user.first_name || ""
+        );
+
+
+        formData.append(
+            "last_name",
+            user.last_name || ""
+        );
+
+
+        formData.append(
+            "email",
+            user.email || ""
+        );
+
+
+        formData.append(
+            "phone",
+            user.phone || ""
+        );
+
+
+        formData.append(
+            "gender",
+            user.gender || ""
+        );
+
+
+        formData.append(
+            "photo",
+            file
+        );
+
+
+
+        try {
+
+
+            setUploading(true);
+
+
+
+            const response = await api.post(
+
+                "/account/profile",
+
+                formData,
+
+                {
+                    headers: {
+                        "Content-Type":
+                            "multipart/form-data",
+                    }
+                }
+
+            );
+
+
+
+            const updatedUser = response.data.user;
+
+
+
+            localStorage.setItem(
+
+                "user",
+
+                JSON.stringify(
+                    updatedUser
+                )
+
+            );
+
+
+
+            setUser(updatedUser);
+
+
+
+        } catch (error) {
+
+
+            console.error(
+
+                error.response?.data ||
+                error.message
+
+            );
+
+
+        } finally {
+
+
+            setUploading(false);
+
+
+        }
+
+
+    };
+
+
+
+
+
+
     return (
+
         <div className="flex items-center gap-[11px]">
+
 
             <div className="relative shrink-0">
 
-                <div className="flex h-[50px] w-[50px] items-center justify-center rounded-full bg-[#f0d8d0] text-[14px] font-semibold text-[#553528]">
-                    {initials}
+
+                <div
+                    className="
+                    flex
+                    h-[50px]
+                    w-[50px]
+                    items-center
+                    justify-center
+                    overflow-hidden
+                    rounded-full
+                    bg-[#f0d8d0]
+                    text-[14px]
+                    font-semibold
+                    text-[#553528]
+                    "
+                >
+
+                    {
+                        user.photo ?
+
+                            <img
+                                src={user.photo}
+                                className="
+                            h-full
+                            w-full
+                            object-cover
+                            "
+                            />
+
+                            :
+
+                            initials
+                    }
+
+
                 </div>
 
-                <NavLink
-                    to="/account/profile"
-                    title="Edit profile"
-                    className="absolute -bottom-[2px] -right-[2px] flex h-[21px] w-[21px] items-center justify-center rounded-full border border-[#dedede] bg-white text-[#555] transition hover:bg-[#f5f5f5]"
+
+
+
+                <label
+                    className="
+                    absolute
+                    -bottom-[2px]
+                    -right-[2px]
+                    flex
+                    h-[21px]
+                    w-[21px]
+                    cursor-pointer
+                    items-center
+                    justify-center
+                    rounded-full
+                    border
+                    border-[#dedede]
+                    bg-white
+                    text-[#555]
+                    "
                 >
-                    <Pencil
-                        size={10}
-                        strokeWidth={1.7}
+
+
+                    {
+                        uploading ?
+
+                            <LoaderCircle
+                                size={10}
+                                className="animate-spin"
+                            />
+
+                            :
+
+                            <Pencil
+                                size={10}
+                                strokeWidth={1.7}
+                            />
+
+                    }
+
+
+
+                    <input
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={handlePhotoUpload}
                     />
-                </NavLink>
+
+
+                </label>
+
 
             </div>
 
+
+
+
+
             <div className="min-w-0">
 
+
                 <p className="truncate text-[14px] font-semibold text-[#171717]">
+
                     {name}
+
                 </p>
+
+
 
                 <p className="mt-[2px] truncate text-[12px] text-[#777]">
+
                     {user.email || ""}
+
                 </p>
 
-                <span className="mt-[6px] inline-flex items-center gap-[4px] rounded-full border border-[#f59e0b] bg-[#fff8ed] px-[7px] py-[2px] text-[10px] font-medium text-[#b35b00]">
+
+
+
+                <span className="
+                mt-[6px]
+                inline-flex
+                items-center
+                gap-[4px]
+                rounded-full
+                border
+                border-[#f59e0b]
+                bg-[#fff8ed]
+                px-[7px]
+                py-[2px]
+                text-[10px]
+                font-medium
+                text-[#b35b00]
+                ">
+
                     <Star
                         size={10}
                         fill="currentColor"
                     />
+
                     Bronze
+
                 </span>
+
 
             </div>
 
+
         </div>
+
     );
+
 };
 
 // Sidebar item
@@ -311,11 +628,10 @@ const SidebarItem = ({
             to={to}
             end={end}
             className={({ isActive }) => {
-                return `flex h-[36px] w-full items-center justify-between rounded-[5px] px-[10px] text-[14px] transition ${
-                    isActive
+                return `flex h-[36px] w-full items-center justify-between rounded-[5px] px-[10px] text-[14px] transition ${isActive
                         ? "bg-[#2065D1] text-white"
                         : "text-[#555] hover:bg-[#f5f5f5] hover:text-[#171717]"
-                }`;
+                    }`;
             }}
         >
             {({ isActive }) => (
@@ -333,11 +649,10 @@ const SidebarItem = ({
 
                     {badge !== undefined && badge !== null && (
                         <span
-                            className={`flex min-w-[25px] items-center justify-center rounded-full px-[6px] py-[2px] text-[11px] ${
-                                isActive
+                            className={`flex min-w-[25px] items-center justify-center rounded-full px-[6px] py-[2px] text-[11px] ${isActive
                                     ? "bg-[#8d5ce8] text-white"
                                     : "border border-[#dedede] bg-white text-[#333]"
-                            }`}
+                                }`}
                         >
                             {badge}
                         </span>

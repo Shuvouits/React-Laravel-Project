@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\Account\CustomerDashboardController;
+use App\Http\Controllers\Api\Account\CustomerOrderController;
 use App\Http\Controllers\Api\Account\PreferenceController;
 use App\Http\Controllers\Api\Account\ProfileController;
 use App\Http\Controllers\Api\Account\WishlistController;
@@ -126,15 +127,12 @@ Route::prefix('customer')->middleware(['auth:sanctum', 'customer'])->group(funct
 
 
     // Customer Messages
-   Route::get('/messages/vendors', [CustomerMessageController::class, 'vendors']);
-   Route::get('/messages', [CustomerMessageController::class, 'index']);
-   Route::post('/messages', [CustomerMessageController::class, 'start']);
-   Route::get('/messages/{id}', [CustomerMessageController::class, 'show'])->whereNumber('id');
-   Route::post('/messages/{id}/send', [CustomerMessageController::class, 'send'])->whereNumber('id');
-   Route::post('/messages/{id}/messages', [CustomerMessageController::class, 'sendMessage'])->whereNumber('id');
-
-
-
+    Route::get('/messages/vendors', [CustomerMessageController::class, 'vendors']);
+    Route::get('/messages', [CustomerMessageController::class, 'index']);
+    Route::post('/messages', [CustomerMessageController::class, 'start']);
+    Route::get('/messages/{id}', [CustomerMessageController::class, 'show'])->whereNumber('id');
+    Route::post('/messages/{id}/send', [CustomerMessageController::class, 'send'])->whereNumber('id');
+    Route::post('/messages/{id}/messages', [CustomerMessageController::class, 'sendMessage'])->whereNumber('id');
 });
 
 
@@ -147,6 +145,8 @@ Route::middleware(['auth:sanctum', 'customer'])->prefix('account')->group(functi
     Route::get('/profile', [ProfileController::class, 'show']);
     Route::put('/profile', [ProfileController::class, 'update']);
 
+     Route::post('/profile', [ProfileController::class, 'update']);
+
     Route::get('/wishlist', [WishlistController::class, 'index']);
 
     Route::post('/wishlist/{product}', [WishlistController::class, 'store']);
@@ -156,6 +156,17 @@ Route::middleware(['auth:sanctum', 'customer'])->prefix('account')->group(functi
     Route::get('/wishlist/{product}/check', [WishlistController::class, 'check']);
 
     Route::get('/overview', [CustomerDashboardController::class, 'overview']);
+
+    Route::get('/orders/{id}', [CustomerOrderController::class, 'show']);
+    Route::get('/orders', [CustomerOrderController::class, 'index']);
+
+
+
+  Route::post('/orders/{id}/cancel', [CustomerOrderController::class, 'cancel']);
+
+Route::get('/orders/{id}/invoice', [CustomerOrderController::class, 'invoice']);
+
+
 });
 
 
@@ -215,39 +226,32 @@ Route::prefix('vendor')->middleware(['auth:sanctum', 'vendor'])->group(function 
     Route::get('/preorders', [VendorPreOrderController::class, 'index']);
 
     // Returns
-Route::get('/returns', [VendorReturnController::class, 'index']);
-Route::get('/returns/{id}', [VendorReturnController::class, 'show']);
+    Route::get('/returns', [VendorReturnController::class, 'index']);
+    Route::get('/returns/{id}', [VendorReturnController::class, 'show']);
 
-// Vendor Profile
-Route::get('/profile', [VendorProfileController::class, 'show']);
-Route::post('/profile', [VendorProfileController::class, 'update']);
+    // Vendor Profile
+    Route::get('/profile', [VendorProfileController::class, 'show']);
+    Route::post('/profile', [VendorProfileController::class, 'update']);
 
-// Vendor Security
-Route::get('/security', [CustomerSecurityController::class, 'index']);
-Route::put('/security/password', [CustomerSecurityController::class, 'updatePassword']);
+    // Vendor Security
+    Route::get('/security', [CustomerSecurityController::class, 'index']);
+    Route::put('/security/password', [CustomerSecurityController::class, 'updatePassword']);
 
-// Two-Factor Authentication
-Route::post('/security/two-factor/setup', [CustomerSecurityController::class, 'setupTwoFactor']);
-Route::post('/security/two-factor/confirm', [CustomerSecurityController::class, 'confirmTwoFactor']);
-Route::post('/security/two-factor/disable', [CustomerSecurityController::class, 'disableTwoFactor']);
-Route::post('/security/two-factor/recovery-codes', [CustomerSecurityController::class, 'regenerateRecoveryCodes']);
+    // Two-Factor Authentication
+    Route::post('/security/two-factor/setup', [CustomerSecurityController::class, 'setupTwoFactor']);
+    Route::post('/security/two-factor/confirm', [CustomerSecurityController::class, 'confirmTwoFactor']);
+    Route::post('/security/two-factor/disable', [CustomerSecurityController::class, 'disableTwoFactor']);
+    Route::post('/security/two-factor/recovery-codes', [CustomerSecurityController::class, 'regenerateRecoveryCodes']);
 
-// Logout Other Sessions
-Route::post('/security/logout-other-sessions', [CustomerSecurityController::class, 'logoutOtherSessions']);
-
-
-// Inbox
-   Route::get('/inbox', [VendorInboxController::class, 'index']);
-Route::get('/inbox/{id}', [VendorInboxController::class, 'show']);
-Route::post('/inbox/{id}/messages', [VendorInboxController::class, 'sendMessage']);
-Route::post('/inbox/{id}/status', [VendorInboxController::class, 'updateStatus']);
+    // Logout Other Sessions
+    Route::post('/security/logout-other-sessions', [CustomerSecurityController::class, 'logoutOtherSessions']);
 
 
-
-
-
-
-
+    // Inbox
+    Route::get('/inbox', [VendorInboxController::class, 'index']);
+    Route::get('/inbox/{id}', [VendorInboxController::class, 'show']);
+    Route::post('/inbox/{id}/messages', [VendorInboxController::class, 'sendMessage']);
+    Route::post('/inbox/{id}/status', [VendorInboxController::class, 'updateStatus']);
 });
 
 
@@ -545,5 +549,4 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'admin'])->group(function ()
     Route::get('/customers/{customer}/edit', [AdminCustomerController::class, 'edit']);
     Route::put('/customers/{customer}', [AdminCustomerController::class, 'update']);
     Route::delete('/customers/{customer}', [AdminCustomerController::class, 'destroy']);
-
 });

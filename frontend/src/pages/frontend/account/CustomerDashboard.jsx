@@ -759,7 +759,6 @@ const RecentOrders = ({
     return (
 
         <section
-
             className="
             mt-[24px]
             rounded-[12px]
@@ -768,22 +767,278 @@ const RecentOrders = ({
             bg-white
             p-[24px]
             "
-
         >
 
-            <h2
 
+            <div
                 className="
-                text-[17px]
-                font-semibold
+                flex
+                items-center
+                justify-between
                 "
-
             >
 
-                Recent Orders
+                <h2
+                    className="
+                    text-[17px]
+                    font-semibold
+                    text-[#171717]
+                    "
+                >
+                    Recent Orders
+                </h2>
 
-            </h2>
 
+                <Link
+                    to="/account/orders"
+                    className="
+                    text-[14px]
+                    text-[#171717]
+                    hover:text-[#2065D1]
+                    "
+                >
+                    View All →
+                </Link>
+
+
+            </div>
+
+
+
+
+
+            {
+                orders.length === 0 ? (
+
+                    <p
+                        className="
+                        mt-5
+                        text-[14px]
+                        text-[#777]
+                        "
+                    >
+                        No recent orders found.
+                    </p>
+
+                ) : (
+
+
+                    <div
+                        className="
+                        mt-5
+                        space-y-3
+                        "
+                    >
+
+
+                        {
+                            orders.map(
+                                (order)=>(
+
+
+                                    <Link
+                                        key={
+                                            order.id
+                                        }
+
+                                        to={
+                                            `/account/orders/${order.id}`
+                                        }
+
+                                        className="
+                                        flex
+                                        items-center
+                                        justify-between
+                                        rounded-[10px]
+                                        border
+                                        border-[#ededed]
+                                        px-5
+                                        py-4
+                                        transition
+                                        hover:bg-[#fafafa]
+                                        "
+                                    >
+
+
+
+                                        <div
+                                            className="
+                                            flex
+                                            items-center
+                                            gap-4
+                                            "
+                                        >
+
+
+
+                                            <div
+                                                className="
+                                                flex
+                                                h-[42px]
+                                                w-[42px]
+                                                items-center
+                                                justify-center
+                                                rounded-lg
+                                                bg-[#f5f6f8]
+                                                "
+                                            >
+
+                                                <Package
+                                                    size={20}
+                                                    className="text-[#777]"
+                                                />
+
+
+                                            </div>
+
+
+
+
+
+                                            <div>
+
+
+                                                <p
+                                                    className="
+                                                    text-[14px]
+                                                    font-medium
+                                                    text-[#171717]
+                                                    "
+                                                >
+
+                                                    #
+                                                    {
+                                                        order.order_no
+                                                    }
+
+
+                                                </p>
+
+
+
+                                                <p
+                                                    className="
+                                                    mt-1
+                                                    text-[13px]
+                                                    text-[#777]
+                                                    "
+                                                >
+
+                                                    {
+                                                        new Date(
+                                                            order.placed_at
+                                                        )
+                                                        .toLocaleDateString(
+                                                            "en-US",
+                                                            {
+                                                                month:"short",
+                                                                day:"numeric",
+                                                                year:"numeric"
+                                                            }
+                                                        )
+                                                    }
+
+                                                </p>
+
+
+
+                                            </div>
+
+
+                                        </div>
+
+
+
+
+
+                                        <div
+                                            className="
+                                            flex
+                                            items-center
+                                            gap-4
+                                            "
+                                        >
+
+
+
+                                            <span
+                                                className={`
+                                                rounded-full
+                                                px-3
+                                                py-1
+                                                text-[12px]
+                                                font-medium
+                                                capitalize
+                                                ${
+                                                    order.status === "processing"
+                                                    ?
+                                                    "bg-[#fff4cc] text-[#9a6700]"
+                                                    :
+                                                    order.status === "delivered"
+                                                    ?
+                                                    "bg-[#dcfce7] text-[#15803d]"
+                                                    :
+                                                    "bg-[#f1f5f9] text-[#475569]"
+                                                }
+                                                `}
+                                            >
+
+                                                {
+                                                    order.status
+                                                }
+
+
+                                            </span>
+
+
+
+
+
+                                            <p
+                                                className="
+                                                text-[15px]
+                                                font-semibold
+                                                text-[#171717]
+                                                "
+                                            >
+
+                                                {
+                                                    formatMoney(
+                                                        order.total
+                                                    )
+                                                }
+
+                                            </p>
+
+
+
+
+
+                                            <ChevronRight
+                                                size={18}
+                                                className="text-[#777]"
+                                            />
+
+
+
+                                        </div>
+
+
+
+
+                                    </Link>
+
+
+                                )
+                            )
+                        }
+
+
+                    </div>
+
+
+                )
+            }
 
 
         </section>
