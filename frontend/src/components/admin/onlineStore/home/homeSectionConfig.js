@@ -92,3 +92,44 @@ export const getTopVendorsSettings = (section) => ({
   title: section?.title || "Top Vendors",
   max_vendors: Number(section?.settings?.max_vendors) || 8,
 });
+
+
+// Become a Vendor settings
+export const getBecomeVendorSettings = (section) => {
+    const settings =
+        section?.settings || {};
+
+    return {
+        title:
+            settings.title ||
+            section?.title ||
+            "Start Selling With Us Today",
+
+        subtitle:
+            settings.subtitle ||
+            "Join our marketplace, manage products easily, accept secure payments, and grow your business faster.",
+
+        button_label:
+            settings.button_label ||
+            "Become a Vendor",
+
+        button_link:
+            settings.button_link ||
+            "/become-vendor",
+
+        image:
+            settings.image || "",
+
+        image_url:
+            settings.image_url || "",
+
+        saved_image_url:
+            settings.image_url || "",
+
+        image_alt:
+            settings.image_alt ||
+            "Start selling products as a vendor",
+
+        uploading: false,
+    };
+};

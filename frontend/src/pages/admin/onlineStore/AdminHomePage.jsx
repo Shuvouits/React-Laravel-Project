@@ -10,13 +10,18 @@ import PromotionsOffersEditor from "../../../components/admin/onlineStore/home/P
 import FeaturedProductsEditor from "../../../components/admin/onlineStore/home/FeaturedProductsEditor";
 import TopVendorsEditor from "../../../components/admin/onlineStore/home/TopVendorsEditor";
 
+import BecomeVendorEditor from "../../../components/admin/onlineStore/home/BecomeVendorEditor";
+
 import {
+
   getFeaturedCategoriesSettings,
   getProductsOnSaleSettings,
   getPromotionsSettings,
   getFeaturedProductsSettings,
   getTopVendorsSettings,
+  getBecomeVendorSettings,
   sectionDescriptions,
+
 } from "../../../components/admin/onlineStore/home/homeSectionConfig";
 
 const AdminHomePage = () => {
@@ -56,6 +61,19 @@ const AdminHomePage = () => {
   const [topVendorsDraft, setTopVendorsDraft] = useState({
     title: "Top Vendors",
     max_vendors: 8,
+  });
+
+  const [becomeVendorDraft, setBecomeVendorDraft] = useState({
+    title: "Start Selling With Us Today",
+    subtitle:
+      "Join our marketplace, manage products easily, accept secure payments, and grow your business faster.",
+    button_label: "Become a Vendor",
+    button_link: "/become-vendor",
+    image: "",
+    image_url: "",
+    saved_image_url: "",
+    image_alt: "Start selling products as a vendor",
+    uploading: false,
   });
 
   const [promotionAiTarget, setPromotionAiTarget] = useState(null);
@@ -194,6 +212,24 @@ const AdminHomePage = () => {
       return;
     }
 
+
+    if (section.section_key === "become_a_vendor") {
+      if (activeEditor === "become_a_vendor") {
+        setActiveEditor(null);
+        return;
+      }
+
+      setBecomeVendorDraft(
+        getBecomeVendorSettings(section)
+      );
+
+      setActiveEditor("become_a_vendor");
+      return;
+    }
+
+
+
+
     console.log(`Editor not added yet: ${section.section_key}`);
   };
 
@@ -216,6 +252,19 @@ const AdminHomePage = () => {
 
   const handleTopVendorsChange = (field, value) => {
     setTopVendorsDraft((previous) => ({ ...previous, [field]: value }));
+  };
+
+  const handleBecomeVendorChange = (
+    field,
+    value
+  ) => {
+    setBecomeVendorDraft((previous) => ({
+      ...previous,
+      [field]: value,
+    }));
+
+    setSectionError("");
+    setSuccessMessage("");
   };
 
   // Upload promotion image.
@@ -270,8 +319,8 @@ const AdminHomePage = () => {
 
       setSectionError(
         error.response?.data?.message ||
-          error.response?.data?.errors?.image?.[0] ||
-          "Unable to upload promotion image."
+        error.response?.data?.errors?.image?.[0] ||
+        "Unable to upload promotion image."
       );
 
       setPromotionsDraft((previous) => {
@@ -287,6 +336,121 @@ const AdminHomePage = () => {
       });
     } finally {
       URL.revokeObjectURL(temporaryPreview);
+    }
+  };
+
+
+  const handleBecomeVendorImageSelect = async (
+    file
+  ) => {
+    if (!file) {
+      return;
+    }
+
+    const allowedTypes = [
+      "image/jpeg",
+      "image/png",
+      "image/webp",
+    ];
+
+    if (!allowedTypes.includes(file.type)) {
+      setSectionError(
+        "Please select a JPG, PNG or WebP image."
+      );
+
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      setSectionError(
+        "Image size cannot be greater than 5MB."
+      );
+
+      return;
+    }
+
+    setSectionError("");
+    setSuccessMessage("");
+
+    const temporaryPreview =
+      URL.createObjectURL(file);
+
+    setBecomeVendorDraft((previous) => ({
+      ...previous,
+      image_url: temporaryPreview,
+      uploading: true,
+    }));
+
+    try {
+      const formData = new FormData();
+
+      formData.append(
+        "image",
+        file
+      );
+
+      const response = await api.post(
+        "/admin/home-sections/become-a-vendor/image",
+        formData,
+        {
+          headers: {
+            "Content-Type":
+              "multipart/form-data",
+          },
+        }
+      );
+
+      const imageUrl =
+        response.data?.image_url || "";
+
+      const imagePath =
+        response.data?.image || "";
+
+      setBecomeVendorDraft((previous) => ({
+        ...previous,
+        image: imagePath,
+        image_url: imageUrl,
+        saved_image_url: imageUrl,
+        uploading: false,
+      }));
+
+      if (response.data?.section) {
+        updateLocalSection(
+          "become_a_vendor",
+          response.data.section
+        );
+      }
+
+      setSuccessMessage(
+        response.data?.message ||
+        "Become a Vendor image uploaded successfully."
+      );
+    } catch (error) {
+      console.error(
+        "Become a Vendor image upload error:",
+        error
+      );
+
+      const imageError =
+        error.response?.data?.errors
+          ?.image?.[0];
+
+      setSectionError(
+        imageError ||
+        error.response?.data?.message ||
+        "Unable to upload the image."
+      );
+
+      setBecomeVendorDraft((previous) => ({
+        ...previous,
+        image_url:
+          previous.saved_image_url || "",
+        uploading: false,
+      }));
+    } finally {
+      URL.revokeObjectURL(
+        temporaryPreview
+      );
     }
   };
 
@@ -484,6 +648,108 @@ const AdminHomePage = () => {
     setSuccessMessage(response.data?.message || "Top Vendors settings saved successfully.");
   };
 
+
+
+  const saveBecomeVendor = async () => {
+    const title =
+      becomeVendorDraft.title.trim();
+
+    const subtitle =
+      becomeVendorDraft.subtitle.trim();
+
+    const buttonLabel =
+      becomeVendorDraft.button_label.trim();
+
+    const buttonLink =
+      becomeVendorDraft.button_link.trim();
+
+    const imageAlt =
+      becomeVendorDraft.image_alt.trim();
+
+    if (!title) {
+      setSectionError(
+        "Section title is required."
+      );
+
+      return;
+    }
+
+    if (!subtitle) {
+      setSectionError(
+        "Section subtitle is required."
+      );
+
+      return;
+    }
+
+    if (!buttonLabel) {
+      setSectionError(
+        "Button label is required."
+      );
+
+      return;
+    }
+
+    if (!buttonLink) {
+      setSectionError(
+        "Button link is required."
+      );
+
+      return;
+    }
+
+    if (!becomeVendorDraft.image_url) {
+      setSectionError(
+        "Please upload a section image."
+      );
+
+      return;
+    }
+
+    const response = await api.post(
+      "/admin/home-sections/become_a_vendor/update",
+      {
+        settings: {
+          title,
+          subtitle,
+          button_label: buttonLabel,
+          button_link: buttonLink,
+
+          image:
+            becomeVendorDraft.image || "",
+
+          image_url:
+            becomeVendorDraft.saved_image_url ||
+            becomeVendorDraft.image_url,
+
+          image_alt:
+            imageAlt ||
+            "Start selling products as a vendor",
+        },
+      }
+    );
+
+    updateLocalSection(
+      "become_a_vendor",
+      response.data?.section
+    );
+
+    setBecomeVendorDraft(
+      getBecomeVendorSettings(
+        response.data?.section
+      )
+    );
+
+    setSectionError("");
+
+    setSuccessMessage(
+      response.data?.message ||
+      "Become a Vendor settings saved successfully."
+    );
+  };
+
+
+
   // Save currently opened section.
   const handleSave = async () => {
     if (saving || !activeEditor || activeEditor === "hero") return;
@@ -498,6 +764,12 @@ const AdminHomePage = () => {
       else if (activeEditor === "promotions") await savePromotions();
       else if (activeEditor === "featured_products") await saveFeaturedProducts();
       else if (activeEditor === "top_vendors") await saveTopVendors();
+
+      else if (activeEditor === "become_a_vendor") {
+        await saveBecomeVendor();
+      }
+
+
     } catch (error) {
       console.error("Home section save error:", error);
 
@@ -507,8 +779,8 @@ const AdminHomePage = () => {
 
         setSectionError(
           firstError ||
-            error.response?.data?.message ||
-            "Please check the section settings."
+          error.response?.data?.message ||
+          "Please check the section settings."
         );
       } else {
         setSectionError(error.response?.data?.message || "Unable to save section settings.");
@@ -542,6 +814,7 @@ const AdminHomePage = () => {
     "promotions",
     "featured_products",
     "top_vendors",
+    "become_a_vendor",
   ].includes(activeEditor);
 
   return (
@@ -625,12 +898,17 @@ const AdminHomePage = () => {
                 section.section_key === "top_vendors" &&
                 activeEditor === "top_vendors";
 
+              const isBecomeVendorEditor =
+                section.section_key === "become_a_vendor" &&
+                activeEditor === "become_a_vendor";
+
               const editorOpen =
                 isFeaturedEditor ||
                 isProductsOnSaleEditor ||
                 isPromotionsEditor ||
                 isFeaturedProductsEditor ||
-                isTopVendorsEditor;
+                isTopVendorsEditor ||
+                isBecomeVendorEditor;
 
               let editorComponent = null;
 
@@ -677,6 +955,20 @@ const AdminHomePage = () => {
                   <TopVendorsEditor
                     value={topVendorsDraft}
                     onChange={handleTopVendorsChange}
+                  />
+                );
+              }
+
+              if (isBecomeVendorEditor) {
+                editorComponent = (
+                  <BecomeVendorEditor
+                    value={becomeVendorDraft}
+                    onChange={
+                      handleBecomeVendorChange
+                    }
+                    onImageSelect={
+                      handleBecomeVendorImageSelect
+                    }
                   />
                 );
               }

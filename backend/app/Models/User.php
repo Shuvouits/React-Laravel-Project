@@ -130,4 +130,41 @@ public function assignedConversations(): HasMany
 
 
 
+public function posSalesAsCustomer(): HasMany
+{
+    return $this->hasMany(
+        PosSale::class,
+        'customer_id'
+    );
+}
+
+public function posSalesAsCashier(): HasMany
+{
+    return $this->hasMany(
+        PosSale::class,
+        'cashier_id'
+    );
+}
+
+public function posRegisterSessions(): HasMany
+{
+    return $this->hasMany(
+        PosRegisterSession::class,
+        'cashier_id'
+    );
+}
+
+public function heldPosSales(): HasMany
+{
+    return $this->hasMany(
+        PosHeldSale::class,
+        'cashier_id'
+    );
+}
+
+
+
+
+
+
 }

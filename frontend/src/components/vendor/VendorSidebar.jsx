@@ -1,9 +1,11 @@
-import { useEffect, useState } from "react";
+import {
+    useEffect,
+    useState,
+} from "react";
 
 import {
     BadgePercent,
     ChevronDown,
-    ChevronRight,
     CreditCard,
     LayoutDashboard,
     MessageSquare,
@@ -21,11 +23,11 @@ import {
     useLocation,
 } from "react-router-dom";
 
-
 const productMenu = [
     {
         label: "All Products",
         to: "/vendor/products",
+        exact: true,
     },
     {
         label: "Inventory",
@@ -41,11 +43,11 @@ const productMenu = [
     },
 ];
 
-
 const orderMenu = [
     {
         label: "All Orders",
         to: "/vendor/orders",
+        exact: true,
     },
     {
         label: "Pre-orders",
@@ -57,19 +59,31 @@ const orderMenu = [
     },
 ];
 
+const financeMenu = [
+    {
+        label: "Overview",
+        to: "/vendor/finance",
+        exact: true,
+    },
+    {
+        label: "Statements",
+        to: "/vendor/finance/statements",
+    },
+    {
+        label: "Expenses",
+        to: "/vendor/finance/expenses",
+    },
+    {
+        label: "Payouts",
+        to: "/vendor/finance/payouts",
+    },
+    {
+        label: "Owed to platform",
+        to: "/vendor/finance/owed",
+    },
+];
 
 const menuItems = [
-    {
-        label: "Dashboard",
-        to: "/vendor/dashboard",
-        icon: LayoutDashboard,
-    },
-    {
-        label: "Finances",
-        to: "/vendor/finances",
-        icon: WalletCards,
-        hasArrow: true,
-    },
     {
         label: "Inbox",
         to: "/vendor/inbox",
@@ -97,7 +111,6 @@ const menuItems = [
     },
 ];
 
-
 const VendorSidebar = () => {
     const location = useLocation();
 
@@ -111,6 +124,20 @@ const VendorSidebar = () => {
         location.pathname === "/vendor/orders" ||
         location.pathname.startsWith(
             "/vendor/orders/"
+        ) ||
+        location.pathname === "/vendor/preorders" ||
+        location.pathname.startsWith(
+            "/vendor/preorders/"
+        ) ||
+        location.pathname === "/vendor/returns" ||
+        location.pathname.startsWith(
+            "/vendor/returns/"
+        );
+
+    const financeRouteActive =
+        location.pathname === "/vendor/finance" ||
+        location.pathname.startsWith(
+            "/vendor/finance/"
         );
 
     const [productsOpen, setProductsOpen] =
@@ -119,6 +146,8 @@ const VendorSidebar = () => {
     const [ordersOpen, setOrdersOpen] =
         useState(orderRouteActive);
 
+    const [financeOpen, setFinanceOpen] =
+        useState(financeRouteActive);
 
     useEffect(() => {
         if (productRouteActive) {
@@ -126,78 +155,22 @@ const VendorSidebar = () => {
         }
     }, [productRouteActive]);
 
-
     useEffect(() => {
         if (orderRouteActive) {
             setOrdersOpen(true);
         }
     }, [orderRouteActive]);
 
-
-    const isProductChildActive = (item) => {
-        if (
-            item.to ===
-            "/vendor/products"
-        ) {
-            return (
-                location.pathname ===
-                item.to
-            );
+    useEffect(() => {
+        if (financeRouteActive) {
+            setFinanceOpen(true);
         }
-
-        return (
-            location.pathname ===
-                item.to ||
-            location.pathname.startsWith(
-                `${item.to}/`
-            )
-        );
-    };
-
-
-    const isOrderChildActive = (item) => {
-        if (
-            item.to ===
-            "/vendor/orders"
-        ) {
-            const isPreOrder =
-                location.pathname ===
-                    "/vendor/orders/preorders" ||
-                location.pathname.startsWith(
-                    "/vendor/orders/preorders/"
-                );
-
-            const isReturn =
-                location.pathname ===
-                    "/vendor/orders/returns" ||
-                location.pathname.startsWith(
-                    "/vendor/orders/returns/"
-                );
-
-            return (
-                orderRouteActive &&
-                !isPreOrder &&
-                !isReturn
-            );
-        }
-
-        return (
-            location.pathname ===
-                item.to ||
-            location.pathname.startsWith(
-                `${item.to}/`
-            )
-        );
-    };
-
+    }, [financeRouteActive]);
 
     return (
         <aside className="sticky top-0 flex h-screen w-[246px] shrink-0 flex-col border-r border-[#e8e8ee] bg-white">
-
             <div className="flex h-[74px] items-center border-b border-[#eeeeee] px-7">
-
                 <div className="flex items-center gap-2">
-
                     <div className="flex h-[31px] w-[31px] items-center justify-center rounded-[8px] bg-[#2563eb] text-white">
                         <Store
                             size={18}
@@ -208,16 +181,11 @@ const VendorSidebar = () => {
                     <span className="text-[21px] font-bold tracking-[-0.03em] text-[#2563eb]">
                         Storify
                     </span>
-
                 </div>
-
             </div>
 
-
             <div className="flex-1 overflow-y-auto px-4 py-4">
-
                 <nav className="space-y-1">
-
                     <SidebarLink
                         label="Dashboard"
                         to="/vendor/dashboard"
@@ -225,199 +193,61 @@ const VendorSidebar = () => {
                         location={location}
                     />
 
+                    <SidebarGroup
+                        label="Products"
+                        icon={Package}
+                        open={productsOpen}
+                        active={productRouteActive}
+                        items={productMenu}
+                        location={location}
+                        onToggle={() =>
+                            setProductsOpen(
+                                (previous) => !previous
+                            )
+                        }
+                    />
 
-                    <div>
+                    <SidebarGroup
+                        label="Orders"
+                        icon={ShoppingCart}
+                        open={ordersOpen}
+                        active={orderRouteActive}
+                        items={orderMenu}
+                        location={location}
+                        onToggle={() =>
+                            setOrdersOpen(
+                                (previous) => !previous
+                            )
+                        }
+                    />
 
-                        <button
-                            type="button"
-                            onClick={() =>
-                                setProductsOpen(
-                                    (prev) => !prev
-                                )
-                            }
-                            className={`flex h-[42px] w-full items-center justify-between rounded-[12px] px-3 text-[14px] transition ${
-                                productRouteActive
-                                    ? "bg-[#f5f7fb] font-medium text-[#2563eb]"
-                                    : "text-[#292929] hover:bg-[#f8f8fa]"
-                            }`}
-                        >
+                    <SidebarGroup
+                        label="Finances"
+                        icon={WalletCards}
+                        open={financeOpen}
+                        active={financeRouteActive}
+                        items={financeMenu}
+                        location={location}
+                        onToggle={() =>
+                            setFinanceOpen(
+                                (previous) => !previous
+                            )
+                        }
+                    />
 
-                            <div className="flex items-center gap-3">
-
-                                <Package
-                                    size={18}
-                                    strokeWidth={1.7}
-                                />
-
-                                <span>
-                                    Products
-                                </span>
-
-                            </div>
-
-                            <ChevronDown
-                                size={17}
-                                strokeWidth={1.8}
-                                className={`transition-transform duration-200 ${
-                                    productsOpen
-                                        ? "rotate-0"
-                                        : "-rotate-90"
-                                }`}
-                            />
-
-                        </button>
-
-
-                        {productsOpen && (
-                            <div className="ml-[21px] mt-1">
-
-                                {productMenu.map(
-                                    (item) => (
-                                        <div
-                                            key={
-                                                item.to
-                                            }
-                                            className="relative border-l border-[#dfe2e8] pl-[16px]"
-                                        >
-                                            <span className="absolute left-0 top-1/2 h-px w-[12px] bg-[#dfe2e8]" />
-
-                                            <NavLink
-                                                to={
-                                                    item.to
-                                                }
-                                                className={`flex min-h-[36px] items-center rounded-[10px] px-2 text-[13px] transition ${
-                                                    isProductChildActive(
-                                                        item
-                                                    )
-                                                        ? "bg-[#f1f1f2] font-semibold text-[#202020]"
-                                                        : "text-[#696969] hover:bg-[#f7f7f8] hover:text-[#222222]"
-                                                }`}
-                                            >
-                                                {
-                                                    item.label
-                                                }
-                                            </NavLink>
-                                        </div>
-                                    )
-                                )}
-
-                            </div>
-                        )}
-
-                    </div>
-
-
-                    <div>
-
-                        <button
-                            type="button"
-                            onClick={() =>
-                                setOrdersOpen(
-                                    (prev) => !prev
-                                )
-                            }
-                            className={`flex h-[42px] w-full items-center justify-between rounded-[12px] px-3 text-[14px] transition ${
-                                orderRouteActive
-                                    ? "bg-[#f5f7fb] font-medium text-[#2563eb]"
-                                    : "text-[#292929] hover:bg-[#f8f8fa]"
-                            }`}
-                        >
-
-                            <div className="flex items-center gap-3">
-
-                                <ShoppingCart
-                                    size={18}
-                                    strokeWidth={1.7}
-                                />
-
-                                <span>
-                                    Orders
-                                </span>
-
-                            </div>
-
-                            <ChevronDown
-                                size={17}
-                                strokeWidth={1.8}
-                                className={`transition-transform duration-200 ${
-                                    ordersOpen
-                                        ? "rotate-0"
-                                        : "-rotate-90"
-                                }`}
-                            />
-
-                        </button>
-
-
-                        {ordersOpen && (
-                            <div className="ml-[21px] mt-1">
-
-                                {orderMenu.map(
-                                    (item) => (
-                                        <div
-                                            key={
-                                                item.to
-                                            }
-                                            className="relative border-l border-[#dfe2e8] pl-[16px]"
-                                        >
-                                            <span className="absolute left-0 top-1/2 h-px w-[12px] bg-[#dfe2e8]" />
-
-                                            <NavLink
-                                                to={
-                                                    item.to
-                                                }
-                                                className={`flex min-h-[36px] items-center rounded-[10px] px-2 text-[13px] transition ${
-                                                    isOrderChildActive(
-                                                        item
-                                                    )
-                                                        ? "bg-[#f1f1f2] font-semibold text-[#202020]"
-                                                        : "text-[#696969] hover:bg-[#f7f7f8] hover:text-[#222222]"
-                                                }`}
-                                            >
-                                                {
-                                                    item.label
-                                                }
-                                            </NavLink>
-                                        </div>
-                                    )
-                                )}
-
-                            </div>
-                        )}
-
-                    </div>
-
-
-                    {menuItems
-                        .filter(
-                            (item) =>
-                                item.label !==
-                                "Dashboard"
-                        )
-                        .map((item) => (
-                            <SidebarLink
-                                key={item.to}
-                                label={
-                                    item.label
-                                }
-                                to={item.to}
-                                icon={item.icon}
-                                hasArrow={
-                                    item.hasArrow
-                                }
-                                location={
-                                    location
-                                }
-                            />
-                        ))}
-
+                    {menuItems.map((item) => (
+                        <SidebarLink
+                            key={item.to}
+                            label={item.label}
+                            to={item.to}
+                            icon={item.icon}
+                            location={location}
+                        />
+                    ))}
                 </nav>
-
             </div>
 
-
             <div className="border-t border-[#eeeeee] p-4">
-
                 <NavLink
                     to="/vendor/settings"
                     className={({ isActive }) =>
@@ -428,7 +258,6 @@ const VendorSidebar = () => {
                         }`
                     }
                 >
-
                     <Settings
                         size={18}
                         strokeWidth={1.7}
@@ -437,21 +266,93 @@ const VendorSidebar = () => {
                     <span>
                         Settings
                     </span>
-
                 </NavLink>
-
             </div>
-
         </aside>
     );
 };
 
+const SidebarGroup = ({
+    label,
+    icon: Icon,
+    open,
+    active,
+    items,
+    location,
+    onToggle,
+}) => {
+    return (
+        <div>
+            <button
+                type="button"
+                onClick={onToggle}
+                className={`flex h-[42px] w-full items-center justify-between rounded-[12px] px-3 text-[14px] transition ${
+                    active
+                        ? "bg-[#f5f7fb] font-medium text-[#2563eb]"
+                        : "text-[#292929] hover:bg-[#f8f8fa]"
+                }`}
+            >
+                <div className="flex items-center gap-3">
+                    <Icon
+                        size={18}
+                        strokeWidth={1.7}
+                    />
+
+                    <span>
+                        {label}
+                    </span>
+                </div>
+
+                <ChevronDown
+                    size={17}
+                    strokeWidth={1.8}
+                    className={`transition-transform duration-200 ${
+                        open
+                            ? "rotate-0"
+                            : "-rotate-90"
+                    }`}
+                />
+            </button>
+
+            {open && (
+                <div className="ml-[21px] mt-1">
+                    {items.map((item) => {
+                        const childActive =
+                            isChildRouteActive(
+                                item,
+                                location.pathname
+                            );
+
+                        return (
+                            <div
+                                key={item.to}
+                                className="relative border-l border-[#dfe2e8] pl-[16px]"
+                            >
+                                <span className="absolute left-0 top-1/2 h-px w-[12px] bg-[#dfe2e8]" />
+
+                                <NavLink
+                                    to={item.to}
+                                    className={`flex min-h-[36px] items-center rounded-[10px] px-2 text-[13px] transition ${
+                                        childActive
+                                            ? "bg-[#f1f1f2] font-semibold text-[#202020]"
+                                            : "text-[#696969] hover:bg-[#f7f7f8] hover:text-[#222222]"
+                                    }`}
+                                >
+                                    {item.label}
+                                </NavLink>
+                            </div>
+                        );
+                    })}
+                </div>
+            )}
+        </div>
+    );
+};
 
 const SidebarLink = ({
     label,
     to,
     icon: Icon,
-    hasArrow = false,
     location,
 }) => {
     const active =
@@ -469,9 +370,7 @@ const SidebarLink = ({
                     : "text-[#4d4d4d] hover:bg-[#f8f8fa] hover:text-[#222222]"
             }`}
         >
-
             <div className="flex items-center gap-3">
-
                 <Icon
                     size={18}
                     strokeWidth={1.7}
@@ -480,20 +379,25 @@ const SidebarLink = ({
                 <span>
                     {label}
                 </span>
-
             </div>
-
-            {hasArrow && (
-                <ChevronRight
-                    size={17}
-                    strokeWidth={1.7}
-                    className="text-[#888888]"
-                />
-            )}
-
         </NavLink>
     );
 };
 
+const isChildRouteActive = (
+    item,
+    pathname
+) => {
+    if (item.exact) {
+        return pathname === item.to;
+    }
+
+    return (
+        pathname === item.to ||
+        pathname.startsWith(
+            `${item.to}/`
+        )
+    );
+};
 
 export default VendorSidebar;

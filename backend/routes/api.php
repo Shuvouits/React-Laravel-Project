@@ -59,6 +59,21 @@ use App\Http\Controllers\Api\Vendor\VendorReturnController;
 use App\Http\Controllers\Api\Vendor\VendorProfileController;
 
 use App\Http\Controllers\Api\Customer\CustomerMessageController;
+use App\Http\Controllers\Api\Vendor\VendorDiscountController;
+use App\Http\Controllers\Api\Vendor\VendorFinanceController;
+
+use App\Http\Controllers\Api\Vendor\VendorExpenseController;
+use App\Http\Controllers\Api\Vendor\VendorPayoutController;
+use App\Http\Controllers\Api\Admin\AdminExpenseController;
+
+use App\Http\Controllers\Api\Admin\AdminFinanceController;
+use App\Http\Controllers\Api\Admin\AdminReceivableController;
+use App\Http\Controllers\Api\Admin\AdminPaymentController;
+use App\Http\Controllers\Api\Admin\AdminPaymentTransactionController;
+use App\Http\Controllers\Api\Admin\AdminFinanceReportController;
+
+use App\Http\Controllers\Api\Admin\AdminPosController;
+use App\Http\Controllers\Api\Vendor\VendorPosController;
 
 use Illuminate\Support\Facades\Route;
 
@@ -125,7 +140,6 @@ Route::prefix('customer')->middleware(['auth:sanctum', 'customer'])->group(funct
     Route::post('/orders', [OrderController::class, 'store']);
     Route::get('/orders/{order}', [OrderController::class, 'show']);
 
-
     // Customer Messages
     Route::get('/messages/vendors', [CustomerMessageController::class, 'vendors']);
     Route::get('/messages', [CustomerMessageController::class, 'index']);
@@ -134,7 +148,6 @@ Route::prefix('customer')->middleware(['auth:sanctum', 'customer'])->group(funct
     Route::post('/messages/{id}/send', [CustomerMessageController::class, 'send'])->whereNumber('id');
     Route::post('/messages/{id}/messages', [CustomerMessageController::class, 'sendMessage'])->whereNumber('id');
 });
-
 
 Route::middleware(['auth:sanctum', 'customer'])->prefix('account')->group(function () {
 
@@ -145,7 +158,7 @@ Route::middleware(['auth:sanctum', 'customer'])->prefix('account')->group(functi
     Route::get('/profile', [ProfileController::class, 'show']);
     Route::put('/profile', [ProfileController::class, 'update']);
 
-     Route::post('/profile', [ProfileController::class, 'update']);
+    Route::post('/profile', [ProfileController::class, 'update']);
 
     Route::get('/wishlist', [WishlistController::class, 'index']);
 
@@ -160,16 +173,10 @@ Route::middleware(['auth:sanctum', 'customer'])->prefix('account')->group(functi
     Route::get('/orders/{id}', [CustomerOrderController::class, 'show']);
     Route::get('/orders', [CustomerOrderController::class, 'index']);
 
+    Route::post('/orders/{id}/cancel', [CustomerOrderController::class, 'cancel']);
 
-
-  Route::post('/orders/{id}/cancel', [CustomerOrderController::class, 'cancel']);
-
-Route::get('/orders/{id}/invoice', [CustomerOrderController::class, 'invoice']);
-
-
+    Route::get('/orders/{id}/invoice', [CustomerOrderController::class, 'invoice']);
 });
-
-
 
 Route::prefix('vendor')->middleware(['auth:sanctum', 'vendor'])->group(function () {
 
@@ -203,7 +210,6 @@ Route::prefix('vendor')->middleware(['auth:sanctum', 'vendor'])->group(function 
     Route::post('/inventory/locations/{id}/toggle-status', [VendorInventoryLocationController::class, 'toggleStatus']);
     Route::post('/inventory/locations/{id}/ship-sooner', [VendorInventoryLocationController::class, 'shipSooner']);
     Route::delete('/inventory/locations/{id}', [VendorInventoryLocationController::class, 'destroy']);
-
 
     // Brands
     Route::get('/brands', [VendorBrandController::class, 'index']);
@@ -246,15 +252,94 @@ Route::prefix('vendor')->middleware(['auth:sanctum', 'vendor'])->group(function 
     // Logout Other Sessions
     Route::post('/security/logout-other-sessions', [CustomerSecurityController::class, 'logoutOtherSessions']);
 
-
     // Inbox
     Route::get('/inbox', [VendorInboxController::class, 'index']);
     Route::get('/inbox/{id}', [VendorInboxController::class, 'show']);
     Route::post('/inbox/{id}/messages', [VendorInboxController::class, 'sendMessage']);
     Route::post('/inbox/{id}/status', [VendorInboxController::class, 'updateStatus']);
+
+    // Discounts
+    Route::get('/discounts', [VendorDiscountController::class, 'index']);
+    Route::post('/discounts', [VendorDiscountController::class, 'store']);
+    Route::get('/discounts/{id}', [VendorDiscountController::class, 'show'])->whereNumber('id');
+    Route::put('/discounts/{id}', [VendorDiscountController::class, 'update'])->whereNumber('id');
+    Route::delete('/discounts/{id}', [VendorDiscountController::class, 'destroy'])->whereNumber('id');
+
+    // Finance Overview
+    Route::get('/finance/overview', [VendorFinanceController::class, 'overview']);
+
+    // Finance Statements
+    Route::get('/finance/statements', [VendorFinanceController::class, 'statements']);
+
+    // Owed to Platform
+    Route::get('/finance/owed', [VendorFinanceController::class, 'owedToPlatform']);
+
+    // Expenses
+    Route::get('/finance/expenses/download', [VendorExpenseController::class, 'download']);
+
+    Route::get('/finance/expenses', [VendorExpenseController::class, 'index']);
+
+    Route::post('/finance/expenses', [VendorExpenseController::class, 'store']);
+
+    Route::get('/finance/expenses/{id}', [VendorExpenseController::class, 'show'])->whereNumber('id');
+
+    Route::put('/finance/expenses/{id}', [VendorExpenseController::class, 'update'])->whereNumber('id');
+
+    Route::delete('/finance/expenses/{id}', [VendorExpenseController::class, 'destroy'])->whereNumber('id');
+
+    // Payouts
+    Route::get('/finance/payouts', [VendorPayoutController::class, 'index']);
+
+    Route::get('/finance/payouts/{id}', [VendorPayoutController::class, 'show'])->whereNumber('id');
+
+
+    // Vendor POS
+Route::prefix('pos')->group(function () {
+    // Context and locations
+    Route::get('/context', [VendorPosController::class, 'context']);
+    Route::get('/locations', [VendorPosController::class, 'locations']);
+
+    // Product catalog
+    Route::get('/categories', [VendorPosController::class, 'categories']);
+    Route::get('/products', [VendorPosController::class, 'products']);
+    Route::get('/barcode-lookup', [VendorPosController::class, 'barcodeLookup']);
+
+    // Customers
+    Route::get('/customers', [VendorPosController::class, 'customers']);
+    Route::post('/customers', [VendorPosController::class, 'storeCustomer']);
+
+    // Register
+    Route::get('/register/current', [VendorPosController::class, 'currentRegister']);
+    Route::post('/register/open', [VendorPosController::class, 'openRegister']);
+    Route::post('/register/{registerSessionId}/close', [VendorPosController::class, 'closeRegister'])
+        ->whereNumber('registerSessionId');
+
+    // Checkout
+    Route::post('/checkout', [VendorPosController::class, 'checkout']);
+
+    // Held sales
+    Route::get('/held-sales', [VendorPosController::class, 'heldSales']);
+    Route::post('/held-sales', [VendorPosController::class, 'holdSale']);
+    Route::get('/held-sales/{heldSaleId}/resume', [VendorPosController::class, 'resumeHeldSale'])
+        ->whereNumber('heldSaleId');
+    Route::patch('/held-sales/{heldSaleId}/complete', [VendorPosController::class, 'completeHeldSale'])
+        ->whereNumber('heldSaleId');
+    Route::delete('/held-sales/{heldSaleId}', [VendorPosController::class, 'cancelHeldSale'])
+        ->whereNumber('heldSaleId');
+
+    // Sales and refunds
+    Route::get('/sales', [VendorPosController::class, 'sales']);
+    Route::get('/sales/{saleId}/receipt', [VendorPosController::class, 'saleReceipt'])
+        ->whereNumber('saleId');
+    Route::post('/sales/{saleId}/refund', [VendorPosController::class, 'refundSale'])
+        ->whereNumber('saleId');
+    Route::get('/sales/{saleId}', [VendorPosController::class, 'saleDetails'])
+        ->whereNumber('saleId');
 });
 
 
+
+});
 
 // Vendor Registration
 Route::prefix('vendor-registration')->group(function () {
@@ -276,10 +361,10 @@ Route::prefix('auth')->group(function () {
     Route::post('/vendor/register', [AuthController::class, 'vendorRegister']);
 
     Route::post('/login', [AuthController::class, 'login'])
-        ->middleware('throttle:10,1');
+    ->middleware('throttle:10,1');
 
     Route::post('/two-factor/challenge', [AuthController::class, 'twoFactorChallenge'])
-        ->middleware('throttle:6,1');
+    ->middleware('throttle:6,1');
 });
 
 // Protected Authentication Routes
@@ -311,6 +396,8 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'admin'])->group(function ()
     Route::post('/home-sections/{section_key}/toggle', [HomeSectionController::class, 'toggle']);
     Route::post('/home-sections/{sectionKey}/update', [HomeSectionController::class, 'update']);
     Route::post('/home-sections/promotions/cards/{index}/image', [HomeSectionController::class, 'uploadPromotionImage']);
+
+    Route::post('/home-sections/become-a-vendor/image',[HomeSectionController::class, 'uploadBecomeVendorImage']);
 
     // Brands
     Route::get('/brands', [BrandController::class, 'index']);
@@ -438,8 +525,8 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'admin'])->group(function ()
 
     // Vendor Account Activation
     Route::get('/vendor/activate/{user}', [VendorActivationController::class, 'activate'])
-        ->middleware('signed')
-        ->name('vendor.activate');
+    ->middleware('signed')
+    ->name('vendor.activate');
 
     // Vendor Plans
     Route::get('/vendor-plans', [VendorPlanController::class, 'index']);
@@ -549,4 +636,67 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'admin'])->group(function ()
     Route::get('/customers/{customer}/edit', [AdminCustomerController::class, 'edit']);
     Route::put('/customers/{customer}', [AdminCustomerController::class, 'update']);
     Route::delete('/customers/{customer}', [AdminCustomerController::class, 'destroy']);
+
+    Route::get('/expenses/download', [AdminExpenseController::class, 'download']);
+
+    Route::delete('/expenses/{adminExpense}/receipt', [AdminExpenseController::class, 'deleteReceipt']);
+
+    Route::apiResource('expenses', AdminExpenseController::class);
+
+    Route::get('/finance/overview', [AdminFinanceController::class, 'overview']);
+
+    Route::get('/finance/receivables', [AdminReceivableController::class, 'index']);
+    Route::get('/finance/receivables/{vendor}', [AdminReceivableController::class, 'show']);
+
+    Route::get('/finance/payments', [AdminPaymentController::class, 'index']);
+
+    Route::get('/finance/transactions', [AdminPaymentTransactionController::class, 'index']);
+    Route::get('/finance/transactions/{paymentTransaction}', [AdminPaymentTransactionController::class, 'show']);
+
+    // Finance Reports
+    Route::get('/finance/reports', [AdminFinanceReportController::class, 'index']);
+    Route::post('/finance/reports/close-month', [AdminFinanceReportController::class, 'closeMonth']);
+    Route::get('/finance/reports/ledger-csv', [AdminFinanceReportController::class, 'ledgerCsv']);
+    Route::get('/finance/reports/expenses-csv', [AdminFinanceReportController::class, 'expensesCsv']);
+
+
+    Route::prefix('pos')->group(function () {
+    Route::get('/context', [AdminPosController::class, 'context']);
+    Route::get('/locations', [AdminPosController::class, 'locations']);
+    Route::get('/categories', [AdminPosController::class, 'categories']);
+    Route::get('/products', [AdminPosController::class, 'products']);
+    Route::get('/barcode-lookup', [AdminPosController::class, 'barcodeLookup']);
+
+    Route::get('/customers', [AdminPosController::class, 'customers']);
+    Route::post('/customers', [AdminPosController::class, 'storeCustomer']);
+
+    Route::get('/register/current', [AdminPosController::class, 'currentRegister']);
+    Route::post('/register/open', [AdminPosController::class, 'openRegister']);
+    Route::post('/register/{registerSessionId}/close', [AdminPosController::class, 'closeRegister'])
+        ->whereNumber('registerSessionId');
+
+    Route::post('/checkout', [AdminPosController::class, 'checkout']);
+
+    Route::get('/held-sales', [AdminPosController::class, 'heldSales']);
+    Route::post('/held-sales', [AdminPosController::class, 'holdSale']);
+    Route::get('/held-sales/{heldSaleId}/resume', [AdminPosController::class, 'resumeHeldSale'])
+        ->whereNumber('heldSaleId');
+    Route::patch('/held-sales/{heldSaleId}/complete', [AdminPosController::class, 'completeHeldSale'])
+        ->whereNumber('heldSaleId');
+    Route::delete('/held-sales/{heldSaleId}', [AdminPosController::class, 'cancelHeldSale'])
+        ->whereNumber('heldSaleId');
+
+    Route::get('/sales', [AdminPosController::class, 'sales']);
+
+    Route::get('/sales/{saleId}/receipt', [AdminPosController::class, 'saleReceipt'])->whereNumber('saleId');
+
+    Route::post('/sales/{saleId}/refund', [AdminPosController::class, 'refundSale'])->whereNumber('saleId');
+
+    Route::get('/sales/{saleId}', [AdminPosController::class, 'saleDetails'])->whereNumber('saleId');
+
+
+});
+
+
+
 });

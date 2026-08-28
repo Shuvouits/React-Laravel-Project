@@ -82,4 +82,32 @@ class InventoryLocation extends Model
             'location_id'
         );
     }
+
+
+    public function posSales(): HasMany
+{
+    return $this->hasMany(
+        PosSale::class,
+        'location_id'
+    );
+}
+
+public function heldPosSales(): HasMany
+{
+    return $this->hasMany(
+        PosHeldSale::class,
+        'location_id'
+    );
+}
+
+public function registerSessions(): HasMany
+{
+    return $this->hasMany(
+        PosRegisterSession::class,
+        'location_id'
+    );
+}
+
+
+
 }

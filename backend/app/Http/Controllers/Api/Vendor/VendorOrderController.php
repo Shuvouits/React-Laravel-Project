@@ -13,6 +13,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use App\Services\VendorFinanceService;
 use Illuminate\Validation\ValidationException;
 
 class VendorOrderController extends Controller
@@ -1228,514 +1229,294 @@ public function storeCustomer(
     */
 
     public function storeManual(
-        Request $request
-    ): JsonResponse {
-        $vendor =
-            $this->vendor(
-                $request
-            );
-
-
-        $validated =
-            $request->validate([
-                'customer_id' => [
-                    'required',
-                    'integer',
-                    'exists:users,id',
-                ],
-
-                'items' => [
-                    'required',
-                    'array',
-                    'min:1',
-                ],
-
-                'items.*.product_id' => [
-                    'required',
-                    'integer',
-                    'exists:products,id',
-                ],
-
-                'items.*.variant_id' => [
-                    'nullable',
-                    'integer',
-                    'exists:product_variants,id',
-                ],
-
-                'items.*.quantity' => [
-                    'required',
-                    'integer',
-                    'min:1',
-                    'max:999',
-                ],
-
-                'discount_total' => [
-                    'nullable',
-                    'numeric',
-                    'min:0',
-                ],
-
-                'shipping_total' => [
-                    'nullable',
-                    'numeric',
-                    'min:0',
-                ],
-
-                'tax_rate' => [
-                    'nullable',
-                    'numeric',
-                    'min:0',
-                    'max:100',
-                ],
-
-                'customer_note' => [
-                    'nullable',
-                    'string',
-                    'max:2000',
-                ],
-
-                'payment_due_later' => [
-                    'nullable',
-                    'boolean',
-                ],
-
-                'mark_as_paid' => [
-                    'nullable',
-                    'boolean',
-                ],
-            ]);
-
-
-        $order = DB::transaction(
-            function () use (
-                $validated,
-                $vendor
-            ) {
-                $subtotal = 0;
-
-                $orderItems = [];
-
-
-                foreach (
-                    $validated['items']
-                    as $line
-                ) {
-                    $product = Product::query()
-                        ->where(
-                            'source',
-                            'vendor'
-                        )
-                        ->where(
-                            'created_by',
-                            $vendor->id
-                        )
-                        ->with(
-                            'store'
-                        )
-                        ->lockForUpdate()
-                        ->find(
-                            $line[
-                                'product_id'
-                            ]
-                        );
-
-
-                    if (! $product) {
-                        throw ValidationException::withMessages([
-                            'items' => [
-                                'A selected product does not belong to your store.',
-                            ],
-                        ]);
-                    }
-
-
-                    $variant = null;
-
-
-                    if (
-                        ! empty(
-                            $line[
-                                'variant_id'
-                            ]
-                        )
-                    ) {
-                        $variant =
-                            ProductVariant::query()
-                                ->lockForUpdate()
-                                ->where(
-                                    'id',
-                                    $line[
-                                        'variant_id'
-                                    ]
-                                )
-                                ->where(
-                                    'product_id',
-                                    $product->id
-                                )
-                                ->first();
-
-
-                        if (! $variant) {
-                            throw ValidationException::withMessages([
-                                'items' => [
-                                    'A selected product variant is invalid.',
-                                ],
-                            ]);
-                        }
-                    }
-
-
-                    $quantity =
-                        (int) $line[
-                            'quantity'
-                        ];
-
-
-                    $available =
-                        $variant
-                            ? (int) (
-                                $variant
-                                    ->quantity
-                                ?? 0
-                            )
-                            : (int) (
-                                $product
-                                    ->quantity
-                                ?? 0
-                            );
-
-
-                    $trackQuantity =
-                        $variant
-                            ? (bool) (
-                                $variant
-                                    ->track_quantity
-                                ?? true
-                            )
-                            : (bool) (
-                                $product
-                                    ->track_quantity
-                                ?? true
-                            );
-
-
-                    $continueSelling =
-                        $variant
-                            ? (bool) (
-                                $variant
-                                    ->continue_selling_when_out_of_stock
-                                ?? false
-                            )
-                            : (bool) (
-                                $product
-                                    ->continue_selling_when_out_of_stock
-                                ?? false
-                            );
-
-
-                    if (
-                        $trackQuantity &&
-                        ! $continueSelling &&
-                        $quantity >
-                            $available
-                    ) {
-                        throw ValidationException::withMessages([
-                            'items' => [
-                                'Not enough stock is available for ' .
-                                (
-                                    $product->title
-                                    ?? 'this product'
-                                ) .
-                                '.',
-                            ],
-                        ]);
-                    }
-
-
-                    $unitPrice =
-                        $variant
-                            ? (float)
-                                $variant->price
-                            : (float)
-                                $product->price;
-
-
-                    $lineTotal =
-                        round(
-                            $unitPrice *
-                            $quantity,
-                            2
-                        );
-
-
-                    $subtotal +=
-                        $lineTotal;
-
-
-                    $orderItems[] = [
-                        'store_id' =>
-                            $product
-                                ->store_id
-                            ?? null,
-
-                        'store_name' =>
-                            $product
-                                ->store
-                                ?->name
-                            ?? null,
-
-                        'product_id' =>
-                            $product->id,
-
-                        'variant_id' =>
-                            $variant?->id,
-
-                        'product_name' =>
-                            $product->title
-                            ?? 'Product',
-
-                        'product_slug' =>
-                            $product->slug,
-
-                        'variant_name' =>
-                            $variant?->name
-                            ??
-                            $variant?->title,
-
-                        'sku' =>
-                            $variant?->sku
-                            ??
-                            $product->sku,
-
-                        'quantity' =>
-                            $quantity,
-
-                        'unit_price' =>
-                            $unitPrice,
-
-                        'compare_at_price' =>
-                            $variant
-                                ?->compare_at_price
-                            ??
-                            $product
-                                ->compare_at_price,
-
-                        'line_total' =>
-                            $lineTotal,
-                    ];
-                }
-
-
-                $subtotal =
-                    round(
-                        $subtotal,
-                        2
-                    );
-
-
-                $discountTotal =
-                    min(
-                        (float) (
-                            $validated[
-                                'discount_total'
-                            ]
-                            ?? 0
-                        ),
-                        $subtotal
-                    );
-
-
-                $shippingTotal =
-                    round(
-                        (float) (
-                            $validated[
-                                'shipping_total'
-                            ]
-                            ?? 0
-                        ),
-                        2
-                    );
-
-
-                $taxRate =
-                    (float) (
-                        $validated[
-                            'tax_rate'
-                        ]
-                        ?? 0
-                    );
-
-
-                $taxTotal =
-                    round(
-                        $subtotal *
-                        (
-                            $taxRate /
-                            100
-                        ),
-                        2
-                    );
-
-
-                $grandTotal =
-                    round(
-                        $subtotal -
-                        $discountTotal +
-                        $shippingTotal +
-                        $taxTotal,
-                        2
-                    );
-
-
-                $markAsPaid =
-                    (bool) (
-                        $validated[
-                            'mark_as_paid'
-                        ]
-                        ?? false
-                    );
-
-
-                $order =
-                    Order::create([
-                        'order_no' =>
-                            $this
-                                ->generateManualOrderNumber(),
-
-                        'user_id' =>
-                            $validated[
-                                'customer_id'
-                            ],
-
-                        'status' =>
-                            $markAsPaid
-                                ? 'processing'
-                                : 'pending',
-
-                        'payment_method' =>
-                            'manual',
-
-                        'payment_status' =>
-                            $markAsPaid
-                                ? 'paid'
-                                : 'pending',
-
-                        'channel' =>
-                            'manual',
-
-                        'fulfillment_status' =>
-                            'unfulfilled',
-
-                        'delivery_status' =>
-                            'not_shipped',
-
-                        'shipping_method' =>
-                            'manual',
-
-                        'currency' =>
-                            'USD',
-
-                        'subtotal' =>
-                            $subtotal,
-
-                        'discount_total' =>
-                            $discountTotal,
-
-                        'shipping_total' =>
-                            $shippingTotal,
-
-                        'tax_total' =>
-                            $taxTotal,
-
-                        'grand_total' =>
-                            $grandTotal,
-
-                        'billing_same_as_shipping' =>
-                            true,
-
-                        'marketing_emails' =>
-                            false,
-
-                        'customer_note' =>
-                            $validated[
-                                'customer_note'
-                            ]
-                            ?? null,
-
-                        'placed_at' =>
-                            now(),
-
-                        'paid_at' =>
-                            $markAsPaid
-                                ? now()
-                                : null,
-                    ]);
-
-
-                foreach (
-                    $orderItems
-                    as $item
-                ) {
-                    $order
-                        ->items()
-                        ->create(
-                            $item
-                        );
-                }
-
-
-                if ($markAsPaid) {
-                    PaymentTransaction::create([
-                        'order_id' =>
-                            $order->id,
-
-                        'gateway' =>
-                            'manual',
-
-                        'status' =>
-                            'paid',
-
-                        'gateway_reference' =>
-                            'MANUAL-' .
-                            $order->order_no,
-
-                        'amount' =>
-                            $order
-                                ->grand_total,
-
-                        'currency' =>
-                            $order
-                                ->currency,
-
-                        'paid_at' =>
-                            now(),
-                    ]);
-                }
-
-
-                return $order->fresh([
-                    'user',
-                    'items',
-                    'paymentTransactions',
+    Request $request,
+    VendorFinanceService $vendorFinanceService
+): JsonResponse {
+    $vendor = $this->vendor($request);
+
+    $validated = $request->validate([
+        'customer_id' => [
+            'required',
+            'integer',
+            'exists:users,id',
+        ],
+        'items' => [
+            'required',
+            'array',
+            'min:1',
+        ],
+        'items.*.product_id' => [
+            'required',
+            'integer',
+            'exists:products,id',
+        ],
+        'items.*.variant_id' => [
+            'nullable',
+            'integer',
+            'exists:product_variants,id',
+        ],
+        'items.*.quantity' => [
+            'required',
+            'integer',
+            'min:1',
+            'max:999',
+        ],
+        'discount_total' => [
+            'nullable',
+            'numeric',
+            'min:0',
+        ],
+        'shipping_total' => [
+            'nullable',
+            'numeric',
+            'min:0',
+        ],
+        'tax_rate' => [
+            'nullable',
+            'numeric',
+            'min:0',
+            'max:100',
+        ],
+        'customer_note' => [
+            'nullable',
+            'string',
+            'max:2000',
+        ],
+        'payment_due_later' => [
+            'nullable',
+            'boolean',
+        ],
+        'mark_as_paid' => [
+            'nullable',
+            'boolean',
+        ],
+    ]);
+
+    $order = DB::transaction(function () use (
+        $validated,
+        $vendor
+    ) {
+        $subtotal = 0;
+        $orderItems = [];
+
+        foreach ($validated['items'] as $line) {
+            $product = Product::query()
+                ->where('source', 'vendor')
+                ->where('created_by', $vendor->id)
+                ->with('store')
+                ->lockForUpdate()
+                ->find($line['product_id']);
+
+            if (!$product) {
+                throw ValidationException::withMessages([
+                    'items' => [
+                        'A selected product does not belong to your store.',
+                    ],
                 ]);
             }
+
+            $variant = null;
+
+            if (!empty($line['variant_id'])) {
+                $variant = ProductVariant::query()
+                    ->lockForUpdate()
+                    ->where('id', $line['variant_id'])
+                    ->where('product_id', $product->id)
+                    ->first();
+
+                if (!$variant) {
+                    throw ValidationException::withMessages([
+                        'items' => [
+                            'A selected product variant is invalid.',
+                        ],
+                    ]);
+                }
+            }
+
+            $quantity = (int) $line['quantity'];
+
+            $available = $variant
+                ? (int) ($variant->quantity ?? 0)
+                : (int) ($product->quantity ?? 0);
+
+            $trackQuantity = $variant
+                ? (bool) ($variant->track_quantity ?? true)
+                : (bool) ($product->track_quantity ?? true);
+
+            $continueSelling = $variant
+                ? (bool) (
+                    $variant->continue_selling_when_out_of_stock
+                    ?? false
+                )
+                : (bool) (
+                    $product->continue_selling_when_out_of_stock
+                    ?? false
+                );
+
+            if (
+                $trackQuantity &&
+                !$continueSelling &&
+                $quantity > $available
+            ) {
+                throw ValidationException::withMessages([
+                    'items' => [
+                        'Not enough stock is available for '
+                        . ($product->title ?? 'this product')
+                        . '.',
+                    ],
+                ]);
+            }
+
+            $unitPrice = $variant
+                ? (float) $variant->price
+                : (float) $product->price;
+
+            if ($unitPrice < 0) {
+                throw ValidationException::withMessages([
+                    'items' => [
+                        'A selected product has an invalid price.',
+                    ],
+                ]);
+            }
+
+            $lineTotal = round(
+                $unitPrice * $quantity,
+                2
+            );
+
+            $subtotal += $lineTotal;
+
+            $orderItems[] = [
+                'store_id' => $product->store_id ?? null,
+                'store_name' => $product->store?->name ?? null,
+                'product_id' => $product->id,
+                'variant_id' => $variant?->id,
+                'product_name' => $product->title ?? 'Product',
+                'product_slug' => $product->slug,
+                'variant_name' => $variant?->name
+                    ?? $variant?->title,
+                'sku' => $variant?->sku
+                    ?? $product->sku,
+                'quantity' => $quantity,
+                'unit_price' => $unitPrice,
+                'compare_at_price' => $variant?->compare_at_price
+                    ?? $product->compare_at_price,
+                'line_total' => $lineTotal,
+            ];
+        }
+
+        $subtotal = round(
+            $subtotal,
+            2
         );
 
+        $discountTotal = min(
+            round(
+                (float) ($validated['discount_total'] ?? 0),
+                2
+            ),
+            $subtotal
+        );
 
-        return response()->json([
-            'success' => true,
+        $shippingTotal = round(
+            (float) ($validated['shipping_total'] ?? 0),
+            2
+        );
 
-            'message' =>
-                $order
-                    ->payment_status ===
-                'paid'
-                    ? 'Order created and marked as paid.'
-                    : 'Order created successfully.',
+        $taxRate = (float) (
+            $validated['tax_rate'] ?? 0
+        );
 
-            'order' =>
-                $order,
-        ], 201);
+        $taxTotal = round(
+            $subtotal * ($taxRate / 100),
+            2
+        );
+
+        $grandTotal = round(
+            $subtotal
+            - $discountTotal
+            + $shippingTotal
+            + $taxTotal,
+            2
+        );
+
+        $markAsPaid = (bool) (
+            $validated['mark_as_paid'] ?? false
+        );
+
+        $order = Order::create([
+            'order_no' => $this->generateManualOrderNumber(),
+            'user_id' => $validated['customer_id'],
+            'status' => $markAsPaid
+                ? 'processing'
+                : 'pending',
+            'payment_method' => 'manual',
+            'payment_status' => $markAsPaid
+                ? 'paid'
+                : 'pending',
+            'channel' => 'manual',
+            'fulfillment_status' => 'unfulfilled',
+            'delivery_status' => 'not_shipped',
+            'shipping_method' => 'manual',
+            'currency' => 'USD',
+            'subtotal' => $subtotal,
+            'discount_total' => $discountTotal,
+            'shipping_total' => $shippingTotal,
+            'tax_total' => $taxTotal,
+            'grand_total' => $grandTotal,
+            'billing_same_as_shipping' => true,
+            'marketing_emails' => false,
+            'customer_note' => $validated['customer_note'] ?? null,
+            'placed_at' => now(),
+            'paid_at' => $markAsPaid
+                ? now()
+                : null,
+        ]);
+
+        foreach ($orderItems as $item) {
+            $order->items()->create($item);
+        }
+
+        if ($markAsPaid) {
+            PaymentTransaction::create([
+                'order_id' => $order->id,
+                'gateway' => 'manual',
+                'status' => 'paid',
+                'gateway_reference' =>
+                    'MANUAL-' . $order->order_no,
+                'amount' => $order->grand_total,
+                'currency' => $order->currency,
+                'paid_at' => now(),
+            ]);
+        }
+
+        return $order->fresh([
+            'user',
+            'items.product',
+            'paymentTransactions',
+        ]);
+    });
+
+    if ($order->payment_status === 'paid') {
+        $vendorFinanceService->recordPaidOrder(
+            $order
+        );
     }
+
+    return response()->json([
+        'success' => true,
+
+        'message' => $order->payment_status === 'paid'
+            ? 'Order created and marked as paid.'
+            : 'Order created successfully.',
+
+        'order' => $order->fresh([
+            'user',
+            'items',
+            'paymentTransactions',
+        ]),
+    ], 201);
+}
 
 
     /*

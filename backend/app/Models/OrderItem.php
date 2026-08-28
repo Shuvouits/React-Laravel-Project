@@ -4,12 +4,14 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class OrderItem extends Model
 {
     protected $fillable = [
         'order_id',
         'store_id',
+        'store_name',
         'product_id',
         'variant_id',
         'product_name',
@@ -39,7 +41,10 @@ class OrderItem extends Model
 
     public function store(): BelongsTo
     {
-        return $this->belongsTo(Store::class);
+        return $this->belongsTo(
+            Store::class,
+            'store_id'
+        );
     }
 
     public function product(): BelongsTo
@@ -49,16 +54,16 @@ class OrderItem extends Model
 
     public function variant(): BelongsTo
     {
-        return $this->belongsTo(ProductVariant::class);
+        return $this->belongsTo(
+            ProductVariant::class,
+            'variant_id'
+        );
     }
 
-    public function returnItems()
-{
-    return $this->hasMany(
-        OrderReturnItem::class
-    );
-}
-
-
-
+    public function returnItems(): HasMany
+    {
+        return $this->hasMany(
+            OrderReturnItem::class
+        );
+    }
 }

@@ -120,6 +120,23 @@ import VendorProfile from "./pages/vendor/profile/VendorProfile";
 import VendorInbox from "./pages/vendor/inbox/VendorInbox";
 import CustomerInbox from "./components/frontend/customer/inbox/CustomerInbox";
 import CustomerOrders from "./pages/frontend/account/CustomerOrders";
+import VendorDiscounts from "./pages/vendor/discounts/VendorDiscounts";
+import VendorExpenses from "./pages/vendor/finance/VendorExpenses";
+import VendorFinanceOverview from "./pages/vendor/finance/VendorFinanceOverview";
+import VendorFinanceStatements from "./pages/vendor/finance/VendorFinanceStatements";
+import VendorPayouts from "./pages/vendor/finance/VendorPayouts";
+import VendorPayoutDetails from "./pages/vendor/finance/VendorPayoutDetails";
+import VendorOwedToPlatform from "./pages/vendor/finance/VendorOwedToPlatform";
+import AdminFinanceOverview from "./pages/admin/finance/AdminFinanceOverview";
+import AdminFinanceExpenses from "./pages/admin/finance/AdminFinanceExpenses";
+import AdminFinancePayouts from "./pages/admin/finance/AdminFinancePayouts";
+import AdminFinancePayoutDetails from "./pages/admin/finance/AdminFinancePayoutDetails";
+import AdminFinanceReceivables from "./pages/admin/finance/AdminFinanceReceivables";
+import AdminFinancePayments from "./pages/admin/finance/AdminFinancePayments";
+import AdminFinanceTransactions from "./pages/admin/finance/AdminFinanceTransactions";
+import AdminFinanceReports from "./pages/admin/finance/AdminFinanceReports";
+import AdminPos from "./pages/admin/pos/AdminPos";
+import BecomeVendorSection from "./components/frontend/BecomeVendorSection";
 
 
 const Home = () => {
@@ -131,6 +148,7 @@ const Home = () => {
             <PromotionsOffers />
             <FeaturedProducts />
             <TopVendors />
+            <BecomeVendorSection />
         </>
     );
 };
@@ -169,7 +187,7 @@ const App = () => {
 
                         <Route path="/account/orders" element={<CustomerOrders />} />
 
-                        
+
 
 
 
@@ -249,10 +267,39 @@ const App = () => {
 
                         <Route path="customers/:id/edit" element={<AdminCustomerEdit />} />
 
+                        <Route path="finance" element={<AdminFinanceOverview />} />
+
+                        <Route path="finance/expenses" element={<AdminFinanceExpenses />} />
+
+                        <Route path="finance/payouts" element={<AdminFinancePayouts />} />
+
+                        <Route path="finance/payouts/:id" element={<AdminFinancePayoutDetails />} />
+
+                        <Route path="finance/receivables" element={<AdminFinanceReceivables />} />
+
+                        <Route path="finance/payments" element={<AdminFinancePayments />} />
+
+                        <Route path="finance/transactions" element={<AdminFinanceTransactions />} />
+
+                        <Route path="finance/reports" element={<AdminFinanceReports />} />
+
+
+
 
 
 
                     </Route>
+
+                    {/* pos route  */}
+
+                    <Route
+                        path="/admin/pos"
+                        element={
+                            <RoleRoute allowedRole="admin">
+                                <AdminPos />
+                            </RoleRoute>
+                        }
+                    />
 
                     {/* Standalone Admin Settings */}
                     <Route
@@ -285,14 +332,29 @@ const App = () => {
                         <Route path="products/brands/:id/edit" element={<VendorBrandEdit />} />
 
                         <Route path="orders" element={<VendorOrders />} />
-<Route path="orders/create" element={<VendorOrderCreate />} />
-<Route path="orders/:id" element={<VendorOrderDetails />} />
+                        <Route path="orders/create" element={<VendorOrderCreate />} />
+                        <Route path="orders/:id" element={<VendorOrderDetails />} />
 
-<Route path="preorders" element={<VendorPreOrders />} />
+                        <Route path="preorders" element={<VendorPreOrders />} />
 
-<Route path="returns" element={<VendorReturns />} />
-<Route path="profile" element={<VendorProfile />} />
-<Route path="inbox" element={<VendorInbox />} />
+                        <Route path="returns" element={<VendorReturns />} />
+                        <Route path="profile" element={<VendorProfile />} />
+                        <Route path="inbox" element={<VendorInbox />} />
+
+                        <Route path="discounts" element={<VendorDiscounts />} />
+                        <Route path="finance/expenses" element={<VendorExpenses />} />
+
+                        <Route path="finance" element={<VendorFinanceOverview />} />
+
+                        <Route path="finance/statements" element={<VendorFinanceStatements />} />
+
+                        <Route path="finance/payouts" element={<VendorPayouts />} />
+
+                        <Route path="finance/payouts/:id" element={<VendorPayoutDetails />} />
+
+                        <Route path="finance/owed" element={<VendorOwedToPlatform />} />
+
+
 
 
 

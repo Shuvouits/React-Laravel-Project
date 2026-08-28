@@ -1,32 +1,25 @@
-import {
-    useEffect,
-    useState,
-} from "react";
+import { useEffect, useState } from "react";
+import { NavLink, useLocation } from "react-router-dom";
 
 import {
-    NavLink,
-    useLocation,
-} from "react-router-dom";
-
-import {
-    LayoutGrid,
     BarChart3,
-    ClipboardList,
-    Box,
-    Sparkles,
     Bot,
-    Users,
-    Store,
-    UserCog,
-    WalletCards,
-    Percent,
-    FileText,
-    MessageSquare,
-    ShoppingBag,
-    Monitor,
-    Settings,
+    Box,
     ChevronDown,
     ChevronRight,
+    ClipboardList,
+    FileText,
+    LayoutGrid,
+    MessageSquare,
+    Monitor,
+    Percent,
+    Settings,
+    ShoppingBag,
+    Sparkles,
+    Store,
+    UserCog,
+    Users,
+    WalletCards,
 } from "lucide-react";
 
 const orderItems = [
@@ -106,6 +99,38 @@ const vendorItems = [
     },
 ];
 
+const financeItems = [
+    {
+        to: "/admin/finance",
+        label: "Overview",
+        end: true,
+    },
+    {
+        to: "/admin/finance/expenses",
+        label: "Expenses",
+    },
+    {
+        to: "/admin/finance/payouts",
+        label: "Payouts",
+    },
+    {
+        to: "/admin/finance/receivables",
+        label: "Receivables",
+    },
+    {
+        to: "/admin/finance/payments",
+        label: "Payments",
+    },
+    {
+        to: "/admin/finance/transactions",
+        label: "Transactions",
+    },
+    {
+        to: "/admin/finance/reports",
+        label: "Reports",
+    },
+];
+
 const onlineStoreItems = [
     {
         to: "/admin/online-store/themes",
@@ -129,24 +154,20 @@ const AdminSidebar = () => {
     const location = useLocation();
 
     const isOrdersRoute =
-        location.pathname.startsWith(
-            "/admin/orders"
-        );
+        location.pathname.startsWith("/admin/orders");
 
     const isProductsRoute =
-        location.pathname.startsWith(
-            "/admin/products"
-        );
+        location.pathname.startsWith("/admin/products");
 
     const isVendorsRoute =
-        location.pathname.startsWith(
-            "/admin/vendors"
-        );
+        location.pathname.startsWith("/admin/vendors");
+
+    const isFinanceRoute =
+        location.pathname === "/admin/finance" ||
+        location.pathname.startsWith("/admin/finance/");
 
     const isOnlineStoreRoute =
-        location.pathname.startsWith(
-            "/admin/online-store"
-        );
+        location.pathname.startsWith("/admin/online-store");
 
     const [ordersOpen, setOrdersOpen] =
         useState(isOrdersRoute);
@@ -156,6 +177,9 @@ const AdminSidebar = () => {
 
     const [vendorsOpen, setVendorsOpen] =
         useState(isVendorsRoute);
+
+    const [financeOpen, setFinanceOpen] =
+        useState(isFinanceRoute);
 
     const [onlineStoreOpen, setOnlineStoreOpen] =
         useState(isOnlineStoreRoute);
@@ -179,14 +203,18 @@ const AdminSidebar = () => {
     }, [isVendorsRoute]);
 
     useEffect(() => {
+        if (isFinanceRoute) {
+            setFinanceOpen(true);
+        }
+    }, [isFinanceRoute]);
+
+    useEffect(() => {
         if (isOnlineStoreRoute) {
             setOnlineStoreOpen(true);
         }
     }, [isOnlineStoreRoute]);
 
-    const navItemClass = ({
-        isActive,
-    }) => {
+    const navItemClass = ({ isActive }) => {
         const base =
             "flex min-h-[42px] items-center gap-[11px] rounded-[10px] px-[14px] text-[14px] font-medium transition-all duration-150";
 
@@ -197,9 +225,7 @@ const AdminSidebar = () => {
         return `${base} text-[#4d5562] hover:bg-[#f5f6f8] hover:text-[#111827]`;
     };
 
-    const subMenuClass = ({
-        isActive,
-    }) => {
+    const subMenuClass = ({ isActive }) => {
         const base =
             "relative flex min-h-[35px] items-center rounded-[9px] px-[12px] text-[13px] font-medium transition-all duration-150";
 
@@ -236,14 +262,10 @@ const AdminSidebar = () => {
                         open={ordersOpen}
                         active={isOrdersRoute}
                         onToggle={() => {
-                            setOrdersOpen(
-                                !ordersOpen
-                            );
+                            setOrdersOpen((current) => !current);
                         }}
                         items={orderItems}
-                        subMenuClass={
-                            subMenuClass
-                        }
+                        subMenuClass={subMenuClass}
                         activeClass="bg-[#edf3ff] text-[#2065D1]"
                     />
 
@@ -251,102 +273,81 @@ const AdminSidebar = () => {
                         label="Products"
                         icon={Box}
                         open={productsOpen}
-                        active={
-                            isProductsRoute
-                        }
+                        active={isProductsRoute}
                         onToggle={() => {
-                            setProductsOpen(
-                                !productsOpen
-                            );
+                            setProductsOpen((current) => !current);
                         }}
                         items={productItems}
-                        subMenuClass={
-                            subMenuClass
-                        }
-                        activeClass="bg-[#f5f5f5] text-[#111]"
+                        subMenuClass={subMenuClass}
+                        activeClass="bg-[#edf3ff] text-[#2065D1]"
                     />
 
                     <SidebarNavItem
                         to="/admin/ai-studio"
                         icon={Sparkles}
                         label="AI Studio"
-                        className={
-                            navItemClass
-                        }
+                        className={navItemClass}
                     />
 
                     <SidebarNavItem
                         to="/admin/sales-agent"
                         icon={Bot}
                         label="Sales Agent"
-                        className={
-                            navItemClass
-                        }
+                        className={navItemClass}
                     />
 
                     <SidebarNavItem
                         to="/admin/customers"
                         icon={Users}
                         label="Customers"
-                        className={
-                            navItemClass
-                        }
+                        className={navItemClass}
                     />
 
                     <SidebarDropdown
                         label="Vendors"
                         icon={Store}
                         open={vendorsOpen}
-                        active={
-                            isVendorsRoute
-                        }
+                        active={isVendorsRoute}
                         onToggle={() => {
-                            setVendorsOpen(
-                                !vendorsOpen
-                            );
+                            setVendorsOpen((current) => !current);
                         }}
                         items={vendorItems}
-                        subMenuClass={
-                            subMenuClass
-                        }
-                        activeClass="bg-[#eaf1ff] text-[#2065D1]"
+                        subMenuClass={subMenuClass}
+                        activeClass="bg-[#edf3ff] text-[#2065D1]"
                     />
 
                     <SidebarNavItem
                         to="/admin/staff"
                         icon={UserCog}
                         label="Staff"
-                        className={
-                            navItemClass
-                        }
+                        className={navItemClass}
                     />
 
-                    <SidebarNavItem
-                        to="/admin/payments"
+                    <SidebarDropdown
+                        label="Finance"
                         icon={WalletCards}
-                        label="Payments"
-                        className={
-                            navItemClass
-                        }
-                        arrow
+                        open={financeOpen}
+                        active={isFinanceRoute}
+                        onToggle={() => {
+                            setFinanceOpen((current) => !current);
+                        }}
+                        items={financeItems}
+                        subMenuClass={subMenuClass}
+                        activeClass="bg-[#edf3ff] text-[#2065D1]"
                     />
 
                     <SidebarNavItem
                         to="/admin/discounts"
                         icon={Percent}
                         label="Discounts"
-                        className={
-                            navItemClass
-                        }
+                        className={navItemClass}
                     />
 
                     <SidebarNavItem
                         to="/admin/content"
                         icon={FileText}
                         label="Content"
-                        className={
-                            navItemClass
-                        }
+                        className={navItemClass}
                         arrow
                     />
 
@@ -354,9 +355,7 @@ const AdminSidebar = () => {
                         to="/admin/inbox"
                         icon={MessageSquare}
                         label="Inbox"
-                        className={
-                            navItemClass
-                        }
+                        className={navItemClass}
                     />
                 </nav>
 
@@ -367,33 +366,21 @@ const AdminSidebar = () => {
                 <SidebarDropdown
                     label="Online Store"
                     icon={ShoppingBag}
-                    open={
-                        onlineStoreOpen
-                    }
-                    active={
-                        isOnlineStoreRoute
-                    }
+                    open={onlineStoreOpen}
+                    active={isOnlineStoreRoute}
                     onToggle={() => {
-                        setOnlineStoreOpen(
-                            !onlineStoreOpen
-                        );
+                        setOnlineStoreOpen((current) => !current);
                     }}
-                    items={
-                        onlineStoreItems
-                    }
-                    subMenuClass={
-                        subMenuClass
-                    }
-                    activeClass="bg-[#eaf1ff] text-[#2065D1]"
+                    items={onlineStoreItems}
+                    subMenuClass={subMenuClass}
+                    activeClass="bg-[#edf3ff] text-[#2065D1]"
                 />
 
                 <SidebarNavItem
                     to="/admin/point-of-sale"
                     icon={Monitor}
                     label="Point of Sale"
-                    className={
-                        navItemClass
-                    }
+                    className={navItemClass}
                 />
             </div>
 
@@ -402,13 +389,9 @@ const AdminSidebar = () => {
                     to="/admin/settings/general"
                     className="flex items-center gap-[12px] rounded-[9px] px-[14px] py-[11px] text-[14px] font-medium text-[#4b5563] transition hover:bg-[#f3f4f6]"
                 >
-                    <Settings
-                        size={18}
-                    />
+                    <Settings size={18} />
 
-                    <span>
-                        Settings
-                    </span>
+                    <span>Settings</span>
                 </NavLink>
             </div>
         </aside>
@@ -453,9 +436,7 @@ const SidebarNavItem = ({
             </span>
 
             {arrow && (
-                <ChevronRight
-                    size={16}
-                />
+                <ChevronRight size={16} />
             )}
         </NavLink>
     );
@@ -507,27 +488,15 @@ const SidebarDropdown = ({
             >
                 <div className="overflow-hidden">
                     <div className="relative ml-[31px] mt-[5px] space-y-[1px] border-l border-[#dedfe2] pb-[4px] pl-[12px]">
-                        {items.map(
-                            (item) => (
-                                <SidebarSubItem
-                                    key={
-                                        item.to
-                                    }
-                                    to={
-                                        item.to
-                                    }
-                                    label={
-                                        item.label
-                                    }
-                                    end={
-                                        item.end
-                                    }
-                                    className={
-                                        subMenuClass
-                                    }
-                                />
-                            )
-                        )}
+                        {items.map((item) => (
+                            <SidebarSubItem
+                                key={item.to}
+                                to={item.to}
+                                label={item.label}
+                                end={item.end}
+                                className={subMenuClass}
+                            />
+                        ))}
                     </div>
                 </div>
             </div>
