@@ -39,13 +39,16 @@ class HomeSectionController extends Controller
         ]);
     }
 
-    // Update homepage section settings.
-public function update(
+
+    public function update(
     Request $request,
     string $sectionKey
 ) {
     $section = HomeSection::query()
-        ->where('section_key', $sectionKey)
+        ->where(
+            'section_key',
+            $sectionKey
+        )
         ->firstOrFail();
 
     /*
@@ -61,12 +64,10 @@ public function update(
                 'string',
                 'max:255',
             ],
-
             'settings.category_source' => [
                 'required',
                 'in:featured,top_level',
             ],
-
             'settings.max_categories' => [
                 'required',
                 'integer',
@@ -93,7 +94,8 @@ public function update(
             'status' => true,
             'message' =>
                 'Featured Categories saved successfully.',
-            'section' => $section->fresh(),
+            'section' =>
+                $section->fresh(),
         ]);
     }
 
@@ -110,25 +112,21 @@ public function update(
                 'string',
                 'max:255',
             ],
-
             'settings.subtitle' => [
                 'nullable',
                 'string',
                 'max:255',
             ],
-
             'settings.product_source' => [
                 'required',
                 'in:on_sale,latest,featured',
             ],
-
             'settings.max_products' => [
                 'required',
                 'integer',
                 'min:1',
                 'max:24',
             ],
-
             'settings.desktop_cards_per_row' => [
                 'required',
                 'integer',
@@ -163,13 +161,14 @@ public function update(
             'status' => true,
             'message' =>
                 'Products on Sale settings saved successfully.',
-            'section' => $section->fresh(),
+            'section' =>
+                $section->fresh(),
         ]);
     }
 
     /*
     |--------------------------------------------------------------------------
-    | Promotions & Offers
+    | Promotions and Offers
     |--------------------------------------------------------------------------
     */
 
@@ -180,31 +179,26 @@ public function update(
                 'string',
                 'max:255',
             ],
-
             'settings.cards' => [
                 'required',
                 'array',
                 'max:5',
             ],
-
             'settings.cards.*.layout' => [
                 'required',
                 'string',
                 'max:100',
             ],
-
             'settings.cards.*.image_alt' => [
                 'nullable',
                 'string',
                 'max:255',
             ],
-
             'settings.cards.*.link' => [
                 'nullable',
                 'string',
                 'max:2048',
             ],
-
             'settings.cards.*.image_url' => [
                 'nullable',
                 'string',
@@ -239,12 +233,18 @@ public function update(
 
         $savedCards = [];
 
-        for ($index = 0; $index < 5; $index++) {
+        for (
+            $index = 0;
+            $index < 5;
+            $index++
+        ) {
             $currentCard =
-                $currentCards[$index] ?? [];
+                $currentCards[$index]
+                ?? [];
 
             $incomingCard =
-                $incomingCards[$index] ?? [];
+                $incomingCards[$index]
+                ?? [];
 
             $savedCards[] = [
                 'layout' =>
@@ -288,8 +288,9 @@ public function update(
         return response()->json([
             'status' => true,
             'message' =>
-                'Promotions & Offers saved successfully.',
-            'section' => $section->fresh(),
+                'Promotions and Offers saved successfully.',
+            'section' =>
+                $section->fresh(),
         ]);
     }
 
@@ -306,17 +307,14 @@ public function update(
                 'string',
                 'max:255',
             ],
-
             'settings.product_source' => [
                 'required',
                 'in:all_products,featured,latest,on_sale,hand_picked',
             ],
-
             'settings.product_ids' => [
                 'nullable',
                 'array',
             ],
-
             'settings.product_ids.*' => [
                 'integer',
                 'exists:products,id',
@@ -365,7 +363,8 @@ public function update(
             'status' => true,
             'message' =>
                 'Featured Products settings saved successfully.',
-            'section' => $section->fresh(),
+            'section' =>
+                $section->fresh(),
         ]);
     }
 
@@ -382,7 +381,6 @@ public function update(
                 'string',
                 'max:255',
             ],
-
             'settings.max_vendors' => [
                 'required',
                 'integer',
@@ -406,7 +404,8 @@ public function update(
             'status' => true,
             'message' =>
                 'Top Vendors settings saved successfully.',
-            'section' => $section->fresh(),
+            'section' =>
+                $section->fresh(),
         ]);
     }
 
@@ -423,37 +422,31 @@ public function update(
                 'string',
                 'max:255',
             ],
-
             'settings.subtitle' => [
                 'required',
                 'string',
                 'max:1000',
             ],
-
             'settings.button_label' => [
                 'required',
                 'string',
                 'max:100',
             ],
-
             'settings.button_link' => [
                 'required',
                 'string',
                 'max:2048',
             ],
-
             'settings.image' => [
                 'nullable',
                 'string',
                 'max:2048',
             ],
-
             'settings.image_url' => [
                 'nullable',
                 'string',
                 'max:2048',
             ],
-
             'settings.image_alt' => [
                 'nullable',
                 'string',
@@ -471,14 +464,18 @@ public function update(
             $validated['settings'];
 
         $savedImage =
-            $currentSettings['image']
-            ?? $incomingSettings['image']
+            $incomingSettings['image']
+            ?? $currentSettings['image']
             ?? '';
 
         $savedImageUrl =
-            $currentSettings['image_url']
-            ?? $incomingSettings['image_url']
+            $incomingSettings['image_url']
+            ?? $currentSettings['image_url']
             ?? '';
+
+        $section->title = trim(
+            $incomingSettings['title']
+        );
 
         $section->settings = [
             'title' => trim(
@@ -515,7 +512,58 @@ public function update(
             'status' => true,
             'message' =>
                 'Become a Vendor settings saved successfully.',
-            'section' => $section->fresh(),
+            'section' =>
+                $section->fresh(),
+        ]);
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Top Articles
+    |--------------------------------------------------------------------------
+    */
+
+    if ($sectionKey === 'top_articles') {
+        $validated = $request->validate([
+            'title' => [
+                'required',
+                'string',
+                'max:255',
+            ],
+            'settings.limit' => [
+                'required',
+                'integer',
+                'min:1',
+                'max:24',
+            ],
+            'settings.desktop_columns' => [
+                'required',
+                'integer',
+                'min:2',
+                'max:4',
+            ],
+        ]);
+
+        $section->title = trim(
+            $validated['title']
+        );
+
+        $section->settings = [
+            'limit' => (int)
+                $validated['settings']['limit'],
+
+            'desktop_columns' => (int)
+                $validated['settings']['desktop_columns'],
+        ];
+
+        $section->save();
+
+        return response()->json([
+            'status' => true,
+            'message' =>
+                'Top Articles settings saved successfully.',
+            'section' =>
+                $section->fresh(),
         ]);
     }
 

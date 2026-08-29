@@ -133,3 +133,73 @@ export const getBecomeVendorSettings = (section) => {
         uploading: false,
     };
 };
+
+
+
+// Top Articles settings
+export const getTopArticlesSettings = (
+    section
+) => ({
+    title:
+        section?.title ||
+        "Top Articles",
+
+    limit:
+        Number(
+            section?.settings?.limit
+        ) || 9,
+
+    desktop_columns:
+        Number(
+            section?.settings
+                ?.desktop_columns
+        ) || 4,
+});
+
+
+
+export const getInstagramGallerySettings = (section) => {
+    const settings = section?.settings || {};
+
+    const savedImages = Array.isArray(settings.images)
+        ? settings.images
+        : [];
+
+    return {
+        title:
+            section?.title ||
+            settings.title ||
+            "From Instagram",
+
+        limit:
+            Number(settings.limit) || 10,
+
+        desktop_columns:
+            Number(settings.desktop_columns) || 5,
+
+        images: savedImages.map((item, index) => ({
+            id:
+                item?.id ||
+                `instagram-image-${index + 1}`,
+
+            image: null,
+
+            image_url:
+                item?.image_url || "",
+
+            saved_image_url:
+                item?.image_url || "",
+
+            image_alt:
+                item?.image_alt || "",
+
+            link:
+                item?.link || "",
+
+            is_active:
+                item?.is_active !== false,
+
+            uploading: false,
+        })),
+    };
+};

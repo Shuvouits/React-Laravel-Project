@@ -71,9 +71,14 @@ use App\Http\Controllers\Api\Admin\AdminReceivableController;
 use App\Http\Controllers\Api\Admin\AdminPaymentController;
 use App\Http\Controllers\Api\Admin\AdminPaymentTransactionController;
 use App\Http\Controllers\Api\Admin\AdminFinanceReportController;
+use App\Http\Controllers\Api\Admin\BlogCategoryController;
+
+use App\Http\Controllers\Api\Admin\BlogPostController;
 
 use App\Http\Controllers\Api\Admin\AdminPosController;
 use App\Http\Controllers\Api\Vendor\VendorPosController;
+use App\Http\Controllers\Api\Admin\BlogPostAIController;
+use App\Http\Controllers\Api\Frontend\TopArticlesController;
 
 use Illuminate\Support\Facades\Route;
 
@@ -109,6 +114,8 @@ Route::get('/pre-orders/{slug}', [PreOrderController::class, 'show']);
 Route::get('/products/{slug}/content-sections', [FrontendProductContentSectionController::class, 'index']);
 
 Route::get('/products/{product:slug}/reviews', [ProductReviewController::class, 'index']);
+
+ Route::get('/home/top-articles', [TopArticlesController::class, 'index']);
 
 // Customer
 Route::prefix('customer')->middleware(['auth:sanctum', 'customer'])->group(function () {
@@ -294,51 +301,48 @@ Route::prefix('vendor')->middleware(['auth:sanctum', 'vendor'])->group(function 
 
 
     // Vendor POS
-Route::prefix('pos')->group(function () {
-    // Context and locations
-    Route::get('/context', [VendorPosController::class, 'context']);
-    Route::get('/locations', [VendorPosController::class, 'locations']);
+    Route::prefix('pos')->group(function () {
+        // Context and locations
+        Route::get('/context', [VendorPosController::class, 'context']);
+        Route::get('/locations', [VendorPosController::class, 'locations']);
 
-    // Product catalog
-    Route::get('/categories', [VendorPosController::class, 'categories']);
-    Route::get('/products', [VendorPosController::class, 'products']);
-    Route::get('/barcode-lookup', [VendorPosController::class, 'barcodeLookup']);
+        // Product catalog
+        Route::get('/categories', [VendorPosController::class, 'categories']);
+        Route::get('/products', [VendorPosController::class, 'products']);
+        Route::get('/barcode-lookup', [VendorPosController::class, 'barcodeLookup']);
 
-    // Customers
-    Route::get('/customers', [VendorPosController::class, 'customers']);
-    Route::post('/customers', [VendorPosController::class, 'storeCustomer']);
+        // Customers
+        Route::get('/customers', [VendorPosController::class, 'customers']);
+        Route::post('/customers', [VendorPosController::class, 'storeCustomer']);
 
-    // Register
-    Route::get('/register/current', [VendorPosController::class, 'currentRegister']);
-    Route::post('/register/open', [VendorPosController::class, 'openRegister']);
-    Route::post('/register/{registerSessionId}/close', [VendorPosController::class, 'closeRegister'])
-        ->whereNumber('registerSessionId');
+        // Register
+        Route::get('/register/current', [VendorPosController::class, 'currentRegister']);
+        Route::post('/register/open', [VendorPosController::class, 'openRegister']);
+        Route::post('/register/{registerSessionId}/close', [VendorPosController::class, 'closeRegister'])
+            ->whereNumber('registerSessionId');
 
-    // Checkout
-    Route::post('/checkout', [VendorPosController::class, 'checkout']);
+        // Checkout
+        Route::post('/checkout', [VendorPosController::class, 'checkout']);
 
-    // Held sales
-    Route::get('/held-sales', [VendorPosController::class, 'heldSales']);
-    Route::post('/held-sales', [VendorPosController::class, 'holdSale']);
-    Route::get('/held-sales/{heldSaleId}/resume', [VendorPosController::class, 'resumeHeldSale'])
-        ->whereNumber('heldSaleId');
-    Route::patch('/held-sales/{heldSaleId}/complete', [VendorPosController::class, 'completeHeldSale'])
-        ->whereNumber('heldSaleId');
-    Route::delete('/held-sales/{heldSaleId}', [VendorPosController::class, 'cancelHeldSale'])
-        ->whereNumber('heldSaleId');
+        // Held sales
+        Route::get('/held-sales', [VendorPosController::class, 'heldSales']);
+        Route::post('/held-sales', [VendorPosController::class, 'holdSale']);
+        Route::get('/held-sales/{heldSaleId}/resume', [VendorPosController::class, 'resumeHeldSale'])
+            ->whereNumber('heldSaleId');
+        Route::patch('/held-sales/{heldSaleId}/complete', [VendorPosController::class, 'completeHeldSale'])
+            ->whereNumber('heldSaleId');
+        Route::delete('/held-sales/{heldSaleId}', [VendorPosController::class, 'cancelHeldSale'])
+            ->whereNumber('heldSaleId');
 
-    // Sales and refunds
-    Route::get('/sales', [VendorPosController::class, 'sales']);
-    Route::get('/sales/{saleId}/receipt', [VendorPosController::class, 'saleReceipt'])
-        ->whereNumber('saleId');
-    Route::post('/sales/{saleId}/refund', [VendorPosController::class, 'refundSale'])
-        ->whereNumber('saleId');
-    Route::get('/sales/{saleId}', [VendorPosController::class, 'saleDetails'])
-        ->whereNumber('saleId');
-});
-
-
-
+        // Sales and refunds
+        Route::get('/sales', [VendorPosController::class, 'sales']);
+        Route::get('/sales/{saleId}/receipt', [VendorPosController::class, 'saleReceipt'])
+            ->whereNumber('saleId');
+        Route::post('/sales/{saleId}/refund', [VendorPosController::class, 'refundSale'])
+            ->whereNumber('saleId');
+        Route::get('/sales/{saleId}', [VendorPosController::class, 'saleDetails'])
+            ->whereNumber('saleId');
+    });
 });
 
 // Vendor Registration
@@ -361,10 +365,10 @@ Route::prefix('auth')->group(function () {
     Route::post('/vendor/register', [AuthController::class, 'vendorRegister']);
 
     Route::post('/login', [AuthController::class, 'login'])
-    ->middleware('throttle:10,1');
+        ->middleware('throttle:10,1');
 
     Route::post('/two-factor/challenge', [AuthController::class, 'twoFactorChallenge'])
-    ->middleware('throttle:6,1');
+        ->middleware('throttle:6,1');
 });
 
 // Protected Authentication Routes
@@ -397,7 +401,7 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'admin'])->group(function ()
     Route::post('/home-sections/{sectionKey}/update', [HomeSectionController::class, 'update']);
     Route::post('/home-sections/promotions/cards/{index}/image', [HomeSectionController::class, 'uploadPromotionImage']);
 
-    Route::post('/home-sections/become-a-vendor/image',[HomeSectionController::class, 'uploadBecomeVendorImage']);
+    Route::post('/home-sections/become-a-vendor/image', [HomeSectionController::class, 'uploadBecomeVendorImage']);
 
     // Brands
     Route::get('/brands', [BrandController::class, 'index']);
@@ -525,8 +529,8 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'admin'])->group(function ()
 
     // Vendor Account Activation
     Route::get('/vendor/activate/{user}', [VendorActivationController::class, 'activate'])
-    ->middleware('signed')
-    ->name('vendor.activate');
+        ->middleware('signed')
+        ->name('vendor.activate');
 
     // Vendor Plans
     Route::get('/vendor-plans', [VendorPlanController::class, 'index']);
@@ -661,42 +665,57 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'admin'])->group(function ()
 
 
     Route::prefix('pos')->group(function () {
-    Route::get('/context', [AdminPosController::class, 'context']);
-    Route::get('/locations', [AdminPosController::class, 'locations']);
-    Route::get('/categories', [AdminPosController::class, 'categories']);
-    Route::get('/products', [AdminPosController::class, 'products']);
-    Route::get('/barcode-lookup', [AdminPosController::class, 'barcodeLookup']);
+        Route::get('/context', [AdminPosController::class, 'context']);
+        Route::get('/locations', [AdminPosController::class, 'locations']);
+        Route::get('/categories', [AdminPosController::class, 'categories']);
+        Route::get('/products', [AdminPosController::class, 'products']);
+        Route::get('/barcode-lookup', [AdminPosController::class, 'barcodeLookup']);
 
-    Route::get('/customers', [AdminPosController::class, 'customers']);
-    Route::post('/customers', [AdminPosController::class, 'storeCustomer']);
+        Route::get('/customers', [AdminPosController::class, 'customers']);
+        Route::post('/customers', [AdminPosController::class, 'storeCustomer']);
 
-    Route::get('/register/current', [AdminPosController::class, 'currentRegister']);
-    Route::post('/register/open', [AdminPosController::class, 'openRegister']);
-    Route::post('/register/{registerSessionId}/close', [AdminPosController::class, 'closeRegister'])
-        ->whereNumber('registerSessionId');
+        Route::get('/register/current', [AdminPosController::class, 'currentRegister']);
+        Route::post('/register/open', [AdminPosController::class, 'openRegister']);
+        Route::post('/register/{registerSessionId}/close', [AdminPosController::class, 'closeRegister'])
+            ->whereNumber('registerSessionId');
 
-    Route::post('/checkout', [AdminPosController::class, 'checkout']);
+        Route::post('/checkout', [AdminPosController::class, 'checkout']);
 
-    Route::get('/held-sales', [AdminPosController::class, 'heldSales']);
-    Route::post('/held-sales', [AdminPosController::class, 'holdSale']);
-    Route::get('/held-sales/{heldSaleId}/resume', [AdminPosController::class, 'resumeHeldSale'])
-        ->whereNumber('heldSaleId');
-    Route::patch('/held-sales/{heldSaleId}/complete', [AdminPosController::class, 'completeHeldSale'])
-        ->whereNumber('heldSaleId');
-    Route::delete('/held-sales/{heldSaleId}', [AdminPosController::class, 'cancelHeldSale'])
-        ->whereNumber('heldSaleId');
+        Route::get('/held-sales', [AdminPosController::class, 'heldSales']);
+        Route::post('/held-sales', [AdminPosController::class, 'holdSale']);
+        Route::get('/held-sales/{heldSaleId}/resume', [AdminPosController::class, 'resumeHeldSale'])
+            ->whereNumber('heldSaleId');
+        Route::patch('/held-sales/{heldSaleId}/complete', [AdminPosController::class, 'completeHeldSale'])
+            ->whereNumber('heldSaleId');
+        Route::delete('/held-sales/{heldSaleId}', [AdminPosController::class, 'cancelHeldSale'])
+            ->whereNumber('heldSaleId');
 
-    Route::get('/sales', [AdminPosController::class, 'sales']);
+        Route::get('/sales', [AdminPosController::class, 'sales']);
 
-    Route::get('/sales/{saleId}/receipt', [AdminPosController::class, 'saleReceipt'])->whereNumber('saleId');
+        Route::get('/sales/{saleId}/receipt', [AdminPosController::class, 'saleReceipt'])->whereNumber('saleId');
 
-    Route::post('/sales/{saleId}/refund', [AdminPosController::class, 'refundSale'])->whereNumber('saleId');
+        Route::post('/sales/{saleId}/refund', [AdminPosController::class, 'refundSale'])->whereNumber('saleId');
 
-    Route::get('/sales/{saleId}', [AdminPosController::class, 'saleDetails'])->whereNumber('saleId');
-
-
-});
+        Route::get('/sales/{saleId}', [AdminPosController::class, 'saleDetails'])->whereNumber('saleId');
+    });
 
 
+    // Blog Posts
+    Route::get('/blog-posts', [BlogPostController::class, 'index']);
+    Route::get('/blog-posts/form-options', [BlogPostController::class, 'formOptions']);
+    Route::post('/blog-posts', [BlogPostController::class, 'store']);
+    Route::get('/blog-posts/{blogPost}', [BlogPostController::class, 'show']);
+    Route::post('/blog-posts/{blogPost}/update', [BlogPostController::class, 'update']);
+    Route::delete('/blog-posts/{blogPost}', [BlogPostController::class, 'destroy']);
+
+    // Blog Categories
+    Route::get('/blog-categories', [BlogCategoryController::class, 'index']);
+    Route::post('/blog-categories', [BlogCategoryController::class, 'store']);
+    Route::get('/blog-categories/{blogCategory}', [BlogCategoryController::class, 'show']);
+    Route::post('/blog-categories/{blogCategory}/update', [BlogCategoryController::class, 'update']);
+    Route::delete('/blog-categories/{blogCategory}', [BlogCategoryController::class, 'destroy']);
+
+    // Blog AI
+    Route::post('/ai/blog-post-content', [BlogPostAIController::class, 'generate']);
 
 });

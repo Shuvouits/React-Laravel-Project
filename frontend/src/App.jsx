@@ -137,6 +137,13 @@ import AdminFinanceTransactions from "./pages/admin/finance/AdminFinanceTransact
 import AdminFinanceReports from "./pages/admin/finance/AdminFinanceReports";
 import AdminPos from "./pages/admin/pos/AdminPos";
 import BecomeVendorSection from "./components/frontend/BecomeVendorSection";
+import AdminBlogCategories from "./components/admin/blog/categories/AdminBlogCategories";
+import AdminBlogCategoryCreate from "./pages/admin/content/blogCategories/AdminBlogCategoryCreate";
+import AdminBlogCategoryEdit from "./pages/admin/content/blogCategories/AdminBlogCategoryEdit";
+import AdminBlogPostEdit from "./pages/admin/content/blogPosts/AdminBlogPostEdit";
+import AdminBlogPostCreate from "./pages/admin/content/blogPosts/AdminBlogPostCreate";
+import AdminBlogPosts from "./pages/admin/content/blogPosts/AdminBlogPosts";
+import TopArticles from "./components/frontend/TopArticles";
 
 
 const Home = () => {
@@ -149,6 +156,7 @@ const Home = () => {
             <FeaturedProducts />
             <TopVendors />
             <BecomeVendorSection />
+            <TopArticles />
         </>
     );
 };
@@ -282,6 +290,17 @@ const App = () => {
                         <Route path="finance/transactions" element={<AdminFinanceTransactions />} />
 
                         <Route path="finance/reports" element={<AdminFinanceReports />} />
+
+
+                        // Content - Blog Posts
+                        <Route path="content/blog-posts" element={<AdminBlogPosts />} />
+                        <Route path="content/blog-posts/new" element={<AdminBlogPostCreate />} />
+                        <Route path="content/blog-posts/:id/edit" element={<AdminBlogPostEdit />} />
+
+                        // Content - Blog Categories
+                        <Route path="content/blog-categories" element={<AdminBlogCategories />} />
+                        <Route path="content/blog-categories/new" element={<AdminBlogCategoryCreate />} />
+                        <Route path="content/blog-categories/:id/edit" element={<AdminBlogCategoryEdit />} />
 
 
 

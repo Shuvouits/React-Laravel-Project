@@ -9,6 +9,7 @@ import ProductsOnSaleEditor from "../../../components/admin/onlineStore/home/Pro
 import PromotionsOffersEditor from "../../../components/admin/onlineStore/home/PromotionsOffersEditor";
 import FeaturedProductsEditor from "../../../components/admin/onlineStore/home/FeaturedProductsEditor";
 import TopVendorsEditor from "../../../components/admin/onlineStore/home/TopVendorsEditor";
+import TopArticlesEditor from "../../../components/admin/onlineStore/home/TopArticlesEditor";
 
 import BecomeVendorEditor from "../../../components/admin/onlineStore/home/BecomeVendorEditor";
 
@@ -21,6 +22,7 @@ import {
   getTopVendorsSettings,
   getBecomeVendorSettings,
   sectionDescriptions,
+  getTopArticlesSettings,
 
 } from "../../../components/admin/onlineStore/home/homeSectionConfig";
 
@@ -62,6 +64,18 @@ const AdminHomePage = () => {
     title: "Top Vendors",
     max_vendors: 8,
   });
+
+
+  const [
+    topArticlesDraft,
+    setTopArticlesDraft,
+] = useState({
+    title: "Top Articles",
+    limit: 9,
+    desktop_columns: 4,
+});
+
+
 
   const [becomeVendorDraft, setBecomeVendorDraft] = useState({
     title: "Start Selling With Us Today",
@@ -229,6 +243,33 @@ const AdminHomePage = () => {
 
 
 
+    if (
+    section.section_key ===
+    "top_articles"
+) {
+    if (
+        activeEditor ===
+        "top_articles"
+    ) {
+        setActiveEditor(null);
+        return;
+    }
+
+    setTopArticlesDraft(
+        getTopArticlesSettings(
+            section
+        )
+    );
+
+    setActiveEditor(
+        "top_articles"
+    );
+
+    return;
+}
+
+
+
 
     console.log(`Editor not added yet: ${section.section_key}`);
   };
@@ -253,6 +294,25 @@ const AdminHomePage = () => {
   const handleTopVendorsChange = (field, value) => {
     setTopVendorsDraft((previous) => ({ ...previous, [field]: value }));
   };
+
+
+  const handleTopArticlesChange = (
+    field,
+    value
+) => {
+    setTopArticlesDraft(
+        (previous) => ({
+            ...previous,
+            [field]: value,
+        })
+    );
+
+    setSectionError("");
+    setSuccessMessage("");
+};
+
+
+  
 
   const handleBecomeVendorChange = (
     field,
@@ -649,6 +709,84 @@ const AdminHomePage = () => {
   };
 
 
+  const saveTopArticles = async () => {
+    const title =
+        topArticlesDraft.title.trim();
+
+    const limit = Number(
+        topArticlesDraft.limit
+    );
+
+    const desktopColumns = Number(
+        topArticlesDraft.desktop_columns
+    );
+
+    if (!title) {
+        setSectionError(
+            "Section title is required."
+        );
+
+        return;
+    }
+
+    if (
+        !Number.isInteger(limit) ||
+        limit < 1 ||
+        limit > 24
+    ) {
+        setSectionError(
+            "Article limit must be between 1 and 24."
+        );
+
+        return;
+    }
+
+    if (
+        !Number.isInteger(
+            desktopColumns
+        ) ||
+        desktopColumns < 2 ||
+        desktopColumns > 4
+    ) {
+        setSectionError(
+            "Desktop columns must be between 2 and 4."
+        );
+
+        return;
+    }
+
+    const response = await api.post(
+        "/admin/home-sections/top_articles/update",
+        {
+            title,
+            settings: {
+                limit,
+                desktop_columns:
+                    desktopColumns,
+            },
+        }
+    );
+
+    updateLocalSection(
+        "top_articles",
+        response.data?.section
+    );
+
+    setTopArticlesDraft(
+        getTopArticlesSettings(
+            response.data?.section
+        )
+    );
+
+    setSectionError("");
+
+    setSuccessMessage(
+        response.data?.message ||
+            "Top Articles settings saved successfully."
+    );
+};
+
+
 
   const saveBecomeVendor = async () => {
     const title =
@@ -765,6 +903,13 @@ const AdminHomePage = () => {
       else if (activeEditor === "featured_products") await saveFeaturedProducts();
       else if (activeEditor === "top_vendors") await saveTopVendors();
 
+      else if (
+    activeEditor ===
+    "top_articles"
+) {
+    await saveTopArticles();
+}
+
       else if (activeEditor === "become_a_vendor") {
         await saveBecomeVendor();
       }
@@ -808,14 +953,15 @@ const AdminHomePage = () => {
     );
   }
 
-  const canSave = [
+ const canSave = [
     "featured_categories",
     "products_on_sale",
     "promotions",
     "featured_products",
     "top_vendors",
     "become_a_vendor",
-  ].includes(activeEditor);
+    "top_articles",
+].includes(activeEditor);
 
   return (
     <div className="min-h-[calc(100vh-74px)] bg-[#f6f7f8] px-6 py-6">
@@ -902,13 +1048,20 @@ const AdminHomePage = () => {
                 section.section_key === "become_a_vendor" &&
                 activeEditor === "become_a_vendor";
 
-              const editorOpen =
-                isFeaturedEditor ||
-                isProductsOnSaleEditor ||
-                isPromotionsEditor ||
-                isFeaturedProductsEditor ||
-                isTopVendorsEditor ||
-                isBecomeVendorEditor;
+                const isTopArticlesEditor =
+    section.section_key ===
+        "top_articles" &&
+    activeEditor ===
+        "top_articles";
+
+            const editorOpen =
+    isFeaturedEditor ||
+    isProductsOnSaleEditor ||
+    isPromotionsEditor ||
+    isFeaturedProductsEditor ||
+    isTopVendorsEditor ||
+    isBecomeVendorEditor ||
+    isTopArticlesEditor;
 
               let editorComponent = null;
 
@@ -972,6 +1125,20 @@ const AdminHomePage = () => {
                   />
                 );
               }
+
+
+              if (isTopArticlesEditor) {
+    editorComponent = (
+        <TopArticlesEditor
+            value={
+                topArticlesDraft
+            }
+            onChange={
+                handleTopArticlesChange
+            }
+        />
+    );
+}
 
               return (
                 <PageBuilderItem

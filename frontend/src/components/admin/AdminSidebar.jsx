@@ -131,6 +131,13 @@ const financeItems = [
     },
 ];
 
+const contentItems = [
+    {
+        to: "/admin/content/blog-posts",
+        label: "Blog posts",
+    },
+];
+
 const onlineStoreItems = [
     {
         to: "/admin/online-store/themes",
@@ -166,6 +173,9 @@ const AdminSidebar = () => {
         location.pathname === "/admin/finance" ||
         location.pathname.startsWith("/admin/finance/");
 
+    const isContentRoute =
+        location.pathname.startsWith("/admin/content");
+
     const isOnlineStoreRoute =
         location.pathname.startsWith("/admin/online-store");
 
@@ -180,6 +190,9 @@ const AdminSidebar = () => {
 
     const [financeOpen, setFinanceOpen] =
         useState(isFinanceRoute);
+
+    const [contentOpen, setContentOpen] =
+        useState(isContentRoute);
 
     const [onlineStoreOpen, setOnlineStoreOpen] =
         useState(isOnlineStoreRoute);
@@ -207,6 +220,14 @@ const AdminSidebar = () => {
             setFinanceOpen(true);
         }
     }, [isFinanceRoute]);
+
+    useEffect(() => {
+    if (isContentRoute) {
+        setContentOpen(true);
+    }
+}, [isContentRoute]);
+
+
 
     useEffect(() => {
         if (isOnlineStoreRoute) {
@@ -343,13 +364,20 @@ const AdminSidebar = () => {
                         className={navItemClass}
                     />
 
-                    <SidebarNavItem
-                        to="/admin/content"
-                        icon={FileText}
-                        label="Content"
-                        className={navItemClass}
-                        arrow
-                    />
+                   <SidebarDropdown
+    label="Content"
+    icon={FileText}
+    open={contentOpen}
+    active={isContentRoute}
+    onToggle={() => {
+        setContentOpen(
+            (current) => !current
+        );
+    }}
+    items={contentItems}
+    subMenuClass={subMenuClass}
+    activeClass="bg-[#edf3ff] text-[#2065D1]"
+/>
 
                     <SidebarNavItem
                         to="/admin/inbox"
