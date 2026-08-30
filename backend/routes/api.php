@@ -79,6 +79,13 @@ use App\Http\Controllers\Api\Admin\AdminPosController;
 use App\Http\Controllers\Api\Vendor\VendorPosController;
 use App\Http\Controllers\Api\Admin\BlogPostAIController;
 use App\Http\Controllers\Api\Frontend\TopArticlesController;
+use App\Http\Controllers\Api\Frontend\InstagramGalleryController;
+
+use App\Http\Controllers\Api\Admin\FooterSettingController;
+use App\Http\Controllers\Api\Frontend\FooterController;
+
+use App\Http\Controllers\Api\Admin\GeneralSettingController as AdminGeneralSettingController;
+use App\Http\Controllers\Api\Frontend\GeneralSettingController as FrontendGeneralSettingController;
 
 use Illuminate\Support\Facades\Route;
 
@@ -116,6 +123,11 @@ Route::get('/products/{slug}/content-sections', [FrontendProductContentSectionCo
 Route::get('/products/{product:slug}/reviews', [ProductReviewController::class, 'index']);
 
  Route::get('/home/top-articles', [TopArticlesController::class, 'index']);
+
+  Route::get('/home/instagram-gallery', [InstagramGalleryController::class, 'index']);
+
+  Route::get('/footer', [FooterController::class, 'show']);
+  Route::get('/general-settings', [FrontendGeneralSettingController::class, 'show']);
 
 // Customer
 Route::prefix('customer')->middleware(['auth:sanctum', 'customer'])->group(function () {
@@ -717,5 +729,14 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'admin'])->group(function ()
 
     // Blog AI
     Route::post('/ai/blog-post-content', [BlogPostAIController::class, 'generate']);
+
+    Route::get('/footer-settings', [FooterSettingController::class, 'show']);
+    Route::put('/footer-settings/{sectionKey}', [FooterSettingController::class, 'update']);
+
+    Route::get('/general-settings', [AdminGeneralSettingController::class, 'show']);
+    Route::post('/general-settings/navbar-logo', [AdminGeneralSettingController::class, 'updateNavbarLogo']);
+    Route::delete('/general-settings/navbar-logo', [AdminGeneralSettingController::class, 'removeNavbarLogo']);
+
+   
 
 });

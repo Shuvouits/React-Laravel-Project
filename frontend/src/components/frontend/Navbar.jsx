@@ -6,6 +6,7 @@ import { useCart } from "../../context/CartContext";
 
 import api from "../../api/axios";
 import CollectionsMegaMenu from "./navbar/CollectionsMegaMenu";
+import NavbarLogoEditor from "./navbar/NavbarLogoEditor";
 
 const Navbar = () => {
     const navigate = useNavigate();
@@ -18,14 +19,24 @@ const Navbar = () => {
     const [categoryLoading, setCategoryLoading] = useState(false);
     const [logoutLoading, setLogoutLoading] = useState(false);
 
+
+    const [navbarLogo, setNavbarLogo] = useState("");
+    const [navbarLogoAlt, setNavbarLogoAlt] = useState("Storify");
+    const [logoEditorOpen, setLogoEditorOpen] = useState(false);
+    const [logoSaving, setLogoSaving] = useState(false);
+
+
+
     const token = localStorage.getItem("token");
     const user = getStoredUser();
 
     const isLoggedIn = Boolean(token && user);
     const isAdmin = user?.role === "admin";
 
+
     useEffect(() => {
         fetchCategories();
+        fetchNavbarLogo();
 
         return () => {
             if (categoryTimer.current) {
@@ -33,6 +44,99 @@ const Navbar = () => {
             }
         };
     }, []);
+
+
+
+    const fetchNavbarLogo = async () => {
+        try {
+            const response = await api.get(
+                "/general-settings"
+            );
+
+            const settings =
+                response.data?.settings ||
+                response.settings ||
+                {};
+
+            const logoUrl =
+                settings.navbar_logo_url ||
+                getImageUrl(settings.navbar_logo) ||
+                "";
+
+            console.log(
+                "Loaded navbar logo:",
+                logoUrl
+            );
+
+            setNavbarLogo(logoUrl);
+
+            setNavbarLogoAlt(
+                settings.navbar_logo_alt ||
+                "Storify"
+            );
+        } catch (error) {
+            console.error(
+                "Navbar logo fetch error:",
+                error.response?.data ||
+                error.message
+            );
+        }
+    };
+
+    const handleNavbarLogoSave = async ({
+        file,
+        alt,
+    }) => {
+        if (!file || logoSaving) {
+            return;
+        }
+
+        try {
+            setLogoSaving(true);
+
+            const formData = new FormData();
+
+            formData.append(
+                "navbar_logo",
+                file
+            );
+
+            formData.append(
+                "navbar_logo_alt",
+                alt || "Storify"
+            );
+
+            const response = await api.post(
+                "/admin/general-settings/navbar-logo",
+                formData
+            );
+
+            const settings =
+                response.data?.settings || {};
+
+            setNavbarLogo(
+                settings.navbar_logo_url ||
+                getImageUrl(settings.navbar_logo) ||
+                ""
+            );
+
+            setNavbarLogoAlt(
+                settings.navbar_logo_alt ||
+                "Storify"
+            );
+
+            setLogoEditorOpen(false);
+        } catch (error) {
+            console.error(
+                "Navbar logo upload error:",
+                error.response?.data ||
+                error.message
+            );
+        } finally {
+            setLogoSaving(false);
+        }
+    };
+
 
     // Fetch category mega menu
     const fetchCategories = async () => {
@@ -106,36 +210,36 @@ const Navbar = () => {
     };
 
     // Dashboard path
-   const getDashboardPath = () => {
+    const getDashboardPath = () => {
 
-    if (
-        user?.role === "admin" ||
-        user?.user_role === "admin"
-    ) {
-        return "/admin";
-    }
-
-
-    if (
-        user?.role === "vendor" ||
-        user?.user_role === "vendor"
-    ) {
-        return "/vendor";
-    }
+        if (
+            user?.role === "admin" ||
+            user?.user_role === "admin"
+        ) {
+            return "/admin";
+        }
 
 
-    if (
-        user?.role === "customer" ||
-        user?.user_role === "customer" ||
-        user?.account_status
-    ) {
-        return "/account";
-    }
+        if (
+            user?.role === "vendor" ||
+            user?.user_role === "vendor"
+        ) {
+            return "/vendor";
+        }
 
 
-    return "/";
+        if (
+            user?.role === "customer" ||
+            user?.user_role === "customer" ||
+            user?.account_status
+        ) {
+            return "/account";
+        }
 
-};
+
+        return "/";
+
+    };
 
     // Settings path
     const getSettingsPath = () => {
@@ -186,6 +290,9 @@ const Navbar = () => {
     };
 
     return (
+
+
+
         <header
             onMouseLeave={closeCategoryMenu}
             className="relative z-[500] w-full border-b border-[#eeeeee] bg-white font-['Inter'] shadow-[0_2px_10px_rgba(0,0,0,0.03)]"
@@ -195,9 +302,35 @@ const Navbar = () => {
                 {/* Top navbar */}
                 <div className="flex h-[62px] items-center gap-8">
 
-                    <Link to="/" className="flex shrink-0 items-center">
-                        <StorifyLogo />
-                    </Link>
+
+
+                   <div className="relative flex shrink-0 items-center">
+    <Link
+        to="/"
+        className="flex items-center"
+    >
+        <StorifyLogo
+            logo={navbarLogo}
+            alt={navbarLogoAlt}
+        />
+    </Link>
+
+    {isAdmin && (
+        <button
+            type="button"
+            onClick={() => setLogoEditorOpen(true)}
+            title="Change navbar logo"
+            aria-label="Change navbar logo"
+            className="absolute -right-[13px] -top-[10px] z-10 flex h-[26px] w-[26px] items-center justify-center rounded-full border border-[#d8e3fa] bg-white text-[#246be0] shadow-[0_4px_12px_rgba(0,0,0,0.12)] transition hover:border-[#aac3f4] hover:bg-[#edf4ff]"
+        >
+            <Pencil
+                size={12}
+                strokeWidth={2}
+            />
+        </button>
+    )}
+</div>
+
 
                     <div className="flex-1">
                         <SearchBox />
@@ -326,6 +459,20 @@ const Navbar = () => {
                 onChildChange={selectChild}
                 onRefresh={fetchCategories}
                 onNavigate={() => setCategoryOpen(false)}
+            />
+
+
+            <NavbarLogoEditor
+                open={logoEditorOpen}
+                currentLogo={navbarLogo}
+                currentAlt={navbarLogoAlt}
+                saving={logoSaving}
+                onClose={() => {
+                    if (!logoSaving) {
+                        setLogoEditorOpen(false);
+                    }
+                }}
+                onSave={handleNavbarLogoSave}
             />
 
         </header>
@@ -920,12 +1067,29 @@ const SearchBox = () => {
 };
 
 // Storify logo
-const StorifyLogo = () => {
+const StorifyLogo = ({
+    logo = "",
+    alt = "Storify",
+}) => {
+    if (logo) {
+        return (
+            <img
+                src={logo}
+                alt={alt}
+                onError={(event) => {
+                    console.error(
+                        "Navbar logo failed to load:",
+                        event.currentTarget.src
+                    );
+                }}
+                className="h-[38px] w-auto max-w-[180px] object-contain"
+            />
+        );
+    }
+
     return (
         <div className="flex items-center gap-[8px]">
-
             <div className="relative h-[34px] w-[31px]">
-
                 <div className="absolute inset-0 rounded-[7px] bg-gradient-to-br from-[#27b4f5] via-[#6378f7] to-[#b54df5]" />
 
                 <div className="absolute inset-[3px] flex items-center justify-center rounded-[5px] bg-white">
@@ -935,13 +1099,11 @@ const StorifyLogo = () => {
                 </div>
 
                 <span className="absolute -top-[3px] left-[7px] h-[5px] w-[5px] rounded-full bg-[#ffd93d]" />
-
             </div>
 
             <span className="text-[22px] font-bold tracking-[-0.7px] text-[#3478ea]">
                 Storify
             </span>
-
         </div>
     );
 };

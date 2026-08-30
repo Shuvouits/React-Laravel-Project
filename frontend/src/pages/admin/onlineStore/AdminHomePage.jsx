@@ -12,6 +12,7 @@ import TopVendorsEditor from "../../../components/admin/onlineStore/home/TopVend
 import TopArticlesEditor from "../../../components/admin/onlineStore/home/TopArticlesEditor";
 
 import BecomeVendorEditor from "../../../components/admin/onlineStore/home/BecomeVendorEditor";
+import InstagramGalleryEditor from "../../../components/admin/onlineStore/home/InstagramGalleryEditor";
 
 import {
 
@@ -23,6 +24,7 @@ import {
   getBecomeVendorSettings,
   sectionDescriptions,
   getTopArticlesSettings,
+  getInstagramGallerySettings
 
 } from "../../../components/admin/onlineStore/home/homeSectionConfig";
 
@@ -69,11 +71,21 @@ const AdminHomePage = () => {
   const [
     topArticlesDraft,
     setTopArticlesDraft,
-] = useState({
+  ] = useState({
     title: "Top Articles",
     limit: 9,
     desktop_columns: 4,
-});
+  });
+
+  const [
+    instagramGalleryDraft,
+    setInstagramGalleryDraft,
+  ] = useState({
+    title: "From Instagram",
+    limit: 10,
+    desktop_columns: 5,
+    images: [],
+  });
 
 
 
@@ -244,31 +256,45 @@ const AdminHomePage = () => {
 
 
     if (
-    section.section_key ===
-    "top_articles"
-) {
-    if (
+      section.section_key ===
+      "top_articles"
+    ) {
+      if (
         activeEditor ===
         "top_articles"
-    ) {
+      ) {
         setActiveEditor(null);
         return;
+      }
+
+      setTopArticlesDraft(
+        getTopArticlesSettings(
+          section
+        )
+      );
+
+      setActiveEditor(
+        "top_articles"
+      );
+
+      return;
     }
 
-    setTopArticlesDraft(
-        getTopArticlesSettings(
-            section
-        )
-    );
-
-    setActiveEditor(
-        "top_articles"
-    );
-
-    return;
-}
 
 
+    if (section.section_key === "from_instagram") {
+      if (activeEditor === "from_instagram") {
+        setActiveEditor(null);
+        return;
+      }
+
+      setInstagramGalleryDraft(
+        getInstagramGallerySettings(section)
+      );
+
+      setActiveEditor("from_instagram");
+      return;
+    }
 
 
     console.log(`Editor not added yet: ${section.section_key}`);
@@ -299,20 +325,36 @@ const AdminHomePage = () => {
   const handleTopArticlesChange = (
     field,
     value
-) => {
+  ) => {
     setTopArticlesDraft(
-        (previous) => ({
-            ...previous,
-            [field]: value,
-        })
+      (previous) => ({
+        ...previous,
+        [field]: value,
+      })
     );
 
     setSectionError("");
     setSuccessMessage("");
-};
+  };
 
 
-  
+  const handleInstagramGalleryChange = (
+    field,
+    value
+  ) => {
+    setInstagramGalleryDraft(
+      (previous) => ({
+        ...previous,
+        [field]: value,
+      })
+    );
+
+    setSectionError("");
+    setSuccessMessage("");
+  };
+
+
+
 
   const handleBecomeVendorChange = (
     field,
@@ -711,80 +753,248 @@ const AdminHomePage = () => {
 
   const saveTopArticles = async () => {
     const title =
-        topArticlesDraft.title.trim();
+      topArticlesDraft.title.trim();
 
     const limit = Number(
-        topArticlesDraft.limit
+      topArticlesDraft.limit
     );
 
     const desktopColumns = Number(
-        topArticlesDraft.desktop_columns
+      topArticlesDraft.desktop_columns
     );
 
     if (!title) {
-        setSectionError(
-            "Section title is required."
-        );
+      setSectionError(
+        "Section title is required."
+      );
 
-        return;
+      return;
     }
 
     if (
-        !Number.isInteger(limit) ||
-        limit < 1 ||
-        limit > 24
+      !Number.isInteger(limit) ||
+      limit < 1 ||
+      limit > 24
     ) {
-        setSectionError(
-            "Article limit must be between 1 and 24."
-        );
+      setSectionError(
+        "Article limit must be between 1 and 24."
+      );
 
-        return;
+      return;
     }
 
     if (
-        !Number.isInteger(
-            desktopColumns
-        ) ||
-        desktopColumns < 2 ||
-        desktopColumns > 4
+      !Number.isInteger(
+        desktopColumns
+      ) ||
+      desktopColumns < 2 ||
+      desktopColumns > 4
     ) {
-        setSectionError(
-            "Desktop columns must be between 2 and 4."
-        );
+      setSectionError(
+        "Desktop columns must be between 2 and 4."
+      );
 
-        return;
+      return;
     }
 
     const response = await api.post(
-        "/admin/home-sections/top_articles/update",
-        {
-            title,
-            settings: {
-                limit,
-                desktop_columns:
-                    desktopColumns,
-            },
-        }
+      "/admin/home-sections/top_articles/update",
+      {
+        title,
+        settings: {
+          limit,
+          desktop_columns:
+            desktopColumns,
+        },
+      }
     );
 
     updateLocalSection(
-        "top_articles",
-        response.data?.section
+      "top_articles",
+      response.data?.section
     );
 
     setTopArticlesDraft(
-        getTopArticlesSettings(
-            response.data?.section
-        )
+      getTopArticlesSettings(
+        response.data?.section
+      )
     );
 
     setSectionError("");
 
     setSuccessMessage(
-        response.data?.message ||
-            "Top Articles settings saved successfully."
+      response.data?.message ||
+      "Top Articles settings saved successfully."
     );
-};
+  };
+
+
+
+  const saveInstagramGallery = async () => {
+    const title =
+      instagramGalleryDraft.title.trim();
+
+    const limit = Number(
+      instagramGalleryDraft.limit
+    );
+
+    const desktopColumns = Number(
+      instagramGalleryDraft.desktop_columns
+    );
+
+    const images = Array.isArray(
+      instagramGalleryDraft.images
+    )
+      ? instagramGalleryDraft.images
+      : [];
+
+    if (!title) {
+      setSectionError(
+        "Section title is required."
+      );
+
+      return;
+    }
+
+    if (
+      !Number.isInteger(limit) ||
+      limit < 1 ||
+      limit > 30
+    ) {
+      setSectionError(
+        "Gallery limit must be between 1 and 30."
+      );
+
+      return;
+    }
+
+    if (
+      !Number.isInteger(desktopColumns) ||
+      desktopColumns < 3 ||
+      desktopColumns > 6
+    ) {
+      setSectionError(
+        "Desktop columns must be between 3 and 6."
+      );
+
+      return;
+    }
+
+    if (images.length === 0) {
+      setSectionError(
+        "Please add at least one gallery image."
+      );
+
+      return;
+    }
+
+    const missingImages = images.some(
+      (item) =>
+        !item.image &&
+        !item.saved_image_url
+    );
+
+    if (missingImages) {
+      setSectionError(
+        "Please upload an image for every gallery item."
+      );
+
+      return;
+    }
+
+    const formData = new FormData();
+
+    formData.append(
+      "title",
+      title
+    );
+
+    formData.append(
+      "settings[limit]",
+      String(limit)
+    );
+
+    formData.append(
+      "settings[desktop_columns]",
+      String(desktopColumns)
+    );
+
+    images.forEach((item, index) => {
+      formData.append(
+        `images[${index}][id]`,
+        String(item.id || "")
+      );
+
+      formData.append(
+        `images[${index}][image_alt]`,
+        item.image_alt?.trim() || ""
+      );
+
+      formData.append(
+        `images[${index}][link]`,
+        item.link?.trim() || ""
+      );
+
+      formData.append(
+        `images[${index}][is_active]`,
+        item.is_active === false
+          ? "0"
+          : "1"
+      );
+
+      formData.append(
+        `images[${index}][saved_image_url]`,
+        item.saved_image_url || ""
+      );
+
+      formData.append(
+    `images[${index}][saved_image_path]`,
+    item.image_path || ""
+);
+
+
+
+
+      if (item.image instanceof File) {
+        formData.append(
+          `images[${index}][image]`,
+          item.image
+        );
+      }
+    });
+
+    const response = await api.post(
+      "/admin/home-sections/from_instagram/update",
+      formData,
+      {
+        headers: {
+          "Content-Type":
+            "multipart/form-data",
+        },
+      }
+    );
+
+    const updatedSection =
+      response.data?.section;
+
+    updateLocalSection(
+      "from_instagram",
+      updatedSection
+    );
+
+    setInstagramGalleryDraft(
+      getInstagramGallerySettings(
+        updatedSection
+      )
+    );
+
+    setSectionError("");
+
+    setSuccessMessage(
+      response.data?.message ||
+      "Instagram gallery saved successfully."
+    );
+  };
 
 
 
@@ -889,51 +1099,100 @@ const AdminHomePage = () => {
 
 
   // Save currently opened section.
+
   const handleSave = async () => {
-    if (saving || !activeEditor || activeEditor === "hero") return;
+    if (
+      saving ||
+      !activeEditor ||
+      activeEditor === "hero"
+    ) {
+      return;
+    }
 
     try {
       setSaving(true);
       setSectionError("");
       setSuccessMessage("");
 
-      if (activeEditor === "featured_categories") await saveFeaturedCategories();
-      else if (activeEditor === "products_on_sale") await saveProductsOnSale();
-      else if (activeEditor === "promotions") await savePromotions();
-      else if (activeEditor === "featured_products") await saveFeaturedProducts();
-      else if (activeEditor === "top_vendors") await saveTopVendors();
-
-      else if (
-    activeEditor ===
-    "top_articles"
-) {
-    await saveTopArticles();
-}
-
-      else if (activeEditor === "become_a_vendor") {
+      if (
+        activeEditor ===
+        "featured_categories"
+      ) {
+        await saveFeaturedCategories();
+      } else if (
+        activeEditor ===
+        "products_on_sale"
+      ) {
+        await saveProductsOnSale();
+      } else if (
+        activeEditor ===
+        "promotions"
+      ) {
+        await savePromotions();
+      } else if (
+        activeEditor ===
+        "featured_products"
+      ) {
+        await saveFeaturedProducts();
+      } else if (
+        activeEditor ===
+        "top_vendors"
+      ) {
+        await saveTopVendors();
+      } else if (
+        activeEditor ===
+        "top_articles"
+      ) {
+        await saveTopArticles();
+      } else if (
+        activeEditor ===
+        "from_instagram"
+      ) {
+        await saveInstagramGallery();
+      } else if (
+        activeEditor ===
+        "become_a_vendor"
+      ) {
         await saveBecomeVendor();
       }
-
-
     } catch (error) {
-      console.error("Home section save error:", error);
+      console.error(
+        "Home section save error:",
+        error
+      );
 
-      if (error.response?.status === 422) {
-        const errors = error.response?.data?.errors || {};
-        const firstError = Object.values(errors).flat().find(Boolean);
+      if (
+        error.response?.status === 422
+      ) {
+        const errors =
+          error.response?.data
+            ?.errors || {};
+
+        const firstError =
+          Object.values(errors)
+            .flat()
+            .find(Boolean);
 
         setSectionError(
           firstError ||
-          error.response?.data?.message ||
+          error.response?.data
+            ?.message ||
           "Please check the section settings."
         );
       } else {
-        setSectionError(error.response?.data?.message || "Unable to save section settings.");
+        setSectionError(
+          error.response?.data
+            ?.message ||
+          "Unable to save section settings."
+        );
       }
     } finally {
       setSaving(false);
     }
   };
+
+
+
 
   // Open storefront preview.
   const handlePreview = () => {
@@ -953,7 +1212,7 @@ const AdminHomePage = () => {
     );
   }
 
- const canSave = [
+  const canSave = [
     "featured_categories",
     "products_on_sale",
     "promotions",
@@ -961,7 +1220,8 @@ const AdminHomePage = () => {
     "top_vendors",
     "become_a_vendor",
     "top_articles",
-].includes(activeEditor);
+    "from_instagram",
+  ].includes(activeEditor);
 
   return (
     <div className="min-h-[calc(100vh-74px)] bg-[#f6f7f8] px-6 py-6">
@@ -1048,20 +1308,31 @@ const AdminHomePage = () => {
                 section.section_key === "become_a_vendor" &&
                 activeEditor === "become_a_vendor";
 
-                const isTopArticlesEditor =
-    section.section_key ===
-        "top_articles" &&
-    activeEditor ===
-        "top_articles";
+              const isTopArticlesEditor =
+                section.section_key ===
+                "top_articles" &&
+                activeEditor ===
+                "top_articles";
 
-            const editorOpen =
-    isFeaturedEditor ||
-    isProductsOnSaleEditor ||
-    isPromotionsEditor ||
-    isFeaturedProductsEditor ||
-    isTopVendorsEditor ||
-    isBecomeVendorEditor ||
-    isTopArticlesEditor;
+              const isInstagramGalleryEditor =
+                section.section_key ===
+                "from_instagram" &&
+                activeEditor ===
+                "from_instagram";
+
+
+
+              const editorOpen =
+
+                isFeaturedEditor ||
+                isProductsOnSaleEditor ||
+                isPromotionsEditor ||
+                isFeaturedProductsEditor ||
+                isTopVendorsEditor ||
+                isBecomeVendorEditor ||
+                isTopArticlesEditor ||
+                isInstagramGalleryEditor;
+
 
               let editorComponent = null;
 
@@ -1128,17 +1399,29 @@ const AdminHomePage = () => {
 
 
               if (isTopArticlesEditor) {
-    editorComponent = (
-        <TopArticlesEditor
-            value={
-                topArticlesDraft
-            }
-            onChange={
-                handleTopArticlesChange
-            }
-        />
-    );
-}
+                editorComponent = (
+                  <TopArticlesEditor
+                    value={
+                      topArticlesDraft
+                    }
+                    onChange={
+                      handleTopArticlesChange
+                    }
+                  />
+                );
+              }
+
+
+              if (isInstagramGalleryEditor) {
+                editorComponent = (
+                  <InstagramGalleryEditor
+                    draft={instagramGalleryDraft}
+                    onChange={
+                      handleInstagramGalleryChange
+                    }
+                  />
+                );
+              }
 
               return (
                 <PageBuilderItem

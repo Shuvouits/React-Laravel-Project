@@ -2,19 +2,20 @@ import { Outlet } from "react-router-dom";
 
 import Navbar from "../../components/frontend/Navbar";
 import CartDrawer from "../../components/frontend/cart/CartDrawer";
+import FrontendFooter from "../../components/frontend/FrontendFooter";
 
 const FrontendLayout = () => {
     return (
-        <div className="min-h-screen bg-white">
-
+        <div className="flex min-h-screen flex-col bg-white">
             <Navbar />
 
-            <main>
+            <main className="flex-1">
                 <Outlet />
             </main>
 
-            <CartDrawer />
+            <FrontendFooter />
 
+            <CartDrawer />
         </div>
     );
 };

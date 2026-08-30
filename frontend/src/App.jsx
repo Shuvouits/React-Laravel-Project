@@ -144,6 +144,7 @@ import AdminBlogPostEdit from "./pages/admin/content/blogPosts/AdminBlogPostEdit
 import AdminBlogPostCreate from "./pages/admin/content/blogPosts/AdminBlogPostCreate";
 import AdminBlogPosts from "./pages/admin/content/blogPosts/AdminBlogPosts";
 import TopArticles from "./components/frontend/TopArticles";
+import InstagramGallery from "./components/frontend/InstagramGallery";
 
 
 const Home = () => {
@@ -157,6 +158,7 @@ const Home = () => {
             <TopVendors />
             <BecomeVendorSection />
             <TopArticles />
+            <InstagramGallery />
         </>
     );
 };

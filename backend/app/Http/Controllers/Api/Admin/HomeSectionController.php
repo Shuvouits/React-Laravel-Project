@@ -567,6 +567,341 @@ class HomeSectionController extends Controller
         ]);
     }
 
+
+
+
+    /*
+|--------------------------------------------------------------------------
+| From Instagram
+|--------------------------------------------------------------------------
+*/
+
+if ($sectionKey === 'from_instagram') {
+    $validated = $request->validate([
+        'title' => [
+            'required',
+            'string',
+            'max:255',
+        ],
+        'settings.limit' => [
+            'required',
+            'integer',
+            'min:1',
+            'max:30',
+        ],
+        'settings.desktop_columns' => [
+            'required',
+            'integer',
+            'min:3',
+            'max:6',
+        ],
+        'images' => [
+            'nullable',
+            'array',
+            'max:30',
+        ],
+        'images.*.id' => [
+            'nullable',
+            'string',
+            'max:255',
+        ],
+        'images.*.image' => [
+            'nullable',
+            'image',
+            'mimes:jpg,jpeg,png,webp,gif',
+            'max:5120',
+        ],
+        'images.*.saved_image_path' => [
+            'nullable',
+            'string',
+            'max:2048',
+        ],
+        'images.*.saved_image_url' => [
+            'nullable',
+            'string',
+            'max:2048',
+        ],
+        'images.*.image_alt' => [
+            'nullable',
+            'string',
+            'max:255',
+        ],
+        'images.*.link' => [
+            'nullable',
+            'string',
+            'max:2048',
+        ],
+        'images.*.is_active' => [
+            'required',
+            'boolean',
+        ],
+    ]);
+
+    $currentSettings = is_array(
+        $section->settings
+    )
+        ? $section->settings
+        : [];
+
+    $currentImages =
+        isset($currentSettings['images']) &&
+        is_array($currentSettings['images'])
+            ? $currentSettings['images']
+            : [];
+
+    $currentImagesById = [];
+
+    foreach ($currentImages as $currentImage) {
+        $currentId = (string) (
+            $currentImage['id'] ?? ''
+        );
+
+        if ($currentId !== '') {
+            $currentImagesById[$currentId] =
+                $currentImage;
+        }
+    }
+
+    $uploadDirectory = public_path(
+        'uploads/home/instagram'
+    );
+
+    if (!file_exists($uploadDirectory)) {
+        mkdir(
+            $uploadDirectory,
+            0755,
+            true
+        );
+    }
+
+    $incomingImages =
+        $validated['images'] ?? [];
+
+    $savedImages = [];
+
+    foreach (
+        $incomingImages as $index => $incomingImage
+    ) {
+        $imageId = trim(
+            (string) (
+                $incomingImage['id'] ?? ''
+            )
+        );
+
+        if ($imageId === '') {
+            $imageId =
+                'instagram-image-'
+                . now()->format('YmdHis')
+                . '-'
+                . $index
+                . '-'
+                . uniqid();
+        }
+
+        $existingImage =
+            $currentImagesById[$imageId]
+            ?? [];
+
+        $relativePath =
+            $existingImage['image']
+            ?? '';
+
+        $imageUrl =
+            $existingImage['image_url']
+            ?? '';
+
+        if (
+            $request->hasFile(
+                "images.{$index}.image"
+            )
+        ) {
+            $uploadedImage =
+                $request->file(
+                    "images.{$index}.image"
+                );
+
+            $extension = strtolower(
+                $uploadedImage
+                    ->getClientOriginalExtension()
+            );
+
+            $fileName =
+                now()->format('YmdHis')
+                . '-'
+                . uniqid()
+                . '.'
+                . $extension;
+
+            $uploadedImage->move(
+                $uploadDirectory,
+                $fileName
+            );
+
+            $newRelativePath =
+                'uploads/home/instagram/'
+                . $fileName;
+
+            if (
+                $relativePath !== '' &&
+                $relativePath !== $newRelativePath &&
+                str_starts_with(
+                    $relativePath,
+                    'uploads/home/instagram/'
+                )
+            ) {
+                $oldImagePath = public_path(
+                    $relativePath
+                );
+
+                if (file_exists($oldImagePath)) {
+                    unlink($oldImagePath);
+                }
+            }
+
+            $relativePath =
+                $newRelativePath;
+
+            $imageUrl = asset(
+                $newRelativePath
+            );
+        } elseif ($relativePath === '') {
+            $savedImagePath = trim(
+                (string) (
+                    $incomingImage[
+                        'saved_image_path'
+                    ] ?? ''
+                )
+            );
+
+            if (
+                $savedImagePath !== '' &&
+                str_starts_with(
+                    $savedImagePath,
+                    'uploads/home/instagram/'
+                )
+            ) {
+                $relativePath =
+                    $savedImagePath;
+
+                $imageUrl = asset(
+                    $savedImagePath
+                );
+            }
+        }
+
+        if ($relativePath === '') {
+            return response()->json([
+                'status' => false,
+                'message' =>
+                    'Please upload an image for gallery item '
+                    . ($index + 1)
+                    . '.',
+            ], 422);
+        }
+
+        $savedImages[] = [
+            'id' =>
+                $imageId,
+
+            'image' =>
+                $relativePath,
+
+            'image_url' =>
+                $imageUrl,
+
+            'image_alt' => trim(
+                (string) (
+                    $incomingImage[
+                        'image_alt'
+                    ] ?? ''
+                )
+            ),
+
+            'link' => trim(
+                (string) (
+                    $incomingImage[
+                        'link'
+                    ] ?? ''
+                )
+            ),
+
+            'is_active' => filter_var(
+                $incomingImage[
+                    'is_active'
+                ] ?? true,
+                FILTER_VALIDATE_BOOLEAN
+            ),
+        ];
+    }
+
+    $savedPaths = array_values(
+        array_filter(
+            array_map(
+                fn ($item) =>
+                    $item['image'] ?? null,
+                $savedImages
+            )
+        )
+    );
+
+    foreach ($currentImages as $currentImage) {
+        $oldRelativePath =
+            $currentImage['image'] ?? '';
+
+        if (
+            $oldRelativePath !== '' &&
+            str_starts_with(
+                $oldRelativePath,
+                'uploads/home/instagram/'
+            ) &&
+            !in_array(
+                $oldRelativePath,
+                $savedPaths,
+                true
+            )
+        ) {
+            $oldImagePath = public_path(
+                $oldRelativePath
+            );
+
+            if (file_exists($oldImagePath)) {
+                unlink($oldImagePath);
+            }
+        }
+    }
+
+    $section->title = trim(
+        $validated['title']
+    );
+
+    $section->settings = [
+        'limit' => (int)
+            $validated['settings']['limit'],
+
+        'desktop_columns' => (int)
+            $validated['settings'][
+                'desktop_columns'
+            ],
+
+        'images' =>
+            array_values($savedImages),
+    ];
+
+    $section->save();
+
+    return response()->json([
+        'status' => true,
+        'message' =>
+            'Instagram gallery saved successfully.',
+        'section' =>
+            $section->fresh(),
+    ]);
+}
+
+
+
+
+
     /*
     |--------------------------------------------------------------------------
     | Unsupported Section
