@@ -1,140 +1,136 @@
-/* ==========================================================================
-   GLOBAL VARIANT CONFIG
-============================================================================ */
-
 export const GLOBAL_VARIANT_API = {
-  index:
-    "/admin/global-variants",
+    index: "/admin/global-variants",
+    create: "/admin/global-variants",
 
-  create:
-    "/admin/global-variants",
+    show: (id) =>
+        `/admin/global-variants/${id}`,
 
-  show: (id) =>
-    `/admin/global-variants/${id}`,
+    update: (id) =>
+        `/admin/global-variants/${id}/update`,
 
-  update: (id) =>
-    `/admin/global-variants/${id}/update`,
+    delete: (id) =>
+        `/admin/global-variants/${id}`,
 
-  delete: (id) =>
-    `/admin/global-variants/${id}`,
-
-  reorder:
-    "/admin/global-variants/reorder",
+    reorder: "/admin/global-variants/reorder",
 };
-
-
-/* ==========================================================================
-   FRONTEND ROUTES
-============================================================================ */
 
 export const GLOBAL_VARIANT_ROUTES = {
-  index:
-    "/admin/products/global-variants",
+    index: "/admin/products/global-variants",
 };
-
-
-/* ==========================================================================
-   VISUAL OPTIONS
-============================================================================ */
 
 export const VISUAL_OPTIONS = [
-  {
-    value: "rectangle",
-    label: "Rectangle",
-  },
-  {
-    value: "circle",
-    label: "Circle",
-  },
-  {
-    value: "pill",
-    label: "Pill",
-  },
-  {
-    value: "color",
-    label: "Color",
-  },
+    {
+        value: "rectangle",
+        label: "Rectangle",
+    },
+    {
+        value: "circle",
+        label: "Circle",
+    },
+    {
+        value: "pill",
+        label: "Pill",
+    },
+    {
+        value: "color",
+        label: "Color",
+    },
 ];
 
-
-/* ==========================================================================
-   EMPTY VARIANT
-============================================================================ */
+export const DEFAULT_COLOR_CODE = "#D1D5DB";
 
 export const EMPTY_VARIANT = {
-  name: "",
-  visual_type: "rectangle",
-  sort_order: 0,
-  values: [],
+    name: "",
+    visual_type: "rectangle",
+    sort_order: 0,
+    values: [],
 };
 
+export const isColorVariant = (variant) => {
+    if (
+        variant?.is_color === true ||
+        variant?.is_color === 1 ||
+        variant?.is_color === "1"
+    ) {
+        return true;
+    }
 
-/* ==========================================================================
-   COLOR HELPER
-============================================================================ */
-
-export const isColorVariant = (
-  variant
-) => {
-
-  if (
-    variant?.is_color === true ||
-    variant?.is_color === 1 ||
-    variant?.is_color === "1"
-  ) {
-    return true;
-  }
-
-
-  const name =
-    String(
-      variant?.name || ""
+    const name = String(
+        variant?.name || ""
     )
-      .trim()
-      .toLowerCase();
+        .trim()
+        .toLowerCase();
 
-
-  return (
-    name === "color" ||
-    name === "colour"
-  );
+    return (
+        name === "color" ||
+        name === "colour"
+    );
 };
 
+export const normalizeColorCode = (colorCode) => {
+    const value = String(
+        colorCode || ""
+    ).trim();
 
-/* ==========================================================================
-   NORMALIZE VARIANT
-============================================================================ */
+    if (!value) {
+        return null;
+    }
 
-export const normalizeVariant = (
-  variant
-) => {
+    const normalized = value.startsWith("#")
+        ? value
+        : `#${value}`;
 
-  return {
-    ...EMPTY_VARIANT,
-    ...variant,
+    if (/^#[0-9a-fA-F]{3}$/.test(normalized)) {
+        const red = normalized[1];
+        const green = normalized[2];
+        const blue = normalized[3];
 
-    sort_order:
-      Number(
-        variant?.sort_order
-      ) || 0,
+        return `#${red}${red}${green}${green}${blue}${blue}`
+            .toUpperCase();
+    }
 
-    values:
-      Array.isArray(
-        variant?.values
-      )
-        ? variant.values.map(
-            (
-              value,
-              index
-            ) => ({
-              ...value,
+    if (/^#[0-9a-fA-F]{6}$/.test(normalized)) {
+        return normalized.toUpperCase();
+    }
 
-              sort_order:
-                Number(
-                  value.sort_order
-                ) || index,
-            })
-          )
-        : [],
-  };
+    return null;
+};
+
+export const getColorPickerValue = (colorCode) => {
+    return (
+        normalizeColorCode(colorCode) ||
+        DEFAULT_COLOR_CODE
+    );
+};
+
+export const normalizeVariant = (variant) => {
+    return {
+        ...EMPTY_VARIANT,
+        ...variant,
+
+        sort_order:
+            Number(variant?.sort_order) || 0,
+
+        values: Array.isArray(variant?.values)
+            ? variant.values.map(
+                (value, index) => ({
+                    ...value,
+
+                    value: String(
+                        value?.value || ""
+                    ),
+
+                    color_code:
+                        normalizeColorCode(
+                            value?.color_code
+                        ),
+
+                    sort_order:
+                        Number(
+                            value?.sort_order
+                        ) || index,
+                })
+            )
+            : [],
+    };
 };

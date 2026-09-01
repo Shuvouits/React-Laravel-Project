@@ -94,245 +94,630 @@ class HomeController extends Controller
     }
 
     // Products on sale
-    public function productsOnSale()
-    {
-        $section = HomeSection::where('section_key', 'products_on_sale')->first();
 
-        if (! $section) {
-            return response()->json([
-                'status' => true,
-                'section' => null,
-                'products' => [],
-            ]);
-        }
 
-        if (! $section->is_active) {
-            return response()->json([
-                'status' => true,
-                'section' => [
-                    'title' => $section->title,
-                    'is_active' => false,
-                    'settings' => $section->settings ?? [],
-                ],
-                'products' => [],
-            ]);
-        }
+  public function productsOnSale()
+{
+    $section = HomeSection::where(
+        'section_key',
+        'products_on_sale'
+    )->first();
 
-        $settings = $section->settings ?? [];
-        $source = $settings['product_source'] ?? 'on_sale';
-        $limit = (int) ($settings['max_products'] ?? 8);
-        $limit = max(1, min($limit, 24));
+    if (! $section) {
+        return response()->json([
+            'status' => true,
+            'section' => null,
+            'products' => [],
+        ]);
+    }
 
-        $query = Product::query()
-            ->where('status', 'active')
-            ->where('online_store', true);
-
-        // Product media
-        if (method_exists(Product::class, 'media')) {
-            $query->with('media');
-        }
-
-        // Variants and options
-        if (method_exists(Product::class, 'variants')) {
-            $query->with([
-                'variants.optionValues.option',
-            ]);
-        }
-
-        // Product source
-        if ($source === 'featured') {
-            $query->where('is_featured', true);
-        }
-
-        if ($source === 'on_sale') {
-            $query->where(function ($saleQuery) {
-                $saleQuery->where(function ($productSaleQuery) {
-                    $productSaleQuery
-                        ->whereNotNull('price')
-                        ->whereNotNull('compare_at_price')
-                        ->whereColumn('compare_at_price', '>', 'price');
-                });
-
-                if (method_exists(Product::class, 'variants')) {
-                    $saleQuery->orWhereHas('variants', function ($variantQuery) {
-                        $variantQuery
-                            ->whereNotNull('price')
-                            ->whereNotNull('compare_at_price')
-                            ->whereColumn('compare_at_price', '>', 'price');
-                    });
-                }
-            });
-        }
-
-        $products = $query
-            ->latest('created_at')
-            ->limit($limit)
-            ->get();
-
-        // On sale fallback
-        if ($source === 'on_sale' && $products->isEmpty()) {
-            $fallbackQuery = Product::query()
-                ->where('status', 'active')
-                ->where('online_store', true);
-
-            if (method_exists(Product::class, 'media')) {
-                $fallbackQuery->with('media');
-            }
-
-            if (method_exists(Product::class, 'variants')) {
-                $fallbackQuery->with([
-                    'variants.optionValues.option',
-                ]);
-            }
-
-            $products = $fallbackQuery
-                ->latest('created_at')
-                ->limit($limit)
-                ->get();
-        }
-
-        // Format products
-        $formattedProducts = $products->map(function ($product) {
-            $productMedia = collect();
-            $variants = collect();
-
-            if ($product->relationLoaded('media')) {
-                $productMedia = $product->media;
-            }
-
-            if ($product->relationLoaded('variants')) {
-                $variants = $product->variants;
-            }
-
-            $imageUrl = $this->resolveProductImage($product);
-
-            $formattedVariants = $variants->map(function ($variant) use ($productMedia, $imageUrl) {
-                $optionValues = $variant->relationLoaded('optionValues')
-                    ? $variant->optionValues
-                    : collect();
-
-                $formattedOptions = $optionValues->map(function ($optionValue) {
-                    $optionName = $optionValue->option->name ?? null;
-
-                    return [
-                        'id' => $optionValue->id,
-                        'global_variant_value_id' => $optionValue->global_variant_value_id ?? null,
-                        'global_variant_name' => $optionName,
-                        'name' => $optionName,
-                        'option_name' => $optionName,
-                        'value' => $optionValue->value ?? null,
-                        'color_code' => $optionValue->color_code ?? null,
-                    ];
-                })->filter(function ($option) {
-                    return (
-                        ! empty($option['option_name']) &&
-                        $option['value'] !== null
-                    );
-                })->values();
-
-                // Variant image
-                $variantImageUrl = null;
-
-                if (! empty($variant->product_media_id)) {
-                    $variantMedia = $productMedia->firstWhere(
-                        'id',
-                        $variant->product_media_id
-                    );
-
-                    if ($variantMedia) {
-                        $variantImageUrl = $this->resolveMediaUrl($variantMedia);
-                    }
-                }
-
-                // Image fallback
-                if (! $variantImageUrl) {
-                    $variantImageUrl = $imageUrl;
-                }
-
-                return [
-                    'id' => $variant->id,
-                    'title' => $variant->title ?? $variant->name ?? null,
-                    'name' => $variant->name ?? $variant->title ?? null,
-                    'combination_key' => $variant->combination_key ?? null,
-                    'product_media_id' => $variant->product_media_id ?? null,
-                    'sku' => $variant->sku ?? null,
-                    'barcode' => $variant->barcode ?? null,
-                    'price' => $variant->price !== null
-                        ? (float) $variant->price
-                        : 0,
-                    'compare_at_price' => $variant->compare_at_price !== null
-                        ? (float) $variant->compare_at_price
-                        : 0,
-                    'quantity' => (int) ($variant->quantity ?? 0),
-                    'is_default' => (bool) ($variant->is_default ?? false),
-                    'is_active' => (bool) ($variant->is_active ?? true),
-                    'image_url' => $variantImageUrl,
-                    'options' => $formattedOptions,
-                ];
-            })->values();
-
-            $price = $product->price;
-            $compareAtPrice = $product->compare_at_price;
-
-            // Use variant price
-            if ($formattedVariants->isNotEmpty()) {
-                $saleVariant = $formattedVariants->first(function ($variant) {
-                    return (
-                        $variant['price'] > 0 &&
-                        $variant['compare_at_price'] > $variant['price']
-                    );
-                });
-
-                if ($saleVariant) {
-                    $price = $saleVariant['price'];
-                    $compareAtPrice = $saleVariant['compare_at_price'];
-                } elseif ($price === null) {
-                    $validPrices = $formattedVariants
-                        ->pluck('price')
-                        ->filter(fn ($value) => $value > 0);
-
-                    if ($validPrices->isNotEmpty()) {
-                        $price = $validPrices->min();
-                    }
-                }
-            }
-
-            return [
-                'id' => $product->id,
-                'title' => $product->title,
-                'slug' => $product->slug,
-                'summary' => $product->summary,
-                'description' => $product->description,
-                'type' => $product->type,
-                'price' => $price !== null
-                    ? (float) $price
-                    : 0,
-                'compare_at_price' => $compareAtPrice !== null
-                    ? (float) $compareAtPrice
-                    : 0,
-                'is_featured' => (bool) $product->is_featured,
-                'quantity' => (int) ($product->quantity ?? 0),
-                'image_url' => $imageUrl,
-                'store_name' => 'Storify',
-                'variants' => $formattedVariants,
-            ];
-        })->values();
-
+    if (! $section->is_active) {
         return response()->json([
             'status' => true,
             'section' => [
-                'title' => $section->title ?: 'Product on Sale',
-                'is_active' => (bool) $section->is_active,
-                'settings' => [
-                    'subtitle' => $settings['subtitle'] ?? '',
-                    'product_source' => $source,
-                    'max_products' => $limit,
-                    'desktop_cards_per_row' => (int) ($settings['desktop_cards_per_row'] ?? 4),
-                ],
+                'title' => $section->title,
+                'is_active' => false,
+                'settings' => $section->settings ?? [],
             ],
-            'products' => $formattedProducts,
+            'products' => [],
         ]);
     }
+
+    $settings = is_array($section->settings)
+        ? $section->settings
+        : [];
+
+    $source = $settings['product_source'] ?? 'on_sale';
+
+    $limit = (int) (
+        $settings['max_products'] ?? 8
+    );
+
+    $limit = max(
+        1,
+        min($limit, 24)
+    );
+
+    $query = Product::query()
+        ->where('status', 'active')
+        ->where('online_store', true)
+        ->with([
+            'media',
+            'category',
+            'brand.vendor',
+            'store',
+            'reviews',
+            'variants.optionValues.option',
+            'variants.optionValues.globalValue',
+        ]);
+
+    if ($source === 'featured') {
+        $query->where('is_featured', true);
+    }
+
+    if ($source === 'on_sale') {
+        $query->where(function ($saleQuery) {
+            $saleQuery
+                ->where(function ($productQuery) {
+                    $productQuery
+                        ->whereNotNull('price')
+                        ->whereNotNull('compare_at_price')
+                        ->whereColumn(
+                            'compare_at_price',
+                            '>',
+                            'price'
+                        );
+                })
+                ->orWhereHas(
+                    'variants',
+                    function ($variantQuery) {
+                        $variantQuery
+                            ->whereNotNull('price')
+                            ->whereNotNull('compare_at_price')
+                            ->whereColumn(
+                                'compare_at_price',
+                                '>',
+                                'price'
+                            );
+                    }
+                );
+        });
+    }
+
+    $products = $query
+        ->latest('created_at')
+        ->limit($limit)
+        ->get();
+
+    if (
+        $source === 'on_sale' &&
+        $products->isEmpty()
+    ) {
+        $products = Product::query()
+            ->where('status', 'active')
+            ->where('online_store', true)
+            ->with([
+                'media',
+                'category',
+                'brand.vendor',
+                'store',
+                'reviews',
+                'variants.optionValues.option',
+                'variants.optionValues.globalValue',
+            ])
+            ->latest('created_at')
+            ->limit($limit)
+            ->get();
+    }
+
+    $formattedProducts = $products
+        ->map(function ($product) {
+            $productMedia = $product->relationLoaded('media')
+                ? $product->media
+                : collect();
+
+            $variants = $product->relationLoaded('variants')
+                ? $product->variants
+                : collect();
+
+            $imageUrl = $this->resolveProductImage(
+                $product
+            );
+
+            $formattedVariants = $variants
+                ->map(function ($variant) use (
+                    $productMedia,
+                    $imageUrl
+                ) {
+                    $optionValues = $variant
+                        ->relationLoaded('optionValues')
+                            ? $variant->optionValues
+                            : collect();
+
+                    $formattedOptions = $optionValues
+                        ->map(function ($optionValue) {
+                            $optionName =
+                                $optionValue->option?->name;
+
+                            $colorCode =
+                                $optionValue
+                                    ->globalValue
+                                    ?->color_code
+                                ?? $optionValue->color_code
+                                ?? null;
+
+                            return [
+                                'id' =>
+                                    $optionValue->id,
+
+                                'global_variant_value_id' =>
+                                    $optionValue
+                                        ->global_variant_value_id
+                                    ?? null,
+
+                                'global_variant_name' =>
+                                    $optionName,
+
+                                'name' =>
+                                    $optionName,
+
+                                'option_name' =>
+                                    $optionName,
+
+                                'value' =>
+                                    $optionValue->value
+                                    ?? null,
+
+                                'color_code' =>
+                                    $colorCode,
+                            ];
+                        })
+                        ->filter(function ($option) {
+                            return (
+                                ! empty(
+                                    $option['option_name']
+                                ) &&
+                                $option['value'] !== null
+                            );
+                        })
+                        ->values();
+
+                    $variantImageUrl = null;
+
+                    if (! empty($variant->product_media_id)) {
+                        $variantMedia = $productMedia
+                            ->firstWhere(
+                                'id',
+                                $variant->product_media_id
+                            );
+
+                        if ($variantMedia) {
+                            $variantImageUrl =
+                                $this->resolveMediaUrl(
+                                    $variantMedia
+                                );
+                        }
+                    }
+
+                    if (! $variantImageUrl) {
+                        $variantImageUrl = $imageUrl;
+                    }
+
+                    return [
+                        'id' =>
+                            $variant->id,
+
+                        'title' =>
+                            $variant->title
+                            ?? $variant->name
+                            ?? null,
+
+                        'name' =>
+                            $variant->name
+                            ?? $variant->title
+                            ?? null,
+
+                        'combination_key' =>
+                            $variant->combination_key
+                            ?? null,
+
+                        'product_media_id' =>
+                            $variant->product_media_id
+                            ?? null,
+
+                        'sku' =>
+                            $variant->sku
+                            ?? null,
+
+                        'barcode' =>
+                            $variant->barcode
+                            ?? null,
+
+                        'price' =>
+                            $variant->price !== null
+                                ? (float) $variant->price
+                                : 0,
+
+                        'compare_at_price' =>
+                            $variant->compare_at_price !== null
+                                ? (float) $variant->compare_at_price
+                                : 0,
+
+                        'quantity' =>
+                            (int) (
+                                $variant->quantity ?? 0
+                            ),
+
+                        'is_default' =>
+                            (bool) (
+                                $variant->is_default ?? false
+                            ),
+
+                        'is_active' =>
+                            (bool) (
+                                $variant->is_active ?? true
+                            ),
+
+                        'image_url' =>
+                            $variantImageUrl,
+
+                        'options' =>
+                            $formattedOptions,
+                    ];
+                })
+                ->values();
+
+            $price = $product->price;
+
+            $compareAtPrice =
+                $product->compare_at_price;
+
+            $selectedVariant = $formattedVariants
+                ->first(function ($variant) {
+                    return (
+                        $variant['is_active'] &&
+                        $variant['is_default']
+                    );
+                });
+
+            if (! $selectedVariant) {
+                $selectedVariant = $formattedVariants
+                    ->first(function ($variant) {
+                        return (
+                            $variant['is_active'] &&
+                            $variant['quantity'] > 0
+                        );
+                    });
+            }
+
+            if (! $selectedVariant) {
+                $selectedVariant = $formattedVariants
+                    ->first(function ($variant) {
+                        return $variant['is_active'];
+                    });
+            }
+
+            if (! $selectedVariant) {
+                $selectedVariant = $formattedVariants->first();
+            }
+
+            $saleVariant = $formattedVariants
+                ->first(function ($variant) {
+                    return (
+                        $variant['is_active'] &&
+                        $variant['price'] > 0 &&
+                        $variant['compare_at_price'] >
+                        $variant['price']
+                    );
+                });
+
+            if ($saleVariant) {
+                $price = $saleVariant['price'];
+
+                $compareAtPrice =
+                    $saleVariant['compare_at_price'];
+            } elseif ($price === null) {
+                $validPrices = $formattedVariants
+                    ->where('is_active', true)
+                    ->pluck('price')
+                    ->filter(
+                        fn ($value) => $value > 0
+                    );
+
+                if ($validPrices->isNotEmpty()) {
+                    $price = $validPrices->min();
+                }
+            }
+
+            $uniqueColors = $formattedVariants
+                ->flatMap(function ($variant) {
+                    return collect($variant['options'])
+                        ->filter(function ($option) {
+                            $name = strtolower(
+                                trim(
+                                    $option['option_name']
+                                    ?? ''
+                                )
+                            );
+
+                            return in_array(
+                                $name,
+                                ['color', 'colour'],
+                                true
+                            );
+                        });
+                })
+                ->unique(function ($option) {
+                    return strtolower(
+                        trim(
+                            $option['value'] ?? ''
+                        )
+                    );
+                })
+                ->map(function ($option) {
+                    return [
+                        'id' =>
+                            $option['global_variant_value_id']
+                            ?? $option['id']
+                            ?? null,
+
+                        'value' =>
+                            $option['value'] ?? '',
+
+                        'color_code' =>
+                            $option['color_code'] ?? null,
+                    ];
+                })
+                ->values();
+
+            $selectedColor = null;
+
+            if ($selectedVariant) {
+                $selectedColorOption = collect(
+                    $selectedVariant['options']
+                )->first(function ($option) {
+                    $name = strtolower(
+                        trim(
+                            $option['option_name']
+                            ?? ''
+                        )
+                    );
+
+                    return in_array(
+                        $name,
+                        ['color', 'colour'],
+                        true
+                    );
+                });
+
+                if ($selectedColorOption) {
+                    $selectedColor = [
+                        'id' =>
+                            $selectedColorOption[
+                                'global_variant_value_id'
+                            ]
+                            ?? $selectedColorOption['id']
+                            ?? null,
+
+                        'value' =>
+                            $selectedColorOption['value']
+                            ?? '',
+
+                        'color_code' =>
+                            $selectedColorOption['color_code']
+                            ?? null,
+                    ];
+                }
+            }
+
+            if (! $selectedColor && $uniqueColors->isNotEmpty()) {
+                $selectedColor = $uniqueColors->first();
+            }
+
+            $availableQuantity = $formattedVariants
+                ->where('is_active', true)
+                ->sum('quantity');
+
+            if ($formattedVariants->isEmpty()) {
+                $availableQuantity = (int) (
+                    $product->quantity ?? 0
+                );
+            }
+
+            $approvedReviews = $product
+                ->relationLoaded('reviews')
+                    ? $product->reviews
+                        ->filter(function ($review) {
+                            return (
+                                $review->status === 'approved' &&
+                                ! $review->is_on_hold
+                            );
+                        })
+                        ->values()
+                    : collect();
+
+            $averageRating = $approvedReviews->isNotEmpty()
+                ? round(
+                    (float) $approvedReviews->avg('rating'),
+                    1
+                )
+                : 0;
+
+            $storeName =
+                $product->store?->name
+                ?? $product->store?->store_name
+                ?? $product->brand?->vendor?->store_name
+                ?? $product->brand?->vendor?->name
+                ?? $product->brand?->name
+                ?? 'Storify';
+
+            $category = $product->category
+                ? [
+                    'id' =>
+                        $product->category->id,
+
+                    'name' =>
+                        $product->category->name,
+
+                    'slug' =>
+                        $product->category->slug,
+                ]
+                : null;
+
+            $brand = $product->brand
+                ? [
+                    'id' =>
+                        $product->brand->id,
+
+                    'name' =>
+                        $product->brand->name,
+
+                    'slug' =>
+                        $product->brand->slug,
+                ]
+                : null;
+
+            $discountPercentage = 0;
+
+            if (
+                $price > 0 &&
+                $compareAtPrice > $price
+            ) {
+                $discountPercentage = (int) round(
+                    (
+                        ($compareAtPrice - $price) /
+                        $compareAtPrice
+                    ) * 100
+                );
+            }
+
+            return [
+                'id' =>
+                    $product->id,
+
+                'title' =>
+                    $product->title,
+
+                'slug' =>
+                    $product->slug,
+
+                'summary' =>
+                    $product->summary,
+
+                'description' =>
+                    $product->description,
+
+                'type' =>
+                    $product->type,
+
+                'price' =>
+                    $price !== null
+                        ? (float) $price
+                        : 0,
+
+                'compare_at_price' =>
+                    $compareAtPrice !== null
+                        ? (float) $compareAtPrice
+                        : 0,
+
+                'discount_percentage' =>
+                    $discountPercentage,
+
+                'is_featured' =>
+                    (bool) $product->is_featured,
+
+                'quantity' =>
+                    (int) (
+                        $product->quantity ?? 0
+                    ),
+
+                'available_quantity' =>
+                    (int) $availableQuantity,
+
+                'in_stock' =>
+                    $availableQuantity > 0,
+
+                'image_url' =>
+                    $imageUrl,
+
+                'store_name' =>
+                    $storeName,
+
+                'category' =>
+                    $category,
+
+                'category_name' =>
+                    $category['name'] ?? null,
+
+                'brand' =>
+                    $brand,
+
+                'brand_name' =>
+                    $brand['name'] ?? null,
+
+                'rating' =>
+                    $averageRating,
+
+                'review_count' =>
+                    $approvedReviews->count(),
+
+                'selected_variant' =>
+                    $selectedVariant,
+
+                'selected_variant_name' =>
+                    $selectedVariant['title']
+                    ?? null,
+
+                'selected_color' =>
+                    $selectedColor,
+
+                'colors' =>
+                    $uniqueColors,
+
+                'color_count' =>
+                    $uniqueColors->count(),
+
+                'variants' =>
+                    $formattedVariants,
+            ];
+        })
+        ->values();
+
+    return response()->json([
+        'status' => true,
+
+        'section' => [
+            'title' =>
+                $section->title
+                ?: 'Products on Sale',
+
+            'is_active' =>
+                (bool) $section->is_active,
+
+            'settings' => [
+                'subtitle' =>
+                    $settings['subtitle'] ?? '',
+
+                'product_source' =>
+                    $source,
+
+                'max_products' =>
+                    $limit,
+
+                'desktop_cards_per_row' =>
+                    (int) (
+                        $settings[
+                            'desktop_cards_per_row'
+                        ] ?? 4
+                    ),
+            ],
+        ],
+
+        'products' =>
+            $formattedProducts,
+    ]);
+}
+
 
     // Resolve product image
     private function resolveProductImage($product)

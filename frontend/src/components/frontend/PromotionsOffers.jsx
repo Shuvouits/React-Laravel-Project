@@ -28,7 +28,7 @@ const PromotionsOffers = () => {
 
   return (
     <section className="w-full bg-white py-[28px] md:py-[38px]">
-      <div className="mx-auto max-w-[1280px] px-4 md:px-5">
+      <div className="mx-auto max-w-[1500px] px-4 md:px-5">
         {section?.title && (
           <h2 className="mb-[22px] text-[26px] font-bold tracking-[-0.4px] text-[#171717]">
             {section.title}
@@ -91,7 +91,7 @@ const isExternalLink = (link = "") => {
 
 const PromotionsSkeleton = () => (
   <section className="w-full bg-white py-[38px]">
-    <div className="mx-auto max-w-[1280px] px-4 md:px-5">
+    <div className="mx-auto max-w-[1500px] px-4 md:px-5">
       <div className="grid grid-cols-1 gap-[16px] sm:grid-cols-2 lg:h-[555px] lg:grid-cols-4 lg:grid-rows-2 lg:gap-[18px]">
         <SkeletonCard className="lg:row-span-2" />
         <SkeletonCard className="lg:row-span-2" />

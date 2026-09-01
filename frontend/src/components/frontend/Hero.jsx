@@ -254,7 +254,7 @@ const Hero = () => {
 
         <div
           className="
-            max-w-[1280px]
+            max-w-[1500px]
             mx-auto
             px-5
             pt-[22px]
@@ -319,7 +319,7 @@ const Hero = () => {
 
       <div
         className="
-          max-w-[1280px]
+          max-w-[1500px]
           mx-auto
           px-5
           pt-[22px]

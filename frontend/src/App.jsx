@@ -145,6 +145,12 @@ import AdminBlogPostCreate from "./pages/admin/content/blogPosts/AdminBlogPostCr
 import AdminBlogPosts from "./pages/admin/content/blogPosts/AdminBlogPosts";
 import TopArticles from "./components/frontend/TopArticles";
 import InstagramGallery from "./components/frontend/InstagramGallery";
+import ProductsPage from "./pages/admin/products/ProductsPage";
+import BrandsPage from "./pages/frontend/BrandsPage";
+import ContactPage from "./pages/frontend/contact/ContactPage";
+import AdminContactInbox from "./pages/admin/inbox/AdminContactInbox";
+import BlogPage from "./pages/frontend/blog/BlogPage";
+import BlogDetailsPage from "./pages/frontend/blog/BlogDetailsPage";
 
 
 const Home = () => {
@@ -196,6 +202,16 @@ const App = () => {
                         <Route path="/account/inbox" element={<CustomerInbox />} />
 
                         <Route path="/account/orders" element={<CustomerOrders />} />
+
+                        <Route path="/products" element={<ProductsPage />} />
+
+                        <Route path="/brands" element={<BrandsPage />} />
+
+                        <Route path="/contact-us" element={<ContactPage />} />
+
+                        <Route path="blog" element={<BlogPage />} />
+
+                        <Route path="blog/:slug" element={<BlogDetailsPage />} />
 
 
 
@@ -303,6 +319,8 @@ const App = () => {
                         <Route path="content/blog-categories" element={<AdminBlogCategories />} />
                         <Route path="content/blog-categories/new" element={<AdminBlogCategoryCreate />} />
                         <Route path="content/blog-categories/:id/edit" element={<AdminBlogCategoryEdit />} />
+
+                        <Route path="/admin/inbox" element={<AdminContactInbox />} />
 
 
 

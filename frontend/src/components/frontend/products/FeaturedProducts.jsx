@@ -109,7 +109,7 @@ const FeaturedProducts = () => {
     return (
         <>
             <section className="w-full bg-white py-[38px] md:py-[46px]">
-                <div className="mx-auto max-w-[1280px] px-4 md:px-5">
+                <div className="mx-auto max-w-[1500px] px-4 md:px-5">
                     <h2 className="text-[27px] font-bold leading-[1.2] tracking-[-0.6px] text-[#151515] md:text-[30px]">
                         {section.title || "Find your favorite products."}
                     </h2>
@@ -259,7 +259,7 @@ const FilterOption = ({ children, active, onClick }) => (
 
 const FeaturedProductsSkeleton = () => (
     <section className="w-full bg-white py-[46px]">
-        <div className="mx-auto max-w-[1280px] px-4 md:px-5">
+        <div className="mx-auto max-w-[1500px] px-4 md:px-5">
             <div className="h-[36px] w-[310px] animate-pulse rounded-[8px] bg-[#f0f1f2]" />
 
             <div className="mt-[28px] flex items-center gap-[10px]">

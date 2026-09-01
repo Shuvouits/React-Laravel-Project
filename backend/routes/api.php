@@ -86,6 +86,15 @@ use App\Http\Controllers\Api\Frontend\FooterController;
 
 use App\Http\Controllers\Api\Admin\GeneralSettingController as AdminGeneralSettingController;
 use App\Http\Controllers\Api\Frontend\GeneralSettingController as FrontendGeneralSettingController;
+use App\Http\Controllers\Api\Frontend\ProductCatalogController;
+use App\Http\Controllers\Api\Frontend\BrandController as FrontendBrandController;
+
+use App\Http\Controllers\Api\Frontend\ContactController;
+use App\Http\Controllers\Api\Admin\ContactPageSettingController;
+
+use App\Http\Controllers\Api\Admin\ContactMessageController;
+use App\Http\Controllers\Api\Frontend\SalesAiController;
+use App\Http\Controllers\Api\Frontend\BlogController;
 
 use Illuminate\Support\Facades\Route;
 
@@ -120,6 +129,8 @@ Route::get('/pre-orders/{slug}', [PreOrderController::class, 'show']);
 // Product Content Sections
 Route::get('/products/{slug}/content-sections', [FrontendProductContentSectionController::class, 'index']);
 
+Route::get('/brands', [FrontendBrandController::class, 'index']);
+
 Route::get('/products/{product:slug}/reviews', [ProductReviewController::class, 'index']);
 
  Route::get('/home/top-articles', [TopArticlesController::class, 'index']);
@@ -128,6 +139,46 @@ Route::get('/products/{product:slug}/reviews', [ProductReviewController::class, 
 
   Route::get('/footer', [FooterController::class, 'show']);
   Route::get('/general-settings', [FrontendGeneralSettingController::class, 'show']);
+
+  Route::get('/products', [ProductCatalogController::class, 'index']);
+
+  Route::get('/products/{slug}', [ProductController::class, 'showBySlug']);
+
+  Route::get('/product-catalog/filters', [ProductCatalogController::class, 'filters']);
+
+  Route::get('/contact-page', [ContactController::class, 'show']);
+
+  Route::post('/contact-messages', [ContactController::class, 'storeMessage'])->middleware('throttle:5,1');
+
+
+  Route::prefix('sales-ai')->group(function () {
+    Route::get('/config', [SalesAiController::class, 'config']);
+
+    Route::post('/conversations', [SalesAiController::class, 'startConversation'])
+        ->middleware('throttle:20,1');
+
+    Route::post('/chat', [SalesAiController::class, 'chat'])
+        ->middleware('throttle:20,1');
+
+    Route::get(
+        '/conversations/{conversationUuid}/messages',
+        [SalesAiController::class, 'messages']
+    );
+
+    Route::post(
+        '/conversations/{conversationUuid}/close',
+        [SalesAiController::class, 'closeConversation']
+    );
+});
+
+
+Route::prefix('blog')->group(function () {
+    Route::get('/posts', [BlogController::class, 'index']);
+    Route::get('/categories', [BlogController::class, 'categories']);
+    Route::get('/posts/{slug}', [BlogController::class, 'show']);
+});
+
+
 
 // Customer
 Route::prefix('customer')->middleware(['auth:sanctum', 'customer'])->group(function () {
@@ -310,6 +361,7 @@ Route::prefix('vendor')->middleware(['auth:sanctum', 'vendor'])->group(function 
     Route::get('/finance/payouts', [VendorPayoutController::class, 'index']);
 
     Route::get('/finance/payouts/{id}', [VendorPayoutController::class, 'show'])->whereNumber('id');
+
 
 
     // Vendor POS
@@ -737,6 +789,30 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'admin'])->group(function ()
     Route::post('/general-settings/navbar-logo', [AdminGeneralSettingController::class, 'updateNavbarLogo']);
     Route::delete('/general-settings/navbar-logo', [AdminGeneralSettingController::class, 'removeNavbarLogo']);
 
-   
+    Route::get('/contact-page-settings', [ContactPageSettingController::class, 'show']);
+
+    Route::put('/contact-page-settings/status', [ContactPageSettingController::class, 'updateStatus']);
+
+    Route::post('/contact-page-settings/hero-image', [ContactPageSettingController::class, 'updateHeroImage']);
+
+    Route::delete('/contact-page-settings/hero-image', [ContactPageSettingController::class, 'removeHeroImage']);
+
+    Route::put('/contact-page-settings/{sectionKey}', [ContactPageSettingController::class, 'update']);
+
+    Route::get('/contact-messages', [ContactMessageController::class, 'index']);
+
+    Route::get('/contact-messages/unread-count', [ContactMessageController::class, 'unreadCount']);
+
+    Route::get('/contact-messages/{contactMessage}', [ContactMessageController::class, 'show']);
+
+    Route::put('/contact-messages/{contactMessage}/read', [ContactMessageController::class, 'markAsRead']);
+
+    Route::put('/contact-messages/{contactMessage}/unread', [ContactMessageController::class, 'markAsUnread']);
+
+    Route::put('/contact-messages/{contactMessage}/status', [ContactMessageController::class, 'updateStatus']);
+
+    Route::delete('/contact-messages/{contactMessage}', [ContactMessageController::class, 'destroy']);
+
+
 
 });

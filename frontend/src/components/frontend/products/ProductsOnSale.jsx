@@ -85,7 +85,7 @@ const ProductsOnSale = () => {
         <>
             <section className="mt-[55px] w-full">
 
-                <div className="mx-auto max-w-[1280px] px-5">
+                <div className="mx-auto max-w-[1500px] px-5">
 
                     {/* Header */}
                     <div className="flex items-end justify-between gap-4">

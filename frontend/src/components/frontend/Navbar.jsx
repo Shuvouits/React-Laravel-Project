@@ -297,39 +297,39 @@ const Navbar = () => {
             onMouseLeave={closeCategoryMenu}
             className="relative z-[500] w-full border-b border-[#eeeeee] bg-white font-['Inter'] shadow-[0_2px_10px_rgba(0,0,0,0.03)]"
         >
-            <div className="mx-auto max-w-[1280px] px-5">
+            <div className="mx-auto max-w-[1500px] px-5">
 
                 {/* Top navbar */}
                 <div className="flex h-[62px] items-center gap-8">
 
 
 
-                   <div className="relative flex shrink-0 items-center">
-    <Link
-        to="/"
-        className="flex items-center"
-    >
-        <StorifyLogo
-            logo={navbarLogo}
-            alt={navbarLogoAlt}
-        />
-    </Link>
+                    <div className="relative flex shrink-0 items-center">
+                        <Link
+                            to="/"
+                            className="flex items-center"
+                        >
+                            <StorifyLogo
+                                logo={navbarLogo}
+                                alt={navbarLogoAlt}
+                            />
+                        </Link>
 
-    {isAdmin && (
-        <button
-            type="button"
-            onClick={() => setLogoEditorOpen(true)}
-            title="Change navbar logo"
-            aria-label="Change navbar logo"
-            className="absolute -right-[13px] -top-[10px] z-10 flex h-[26px] w-[26px] items-center justify-center rounded-full border border-[#d8e3fa] bg-white text-[#246be0] shadow-[0_4px_12px_rgba(0,0,0,0.12)] transition hover:border-[#aac3f4] hover:bg-[#edf4ff]"
-        >
-            <Pencil
-                size={12}
-                strokeWidth={2}
-            />
-        </button>
-    )}
-</div>
+                        {isAdmin && (
+                            <button
+                                type="button"
+                                onClick={() => setLogoEditorOpen(true)}
+                                title="Change navbar logo"
+                                aria-label="Change navbar logo"
+                                className="absolute -right-[13px] -top-[10px] z-10 flex h-[26px] w-[26px] items-center justify-center rounded-full border border-[#d8e3fa] bg-white text-[#246be0] shadow-[0_4px_12px_rgba(0,0,0,0.12)] transition hover:border-[#aac3f4] hover:bg-[#edf4ff]"
+                            >
+                                <Pencil
+                                    size={12}
+                                    strokeWidth={2}
+                                />
+                            </button>
+                        )}
+                    </div>
 
 
                     <div className="flex-1">
@@ -485,44 +485,55 @@ const CategoryMegaMenu = ({
     loading,
     categories,
     activeParent,
-    activeChild,
     isAdmin,
     onOpen,
     onClose,
     onParentChange,
-    onChildChange,
     onRefresh,
     onNavigate,
 }) => {
     const fileInputRef = useRef(null);
-    const [uploading, setUploading] = useState(false);
+    const [uploading, setUploading] =
+        useState(false);
 
     if (!open) {
         return null;
     }
 
-    // Open image picker
     const openImagePicker = () => {
-        if (!isAdmin || !activeParent) {
+        if (
+            !isAdmin ||
+            !activeParent
+        ) {
             return;
         }
 
         fileInputRef.current?.click();
     };
 
-    // Upload category image
-    const handleImageUpload = async (e) => {
-        const file = e.target.files?.[0];
+    const handleImageUpload = async (
+        event
+    ) => {
+        const file =
+            event.target.files?.[0];
 
-        if (!file || !activeParent) {
+        if (
+            !file ||
+            !activeParent
+        ) {
             return;
         }
 
         try {
             setUploading(true);
 
-            const formData = new FormData();
-            formData.append("image", file);
+            const formData =
+                new FormData();
+
+            formData.append(
+                "image",
+                file
+            );
 
             await api.post(
                 `/admin/categories/${activeParent.id}/mega-menu-image`,
@@ -533,195 +544,194 @@ const CategoryMegaMenu = ({
         } catch (error) {
             console.error(
                 "Mega menu image error:",
-                error.response?.data || error.message
+                error.response?.data ||
+                error.message
             );
         } finally {
             setUploading(false);
-            e.target.value = "";
+            event.target.value = "";
         }
     };
+
+    const childCategories =
+        activeParent?.children || [];
 
     return (
         <div
             onMouseEnter={onOpen}
             onMouseLeave={onClose}
-            className="absolute left-0 top-full z-[1000] w-full border-t border-[#eeeeee] bg-white shadow-[0_22px_45px_rgba(0,0,0,0.12)]"
+            className="absolute left-0 top-full z-[1000] w-full"
         >
-            <div className="mx-auto max-w-[1280px]">
-
-                {loading ? (
-                    <MegaMenuLoader />
-                ) : (
-                    <div className="grid min-h-[365px] grid-cols-[255px_255px_1fr_290px]">
-
-                        {/* Parent categories */}
-                        <div className="border-r border-[#ececec] p-[14px]">
-
-                            {categories.map((category) => (
-                                <ParentCategory
-                                    key={category.id}
-                                    category={category}
-                                    active={activeParent?.id === category.id}
-                                    onMouseEnter={() => onParentChange(category)}
-                                    onClick={() => onParentChange(category)}
-                                />
-                            ))}
-
-                            {!categories.length && (
-                                <p className="px-[13px] py-[12px] text-[12px] text-[#999999]">
-                                    No categories available.
-                                </p>
-                            )}
-
-                            <Link
-                                to="/products"
-                                onClick={onNavigate}
-                                className="mt-[8px] flex items-center justify-center gap-[6px] py-[12px] text-[13px] font-medium text-[#2065D1]"
-                            >
-                                View All
-                                <ChevronRight size={14} />
-                            </Link>
-
-                        </div>
-
-                        {/* Child categories */}
-                        <div className="border-r border-[#ececec] px-[18px] py-[20px]">
-
-                            <p className="mb-[12px] text-[11px] font-semibold uppercase tracking-[0.08em] text-[#777777]">
-                                {activeParent?.name || "Categories"}
-                            </p>
-
-                            <div className="space-y-[3px]">
-
-                                {activeParent?.children?.map((category) => (
-                                    <ChildCategory
-                                        key={category.id}
-                                        category={category}
-                                        active={activeChild?.id === category.id}
-                                        onMouseEnter={() => onChildChange(category)}
-                                        onClick={() => onChildChange(category)}
-                                    />
-                                ))}
-
-                                {!activeParent?.children?.length && (
-                                    <p className="px-[12px] py-[10px] text-[12px] text-[#999999]">
-                                        No subcategories available.
-                                    </p>
-                                )}
-
-                            </div>
-
-                        </div>
-
-                        {/* Grandchild categories */}
-                        <div className="px-[28px] py-[20px]">
-
-                            <div className="flex items-center justify-between border-b border-[#eeeeee] pb-[13px]">
-
-                                <h3 className="text-[14px] font-semibold text-[#222222]">
-                                    {activeChild?.name || activeParent?.name || "Category"}
-                                </h3>
-
-                                {activeChild && (
-                                    <Link
-                                        to={`/products?category=${activeChild.slug}`}
-                                        onClick={onNavigate}
-                                        className="flex items-center gap-[5px] text-[12px] font-medium text-[#2065D1]"
-                                    >
-                                        View all
-                                        <ChevronRight size={13} />
-                                    </Link>
-                                )}
-
-                            </div>
-
-                            {activeChild?.children?.length ? (
-                                <div className="mt-[18px] grid grid-cols-2 gap-x-[45px] gap-y-[18px]">
-
-                                    {activeChild.children.map((category) => (
-                                        <Link
-                                            key={category.id}
-                                            to={`/products?category=${category.slug}`}
-                                            onClick={onNavigate}
-                                            className="text-[13px] text-[#555555] transition-colors hover:text-[#2065D1]"
-                                        >
-                                            {category.name}
-                                        </Link>
-                                    ))}
-
-                                </div>
-                            ) : (
-                                <div className="mt-[18px]">
-
-                                    {activeChild ? (
-                                        <Link
-                                            to={`/products?category=${activeChild.slug}`}
-                                            onClick={onNavigate}
-                                            className="text-[13px] text-[#555555] transition-colors hover:text-[#2065D1]"
-                                        >
-                                            Browse {activeChild.name}
-                                        </Link>
-                                    ) : (
-                                        <p className="text-[12px] text-[#999999]">
-                                            Select a category.
-                                        </p>
+            <div className="mx-auto max-w-[1500px] px-5">
+                <div className="w-[1070px] max-w-full overflow-hidden rounded-b-[18px] border border-t-0 border-[#e7e7e7] bg-white shadow-[0_20px_45px_rgba(0,0,0,0.13)]">
+                    {loading ? (
+                        <MegaMenuLoader />
+                    ) : (
+                        <div className="grid min-h-[460px] grid-cols-[260px_minmax(0,1fr)_265px]">
+                            <div className="flex flex-col border-r border-[#ececec] bg-white">
+                                <div className="flex-1 px-[6px] py-[8px]">
+                                    {categories.map(
+                                        (
+                                            category
+                                        ) => (
+                                            <ParentCategory
+                                                key={
+                                                    category.id
+                                                }
+                                                category={
+                                                    category
+                                                }
+                                                active={
+                                                    activeParent?.id ===
+                                                    category.id
+                                                }
+                                                onMouseEnter={() =>
+                                                    onParentChange(
+                                                        category
+                                                    )
+                                                }
+                                                onNavigate={
+                                                    onNavigate
+                                                }
+                                            />
+                                        )
                                     )}
 
+                                    {!categories.length && (
+                                        <p className="px-[14px] py-[15px] text-[12px] text-[#999]">
+                                            No categories available.
+                                        </p>
+                                    )}
                                 </div>
-                            )}
 
-                        </div>
-
-                        {/* Mega menu image */}
-                        <div className="border-l border-[#ececec] p-[18px]">
-
-                            <div className="relative h-[315px] overflow-hidden rounded-[18px] bg-[#f5f5f5]">
-
-                                {activeParent?.mega_menu_image ? (
-                                    <img
-                                        src={getImageUrl(activeParent.mega_menu_image)}
-                                        alt={activeParent.name}
-                                        className="h-full w-full object-cover"
-                                    />
-                                ) : (
-                                    <MegaMenuImagePlaceholder
-                                        category={activeParent}
-                                    />
-                                )}
-
-                                {isAdmin && activeParent && (
-                                    <button
-                                        type="button"
-                                        onClick={openImagePicker}
-                                        disabled={uploading}
-                                        title="Edit mega menu image"
-                                        className="absolute right-[12px] top-[12px] flex h-[38px] w-[38px] items-center justify-center rounded-full border border-[#e5e5e5] bg-white text-[#2065D1] shadow-md transition hover:bg-[#2065D1] hover:text-white disabled:cursor-not-allowed disabled:opacity-60"
-                                    >
-                                        <Pencil size={16} />
-                                    </button>
-                                )}
-
-                                {uploading && (
-                                    <div className="absolute inset-0 flex items-center justify-center bg-black/40">
-                                        <span className="h-[28px] w-[28px] animate-spin rounded-full border-2 border-white/40 border-t-white" />
-                                    </div>
-                                )}
-
+                                <Link
+                                    to="/products"
+                                    onClick={
+                                        onNavigate
+                                    }
+                                    className="flex min-h-[51px] items-center border-t border-[#ececec] px-[18px] text-[13px] font-semibold text-[#292929] transition hover:bg-[#f8f8f8] hover:text-[#2065D1]"
+                                >
+                                    View All Categories
+                                </Link>
                             </div>
 
-                            <input
-                                ref={fileInputRef}
-                                type="file"
-                                accept="image/png,image/jpeg,image/webp"
-                                onChange={handleImageUpload}
-                                className="hidden"
-                            />
+                            <div className="px-[32px] py-[30px]">
+                                {childCategories.length >
+                                0 ? (
+                                    <div className="grid grid-cols-2 gap-x-[32px] gap-y-[33px]">
+                                        {childCategories.map(
+                                            (
+                                                child
+                                            ) => (
+                                                <CategoryLinkGroup
+                                                    key={
+                                                        child.id
+                                                    }
+                                                    category={
+                                                        child
+                                                    }
+                                                    onNavigate={
+                                                        onNavigate
+                                                    }
+                                                />
+                                            )
+                                        )}
+                                    </div>
+                                ) : (
+                                    <EmptyCategoryChildren
+                                        category={
+                                            activeParent
+                                        }
+                                        onNavigate={
+                                            onNavigate
+                                        }
+                                    />
+                                )}
+                            </div>
 
+                            <div className="border-l border-[#ececec] p-[27px]">
+                                <div className="relative h-full min-h-[405px] overflow-hidden rounded-[18px] bg-[#f3f3f4]">
+                                    {activeParent?.mega_menu_image ? (
+                                        <Link
+                                            to={`/products?category=${activeParent.slug}`}
+                                            onClick={
+                                                onNavigate
+                                            }
+                                            className="block h-full w-full"
+                                        >
+                                            <img
+                                                src={getImageUrl(
+                                                    activeParent.mega_menu_image
+                                                )}
+                                                alt={
+                                                    activeParent.name
+                                                }
+                                                className="h-full w-full object-cover"
+                                            />
+                                        </Link>
+                                    ) : (
+                                        <Link
+                                            to={
+                                                activeParent?.slug
+                                                    ? `/products?category=${activeParent.slug}`
+                                                    : "/products"
+                                            }
+                                            onClick={
+                                                onNavigate
+                                            }
+                                            className="block h-full w-full"
+                                        >
+                                            <MegaMenuImagePlaceholder
+                                                category={
+                                                    activeParent
+                                                }
+                                            />
+                                        </Link>
+                                    )}
+
+                                    {isAdmin &&
+                                        activeParent && (
+                                            <button
+                                                type="button"
+                                                onClick={
+                                                    openImagePicker
+                                                }
+                                                disabled={
+                                                    uploading
+                                                }
+                                                title="Edit mega menu image"
+                                                className="absolute right-[13px] top-[13px] z-20 flex h-[40px] w-[40px] items-center justify-center rounded-full border border-[#e3e3e3] bg-white text-[#2065D1] shadow-[0_5px_15px_rgba(0,0,0,0.13)] transition hover:bg-[#2065D1] hover:text-white disabled:cursor-not-allowed disabled:opacity-60"
+                                            >
+                                                <Pencil
+                                                    size={
+                                                        16
+                                                    }
+                                                />
+                                            </button>
+                                        )}
+
+                                    {uploading && (
+                                        <div className="absolute inset-0 z-30 flex items-center justify-center bg-black/40">
+                                            <span className="h-[30px] w-[30px] animate-spin rounded-full border-2 border-white/40 border-t-white" />
+                                        </div>
+                                    )}
+                                </div>
+
+                                <input
+                                    ref={
+                                        fileInputRef
+                                    }
+                                    type="file"
+                                    accept="image/png,image/jpeg,image/webp"
+                                    onChange={
+                                        handleImageUpload
+                                    }
+                                    className="hidden"
+                                />
+                            </div>
                         </div>
-
-                    </div>
-                )}
-
+                    )}
+                </div>
             </div>
         </div>
     );
@@ -732,32 +742,157 @@ const ParentCategory = ({
     category,
     active,
     onMouseEnter,
-    onClick,
+    onNavigate,
 }) => {
-    const activeClass = active
-        ? "bg-[#edf4ff] text-[#2065D1]"
-        : "text-[#555555] hover:bg-[#f6f6f6]";
+    const hasChildren =
+        category.children?.length > 0;
 
     return (
-        <button
-            type="button"
-            onMouseEnter={onMouseEnter}
-            onClick={onClick}
-            className={`mb-[3px] flex w-full items-center justify-between rounded-[12px] px-[13px] py-[11px] text-left text-[13px] transition ${activeClass}`}
+        <Link
+            to={`/products?category=${category.slug}`}
+            onMouseEnter={
+                onMouseEnter
+            }
+            onClick={onNavigate}
+            className={`mb-[2px] flex min-h-[45px] w-full items-center justify-between rounded-[12px] px-[14px] text-[13px] transition ${
+                active
+                    ? "bg-[#eaf2ff] font-medium text-[#1769e8]"
+                    : "text-[#555] hover:bg-[#f6f6f6] hover:text-[#2065D1]"
+            }`}
         >
-            <span className="flex min-w-0 items-center gap-[11px]">
-
-                <CategoryIcon category={category} />
-
-                <span className="truncate">
-                    {category.name}
-                </span>
-
+            <span className="truncate">
+                {category.name}
             </span>
 
-            <ChevronRight size={15} />
+            {hasChildren && (
+                <ChevronRight
+                    size={15}
+                    strokeWidth={1.8}
+                    className={
+                        active
+                            ? "text-[#1769e8]"
+                            : "text-[#888]"
+                    }
+                />
+            )}
+        </Link>
+    );
+};
 
-        </button>
+
+const CategoryLinkGroup = ({
+    category,
+    onNavigate,
+}) => {
+    const children =
+        category.children || [];
+
+    const visibleChildren =
+        children.slice(0, 4);
+
+    return (
+        <section>
+            <Link
+                to={`/products?category=${category.slug}`}
+                onClick={onNavigate}
+                className="block text-[12px] font-bold uppercase tracking-[0.06em] text-[#252525] transition hover:text-[#2065D1]"
+            >
+                {category.name}
+            </Link>
+
+            <div className="relative mt-[10px] h-px bg-[#dddddd]">
+                <span className="absolute left-0 top-0 h-[2px] w-[50px] -translate-y-[1px] bg-[#2065D1]" />
+            </div>
+
+            {visibleChildren.length >
+            0 ? (
+                <div className="mt-[13px] space-y-[11px]">
+                    {visibleChildren.map(
+                        (child) => (
+                            <Link
+                                key={
+                                    child.id
+                                }
+                                to={`/products?category=${child.slug}`}
+                                onClick={
+                                    onNavigate
+                                }
+                                className="block truncate text-[13px] text-[#606060] transition hover:text-[#2065D1]"
+                            >
+                                {
+                                    child.name
+                                }
+                            </Link>
+                        )
+                    )}
+
+                    <Link
+                        to={`/products?category=${category.slug}`}
+                        onClick={
+                            onNavigate
+                        }
+                        className="flex items-center gap-[5px] pt-[1px] text-[12px] font-medium text-[#1769e8] hover:text-[#0d54bf]"
+                    >
+                        View All (
+                        {children.length})
+                        <ChevronRight
+                            size={13}
+                        />
+                    </Link>
+                </div>
+            ) : (
+                <Link
+                    to={`/products?category=${category.slug}`}
+                    onClick={onNavigate}
+                    className="mt-[13px] flex items-center gap-[5px] text-[12px] font-medium text-[#1769e8] hover:text-[#0d54bf]"
+                >
+                    Browse products
+                    <ChevronRight
+                        size={13}
+                    />
+                </Link>
+            )}
+        </section>
+    );
+};
+
+
+
+const EmptyCategoryChildren = ({
+    category,
+    onNavigate,
+}) => {
+    if (!category) {
+        return (
+            <div className="flex h-full min-h-[350px] items-center justify-center">
+                <p className="text-[13px] text-[#999]">
+                    Select a category.
+                </p>
+            </div>
+        );
+    }
+
+    return (
+        <div className="flex h-full min-h-[350px] flex-col items-center justify-center text-center">
+            <h3 className="text-[17px] font-semibold text-[#252525]">
+                {category.name}
+            </h3>
+
+            <p className="mt-[7px] max-w-[280px] text-[13px] leading-[20px] text-[#888]">
+                Browse all available products from this category.
+            </p>
+
+            <Link
+                to={`/products?category=${category.slug}`}
+                onClick={onNavigate}
+                className="mt-[18px] flex h-[39px] items-center gap-[7px] rounded-full bg-[#2065D1] px-[18px] text-[12px] font-semibold text-white transition hover:bg-[#1757b8]"
+            >
+                View products
+                <ChevronRight
+                    size={14}
+                />
+            </Link>
+        </div>
     );
 };
 
@@ -766,17 +901,17 @@ const ChildCategory = ({
     category,
     active,
     onMouseEnter,
-    onClick,
+    onNavigate,
 }) => {
     const activeClass = active
         ? "bg-[#edf4ff] font-medium text-[#2065D1]"
         : "text-[#555555] hover:bg-[#f7f7f7]";
 
     return (
-        <button
-            type="button"
+        <Link
+            to={`/products?category=${category.slug}`}
             onMouseEnter={onMouseEnter}
-            onClick={onClick}
+            onClick={onNavigate}
             className={`flex w-full items-center justify-between rounded-[10px] px-[12px] py-[10px] text-left text-[13px] transition ${activeClass}`}
         >
             <span className="truncate">
@@ -784,8 +919,7 @@ const ChildCategory = ({
             </span>
 
             <ChevronRight size={14} />
-
-        </button>
+        </Link>
     );
 };
 
@@ -1041,30 +1175,413 @@ const DropdownItem = ({ to, children }) => {
     );
 };
 
-// Search box
+
+
+
 const SearchBox = () => {
+    const navigate = useNavigate();
+    const searchRef = useRef(null);
+
+    const [query, setQuery] = useState("");
+    const [products, setProducts] = useState([]);
+    const [searching, setSearching] = useState(false);
+    const [dropdownOpen, setDropdownOpen] = useState(false);
+    const [searchError, setSearchError] = useState("");
+
+    useEffect(() => {
+        const handleOutsideClick = (event) => {
+            if (
+                searchRef.current &&
+                !searchRef.current.contains(event.target)
+            ) {
+                setDropdownOpen(false);
+            }
+        };
+
+        document.addEventListener(
+            "mousedown",
+            handleOutsideClick
+        );
+
+        return () => {
+            document.removeEventListener(
+                "mousedown",
+                handleOutsideClick
+            );
+        };
+    }, []);
+
+    useEffect(() => {
+        const searchText = query.trim();
+
+        if (searchText.length < 2) {
+            setProducts([]);
+            setSearching(false);
+            setSearchError("");
+            return;
+        }
+
+        const controller = new AbortController();
+
+        const timer = setTimeout(async () => {
+            try {
+                setSearching(true);
+                setSearchError("");
+
+                const response = await api.get(
+                    "/products",
+                    {
+                        params: {
+                            search: searchText,
+                            per_page: 6,
+                        },
+                        signal: controller.signal,
+                    }
+                );
+
+                const productItems =
+                    response.data?.products || [];
+
+                setProducts(productItems);
+                setDropdownOpen(true);
+            } catch (error) {
+                if (
+                    error.code === "ERR_CANCELED" ||
+                    error.name === "CanceledError"
+                ) {
+                    return;
+                }
+
+                console.error(
+                    "Navbar product search error:",
+                    error.response?.data ||
+                    error.message
+                );
+
+                setProducts([]);
+                setSearchError(
+                    "Search results could not be loaded."
+                );
+                setDropdownOpen(true);
+            } finally {
+                setSearching(false);
+            }
+        }, 350);
+
+        return () => {
+            clearTimeout(timer);
+            controller.abort();
+        };
+    }, [query]);
+
+    const openSalesAi = () => {
+        window.dispatchEvent(
+            new CustomEvent(
+                "storify:sales-ai-open"
+            )
+        );
+    };
+
+    const handleSubmit = (event) => {
+        event.preventDefault();
+
+        const searchText = query.trim();
+
+        if (!searchText) {
+            return;
+        }
+
+        setDropdownOpen(false);
+
+        navigate(
+            `/products?search=${encodeURIComponent(
+                searchText
+            )}`
+        );
+    };
+
+    const handleProductClick = (product) => {
+        setDropdownOpen(false);
+        setQuery("");
+
+        navigate(`/products/${product.slug}`);
+    };
+
+    const clearSearch = () => {
+        setQuery("");
+        setProducts([]);
+        setSearchError("");
+        setDropdownOpen(false);
+    };
+
+    const showDropdown =
+        dropdownOpen &&
+        query.trim().length >= 2;
+
     return (
-        <div className="flex h-[38px] w-full items-center rounded-full border border-[#dddddd] bg-white px-[15px] transition-all duration-200 focus-within:border-[#2065D1] focus-within:ring-2 focus-within:ring-[#2065D1]/10">
-
-            <SearchIcon />
-
-            <input
-                type="text"
-                placeholder="Search products..."
-                className="h-full w-full border-none bg-transparent px-3 text-[14px] font-normal text-[#252525] outline-none placeholder:text-[#666666]"
-            />
-
-            <button
-                type="button"
-                aria-label="Search"
-                className="flex h-[27px] w-[27px] shrink-0 items-center justify-center rounded-full bg-[#6957e9] text-white transition-colors duration-200 hover:bg-[#2065D1]"
+        <div
+            ref={searchRef}
+            className="relative w-full"
+        >
+            <form
+                onSubmit={handleSubmit}
+                className="flex h-[38px] w-full items-center rounded-full border border-[#dddddd] bg-white px-[15px] transition-all duration-200 focus-within:border-[#2065D1] focus-within:ring-2 focus-within:ring-[#2065D1]/10"
             >
-                <SparkIcon />
-            </button>
+                <SearchIcon />
 
+                <input
+                    type="text"
+                    value={query}
+                    onChange={(event) => {
+                        setQuery(event.target.value);
+
+                        if (
+                            event.target.value
+                                .trim()
+                                .length >= 2
+                        ) {
+                            setDropdownOpen(true);
+                        }
+                    }}
+                    onFocus={() => {
+                        if (query.trim().length >= 2) {
+                            setDropdownOpen(true);
+                        }
+                    }}
+                    onKeyDown={(event) => {
+                        if (event.key === "Escape") {
+                            setDropdownOpen(false);
+                        }
+                    }}
+                    placeholder="Search products..."
+                    autoComplete="off"
+                    className="h-full w-full border-none bg-transparent px-3 text-[14px] font-normal text-[#252525] outline-none placeholder:text-[#666666]"
+                />
+
+                {searching && (
+                    <span className="mr-3 h-[16px] w-[16px] shrink-0 animate-spin rounded-full border-2 border-[#2065D1]/20 border-t-[#2065D1]" />
+                )}
+
+                {!searching && query && (
+                    <button
+                        type="button"
+                        onClick={clearSearch}
+                        aria-label="Clear search"
+                        className="mr-3 flex h-[22px] w-[22px] shrink-0 items-center justify-center rounded-full text-[20px] leading-none text-[#777777] transition hover:bg-[#f1f1f1] hover:text-[#2065D1]"
+                    >
+                        ×
+                    </button>
+                )}
+
+                <button
+                    type="button"
+                    onClick={openSalesAi}
+                    aria-label="Open Sales AI"
+                    title="Ask Sales AI"
+                    className="flex h-[27px] w-[27px] shrink-0 items-center justify-center rounded-full bg-[#6957e9] text-white transition-all duration-200 hover:scale-105 hover:bg-[#4f3edc] focus:outline-none focus:ring-2 focus:ring-[#6957e9]/30"
+                >
+                    <SparkIcon />
+                </button>
+            </form>
+
+            {showDropdown && (
+                <div className="absolute left-0 top-[48px] z-[1200] w-full overflow-hidden rounded-[22px] border border-[#e2e2e2] bg-white shadow-[0_16px_40px_rgba(0,0,0,0.15)]">
+                    <div className="max-h-[410px] overflow-y-auto px-[14px] py-[12px]">
+                        {searching &&
+                            products.length === 0 && (
+                                <SearchLoading />
+                            )}
+
+                        {!searching &&
+                            searchError && (
+                                <div className="px-4 py-8 text-center">
+                                    <p className="text-[13px] text-red-500">
+                                        {searchError}
+                                    </p>
+                                </div>
+                            )}
+
+                        {!searching &&
+                            !searchError &&
+                            products.length === 0 && (
+                                <div className="px-4 py-8 text-center">
+                                    <p className="text-[14px] font-medium text-[#333333]">
+                                        No products found
+                                    </p>
+
+                                    <p className="mt-1 text-[12px] text-[#888888]">
+                                        Try another product name,
+                                        brand, category or SKU.
+                                    </p>
+                                </div>
+                            )}
+
+                        {products.map((product) => (
+                            <SearchProductItem
+                                key={product.id}
+                                product={product}
+                                onClick={() =>
+                                    handleProductClick(
+                                        product
+                                    )
+                                }
+                            />
+                        ))}
+                    </div>
+
+                    {!searchError &&
+                        products.length > 0 && (
+                            <button
+                                type="button"
+                                onClick={handleSubmit}
+                                className="flex min-h-[43px] w-full items-center justify-between border-t border-[#eeeeee] bg-white px-[18px] text-left text-[12px] text-[#444444] transition hover:bg-[#f8f9fb] hover:text-[#2065D1]"
+                            >
+                                <span>
+                                    View all results for{" "}
+                                    <strong>
+                                        "{query.trim()}"
+                                    </strong>
+                                </span>
+
+                                <span className="font-semibold">
+                                    Press Enter
+                                </span>
+                            </button>
+                        )}
+                </div>
+            )}
         </div>
     );
 };
+
+
+
+const SearchProductItem = ({
+    product,
+    onClick,
+}) => {
+    const regularPrice = Number(
+        product.price || 0
+    );
+
+    const comparePrice = Number(
+        product.compare_at_price || 0
+    );
+
+    return (
+        <button
+            type="button"
+            onClick={onClick}
+            className="group flex min-h-[70px] w-full items-center gap-[13px] rounded-[14px] px-[10px] py-[8px] text-left transition hover:bg-[#f6f8fc]"
+        >
+            <div className="flex h-[52px] w-[52px] shrink-0 items-center justify-center overflow-hidden rounded-[11px] bg-[#f3f3f3]">
+                {product.image_url ? (
+                    <img
+                        src={product.image_url}
+                        alt={product.title}
+                        className="h-full w-full object-cover"
+                    />
+                ) : (
+                    <ProductSearchPlaceholder />
+                )}
+            </div>
+
+            <div className="min-w-0 flex-1">
+                <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                        <p className="truncate text-[14px] font-semibold text-[#252525] transition group-hover:text-[#2065D1]">
+                            {product.title}
+                        </p>
+
+                        <p className="mt-[3px] truncate text-[11px] text-[#888888]">
+                            {[
+                                product.brand?.name,
+                                product.category?.name,
+                            ]
+                                .filter(Boolean)
+                                .join(" · ") ||
+                                "Store product"}
+                        </p>
+                    </div>
+
+                    <div className="shrink-0 text-right">
+                        <p className="text-[13px] font-semibold text-[#00a86b]">
+                            ${regularPrice.toFixed(2)}
+                        </p>
+
+                        {comparePrice >
+                            regularPrice && (
+                            <p className="text-[10px] text-[#999999] line-through">
+                                ${comparePrice.toFixed(2)}
+                            </p>
+                        )}
+                    </div>
+                </div>
+
+                <div className="mt-[5px] flex items-center gap-2">
+                    <span
+                        className={`h-[6px] w-[6px] rounded-full ${
+                            product.in_stock
+                                ? "bg-[#10b981]"
+                                : "bg-[#ef4444]"
+                        }`}
+                    />
+
+                    <span className="text-[10px] text-[#777777]">
+                        {product.in_stock
+                            ? "In stock"
+                            : "Out of stock"}
+                    </span>
+                </div>
+            </div>
+        </button>
+    );
+};
+
+const SearchLoading = () => {
+    return (
+        <div className="space-y-2">
+            {[1, 2, 3].map((item) => (
+                <div
+                    key={item}
+                    className="flex animate-pulse items-center gap-3 rounded-[14px] px-[10px] py-[8px]"
+                >
+                    <div className="h-[52px] w-[52px] rounded-[11px] bg-gray-200" />
+
+                    <div className="flex-1">
+                        <div className="h-[13px] w-1/3 rounded bg-gray-200" />
+                        <div className="mt-2 h-[10px] w-1/4 rounded bg-gray-100" />
+                    </div>
+                </div>
+            ))}
+        </div>
+    );
+};
+
+const ProductSearchPlaceholder = () => {
+    return (
+        <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            className="h-[22px] w-[22px] text-[#aaaaaa]"
+        >
+            <path
+                d="M4 7.5L12 3L20 7.5V16.5L12 21L4 16.5V7.5Z"
+                stroke="currentColor"
+                strokeWidth="1.5"
+            />
+
+            <path
+                d="M4.5 7.5L12 12L19.5 7.5M12 12V20.5"
+                stroke="currentColor"
+                strokeWidth="1.5"
+            />
+        </svg>
+    );
+};
+
+
+
 
 // Storify logo
 const StorifyLogo = ({

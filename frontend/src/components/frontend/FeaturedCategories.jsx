@@ -175,7 +175,7 @@ const FeaturedCategories = () => {
 
         <div
           className="
-            max-w-[1280px]
+            max-w-[1500px]
             mx-auto
             px-5
           "
@@ -304,7 +304,7 @@ const FeaturedCategories = () => {
 
       <div
         className="
-          max-w-[1280px]
+          max-w-[1500px]
           mx-auto
           px-5
         "

@@ -3,6 +3,7 @@ import { Outlet } from "react-router-dom";
 import Navbar from "../../components/frontend/Navbar";
 import CartDrawer from "../../components/frontend/cart/CartDrawer";
 import FrontendFooter from "../../components/frontend/FrontendFooter";
+import SalesAiWidget from "../../components/frontend/sales-ai/SalesAiWidget";
 
 const FrontendLayout = () => {
     return (
@@ -14,6 +15,8 @@ const FrontendLayout = () => {
             </main>
 
             <FrontendFooter />
+
+             <SalesAiWidget />
 
             <CartDrawer />
         </div>
