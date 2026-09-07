@@ -294,8 +294,8 @@ const Navbar = () => {
 
 
         <header
-            onMouseLeave={closeCategoryMenu}
-            className="relative z-[500] w-full border-b border-[#eeeeee] bg-white font-['Inter'] shadow-[0_2px_10px_rgba(0,0,0,0.03)]"
+           onMouseLeave={closeCategoryMenu}
+    className="relative z-[500] hidden w-full border-b border-[#eeeeee] bg-white font-['Inter'] shadow-[0_2px_10px_rgba(0,0,0,0.03)] lg:block"
         >
             <div className="mx-auto max-w-[1500px] px-5">
 
@@ -1134,29 +1134,59 @@ const GuestAccountMenu = () => {
 
 
 const UserAvatar = ({ user }) => {
+    const [imageError, setImageError] = useState(false);
 
-    const image = user?.photo || user?.avatar;
+    const image = getUserAvatar(user);
 
-    if (image) {
+    useEffect(() => {
+        setImageError(false);
+    }, [image]);
+
+    const initial =
+        user?.name?.charAt(0)?.toUpperCase() ||
+        user?.first_name?.charAt(0)?.toUpperCase() ||
+        "U";
+
+    if (image && !imageError) {
         return (
             <div className="h-[34px] w-[34px] shrink-0 overflow-hidden rounded-full border border-[#e7e7e7] bg-[#eeeeee]">
                 <img
                     src={image}
                     alt={user?.name || "User"}
+                    onError={() => setImageError(true)}
                     className="h-full w-full object-cover"
                 />
             </div>
         );
     }
 
-    const initial =
-        user?.name?.charAt(0)?.toUpperCase() || "U";
-
     return (
         <div className="flex h-[34px] w-[34px] shrink-0 items-center justify-center rounded-full border border-[#e7e7e7] bg-[#eeeeee] text-[14px] font-semibold text-[#333333]">
             {initial}
         </div>
     );
+};
+
+
+const getUserAvatar = (user) => {
+    if (!user) {
+        return "";
+    }
+
+    const image =
+        user.photo_url ||
+        user.avatar_url ||
+        user.profile_photo_url ||
+        user.photo ||
+        user.avatar ||
+        user.profile_photo ||
+        "";
+
+    if (!image) {
+        return "";
+    }
+
+    return getImageUrl(image);
 };
 
 
@@ -1685,14 +1715,20 @@ const getImageUrl = (path) => {
         return "";
     }
 
-    if (path.startsWith("http://") || path.startsWith("https://")) {
-        return path;
+    const imagePath = String(path).trim();
+
+    if (
+        imagePath.startsWith("http://") ||
+        imagePath.startsWith("https://") ||
+        imagePath.startsWith("data:")
+    ) {
+        return imagePath;
     }
 
     const apiBase = api.defaults.baseURL || "";
     const backendBase = apiBase.replace(/\/api\/?$/, "");
 
-    return `${backendBase}/${path.replace(/^\/+/, "")}`;
+    return `${backendBase}/${imagePath.replace(/^\/+/, "")}`;
 };
 
 // Main menu class

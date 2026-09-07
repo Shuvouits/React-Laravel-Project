@@ -44,6 +44,7 @@ import {
 } from "../../components/frontend/products/productHelpers";
 
 import { useCart } from "../../context/CartContext";
+import RelatedProducts from "../../components/frontend/products/RelatedProducts";
 
 
 const emptyReviewSummary = {
@@ -821,6 +822,10 @@ const ProductDetails = () => {
                     onChange={setActiveTab}
                     onReviewSummaryChange={setReviewSummary}
                 />
+
+                <RelatedProducts
+    product={product}
+/>
 
             </div>
 

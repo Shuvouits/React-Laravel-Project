@@ -29,6 +29,38 @@ import {
     isColorOption,
 } from "./productHelpers";
 
+const getOptionValue = (item) => {
+    if (
+        item !== null &&
+        typeof item === "object"
+    ) {
+        return String(
+            item.value ??
+                item.name ??
+                item.label ??
+                ""
+        );
+    }
+
+    return String(item ?? "");
+};
+
+const getOptionKey = (item, index) => {
+    if (
+        item !== null &&
+        typeof item === "object"
+    ) {
+        return String(
+            item.id ??
+                item.global_variant_value_id ??
+                item.product_option_id ??
+                `${getOptionValue(item)}-${index}`
+        );
+    }
+
+    return `${getOptionValue(item)}-${index}`;
+};
+
 const ProductQuickViewModal = ({
     product,
     open,
@@ -100,7 +132,9 @@ const ProductQuickViewModal = ({
                         option.value !== undefined
                     ) {
                         defaults[name] =
-                            String(option.value);
+                            getOptionValue(
+                                option.value
+                            );
                     }
                 }
             );
@@ -113,7 +147,9 @@ const ProductQuickViewModal = ({
                 option.values?.length
             ) {
                 defaults[option.name] =
-                    option.values[0];
+                    getOptionValue(
+                        option.values[0]
+                    );
             }
         });
 
@@ -192,10 +228,10 @@ const ProductQuickViewModal = ({
                                         String(
                                             selectedName
                                         ) &&
-                                    String(
+                                    getOptionValue(
                                         option.value
                                     ) ===
-                                        String(
+                                        getOptionValue(
                                             selectedValue
                                         )
                                 );
@@ -288,7 +324,7 @@ const ProductQuickViewModal = ({
         setSelections((previous) => ({
             ...previous,
             [optionName]:
-                String(value),
+                getOptionValue(value),
         }));
     };
 
@@ -594,17 +630,28 @@ const ColorOptions = ({
     selections,
     onSelect,
 }) => {
+    const values = Array.isArray(
+        option.values
+    )
+        ? option.values
+        : [];
+
     return (
         <div className="flex flex-wrap items-center gap-[12px]">
-            {option.values.map(
-                (value) => {
+            {values.map(
+                (rawValue, index) => {
+                    const value =
+                        getOptionValue(
+                            rawValue
+                        );
+
                     const active =
-                        String(
+                        getOptionValue(
                             selections[
                                 option.name
                             ]
                         ) ===
-                        String(value);
+                        value;
 
                     const item =
                         option.items?.find(
@@ -612,15 +659,17 @@ const ColorOptions = ({
                                 optionItem
                             ) => {
                                 return (
-                                    String(
-                                        optionItem.value
-                                    ) ===
-                                    String(
-                                        value
-                                    )
+                                    getOptionValue(
+                                        optionItem
+                                    ) === value
                                 );
                             }
-                        );
+                        ) ||
+                        (rawValue &&
+                        typeof rawValue ===
+                            "object"
+                            ? rawValue
+                            : null);
 
                     const color =
                         item?.color_code ||
@@ -630,7 +679,10 @@ const ColorOptions = ({
 
                     return (
                         <button
-                            key={value}
+                            key={getOptionKey(
+                                rawValue,
+                                index
+                            )}
                             type="button"
                             title={value}
                             aria-label={`${option.name}: ${value}`}
@@ -650,7 +702,8 @@ const ColorOptions = ({
                             }`}
                             style={{
                                 backgroundColor:
-                                    color,
+                                    color ||
+                                    "#d4d4d4",
                             }}
                         >
                             {active && (
@@ -669,21 +722,35 @@ const NormalOptions = ({
     selections,
     onSelect,
 }) => {
+    const values = Array.isArray(
+        option.values
+    )
+        ? option.values
+        : [];
+
     return (
         <div className="flex flex-wrap gap-[9px]">
-            {option.values.map(
-                (value) => {
+            {values.map(
+                (rawValue, index) => {
+                    const value =
+                        getOptionValue(
+                            rawValue
+                        );
+
                     const active =
-                        String(
+                        getOptionValue(
                             selections[
                                 option.name
                             ]
                         ) ===
-                        String(value);
+                        value;
 
                     return (
                         <button
-                            key={value}
+                            key={getOptionKey(
+                                rawValue,
+                                index
+                            )}
                             type="button"
                             aria-pressed={
                                 active
