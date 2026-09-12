@@ -96,104 +96,49 @@ class HomeController extends Controller
     // Products on sale
 
 
-  public function productsOnSale()
-{
-    $section = HomeSection::where(
-        'section_key',
-        'products_on_sale'
-    )->first();
+    public function productsOnSale()
+    {
+        $section = HomeSection::where(
+            'section_key',
+            'products_on_sale'
+        )->first();
 
-    if (! $section) {
-        return response()->json([
-            'status' => true,
-            'section' => null,
-            'products' => [],
-        ]);
-    }
+        if (! $section) {
+            return response()->json([
+                'status' => true,
+                'section' => null,
+                'products' => [],
+            ]);
+        }
 
-    if (! $section->is_active) {
-        return response()->json([
-            'status' => true,
-            'section' => [
-                'title' => $section->title,
-                'is_active' => false,
-                'settings' => $section->settings ?? [],
-            ],
-            'products' => [],
-        ]);
-    }
+        if (! $section->is_active) {
+            return response()->json([
+                'status' => true,
+                'section' => [
+                    'title' => $section->title,
+                    'is_active' => false,
+                    'settings' => $section->settings ?? [],
+                ],
+                'products' => [],
+            ]);
+        }
 
-    $settings = is_array($section->settings)
-        ? $section->settings
-        : [];
+        $settings = is_array($section->settings)
+            ? $section->settings
+            : [];
 
-    $source = $settings['product_source'] ?? 'on_sale';
+        $source = $settings['product_source'] ?? 'on_sale';
 
-    $limit = (int) (
-        $settings['max_products'] ?? 8
-    );
+        $limit = (int) (
+            $settings['max_products'] ?? 8
+        );
 
-    $limit = max(
-        1,
-        min($limit, 24)
-    );
+        $limit = max(
+            1,
+            min($limit, 24)
+        );
 
-    $query = Product::query()
-        ->where('status', 'active')
-        ->where('online_store', true)
-        ->with([
-            'media',
-            'category',
-            'brand.vendor',
-            'store',
-            'reviews',
-            'variants.optionValues.option',
-            'variants.optionValues.globalValue',
-        ]);
-
-    if ($source === 'featured') {
-        $query->where('is_featured', true);
-    }
-
-    if ($source === 'on_sale') {
-        $query->where(function ($saleQuery) {
-            $saleQuery
-                ->where(function ($productQuery) {
-                    $productQuery
-                        ->whereNotNull('price')
-                        ->whereNotNull('compare_at_price')
-                        ->whereColumn(
-                            'compare_at_price',
-                            '>',
-                            'price'
-                        );
-                })
-                ->orWhereHas(
-                    'variants',
-                    function ($variantQuery) {
-                        $variantQuery
-                            ->whereNotNull('price')
-                            ->whereNotNull('compare_at_price')
-                            ->whereColumn(
-                                'compare_at_price',
-                                '>',
-                                'price'
-                            );
-                    }
-                );
-        });
-    }
-
-    $products = $query
-        ->latest('created_at')
-        ->limit($limit)
-        ->get();
-
-    if (
-        $source === 'on_sale' &&
-        $products->isEmpty()
-    ) {
-        $products = Product::query()
+        $query = Product::query()
             ->where('status', 'active')
             ->where('online_store', true)
             ->with([
@@ -204,519 +149,568 @@ class HomeController extends Controller
                 'reviews',
                 'variants.optionValues.option',
                 'variants.optionValues.globalValue',
-            ])
+            ]);
+
+        if ($source === 'featured') {
+            $query->where('is_featured', true);
+        }
+
+        if ($source === 'on_sale') {
+            $query->where(function ($saleQuery) {
+                $saleQuery
+                    ->where(function ($productQuery) {
+                        $productQuery
+                            ->whereNotNull('price')
+                            ->whereNotNull('compare_at_price')
+                            ->whereColumn(
+                                'compare_at_price',
+                                '>',
+                                'price'
+                            );
+                    })
+                    ->orWhereHas(
+                        'variants',
+                        function ($variantQuery) {
+                            $variantQuery
+                                ->whereNotNull('price')
+                                ->whereNotNull('compare_at_price')
+                                ->whereColumn(
+                                    'compare_at_price',
+                                    '>',
+                                    'price'
+                                );
+                        }
+                    );
+            });
+        }
+
+        $products = $query
             ->latest('created_at')
             ->limit($limit)
             ->get();
-    }
 
-    $formattedProducts = $products
-        ->map(function ($product) {
-            $productMedia = $product->relationLoaded('media')
-                ? $product->media
-                : collect();
+        if (
+            $source === 'on_sale' &&
+            $products->isEmpty()
+        ) {
+            $products = Product::query()
+                ->where('status', 'active')
+                ->where('online_store', true)
+                ->with([
+                    'media',
+                    'category',
+                    'brand.vendor',
+                    'store',
+                    'reviews',
+                    'variants.optionValues.option',
+                    'variants.optionValues.globalValue',
+                ])
+                ->latest('created_at')
+                ->limit($limit)
+                ->get();
+        }
 
-            $variants = $product->relationLoaded('variants')
-                ? $product->variants
-                : collect();
+        $formattedProducts = $products
+            ->map(function ($product) {
+                $productMedia = $product->relationLoaded('media')
+                    ? $product->media
+                    : collect();
 
-            $imageUrl = $this->resolveProductImage(
-                $product
-            );
+                $variants = $product->relationLoaded('variants')
+                    ? $product->variants
+                    : collect();
 
-            $formattedVariants = $variants
-                ->map(function ($variant) use (
-                    $productMedia,
-                    $imageUrl
-                ) {
-                    $optionValues = $variant
-                        ->relationLoaded('optionValues')
+                $imageUrl = $this->resolveProductImage(
+                    $product
+                );
+
+                $formattedVariants = $variants
+                    ->map(function ($variant) use (
+                        $productMedia,
+                        $imageUrl
+                    ) {
+                        $optionValues = $variant
+                            ->relationLoaded('optionValues')
                             ? $variant->optionValues
                             : collect();
 
-                    $formattedOptions = $optionValues
-                        ->map(function ($optionValue) {
-                            $optionName =
-                                $optionValue->option?->name;
+                        $formattedOptions = $optionValues
+                            ->map(function ($optionValue) {
+                                $optionName =
+                                    $optionValue->option?->name;
 
-                            $colorCode =
-                                $optionValue
+                                $colorCode =
+                                    $optionValue
                                     ->globalValue
                                     ?->color_code
-                                ?? $optionValue->color_code
-                                ?? null;
+                                    ?? $optionValue->color_code
+                                    ?? null;
 
-                            return [
-                                'id' =>
+                                return [
+                                    'id' =>
                                     $optionValue->id,
 
-                                'global_variant_value_id' =>
+                                    'global_variant_value_id' =>
                                     $optionValue
                                         ->global_variant_value_id
-                                    ?? null,
+                                        ?? null,
 
-                                'global_variant_name' =>
+                                    'global_variant_name' =>
                                     $optionName,
 
-                                'name' =>
+                                    'name' =>
                                     $optionName,
 
-                                'option_name' =>
+                                    'option_name' =>
                                     $optionName,
 
-                                'value' =>
+                                    'value' =>
                                     $optionValue->value
-                                    ?? null,
+                                        ?? null,
 
-                                'color_code' =>
+                                    'color_code' =>
                                     $colorCode,
-                            ];
-                        })
-                        ->filter(function ($option) {
-                            return (
-                                ! empty(
-                                    $option['option_name']
-                                ) &&
-                                $option['value'] !== null
-                            );
-                        })
-                        ->values();
-
-                    $variantImageUrl = null;
-
-                    if (! empty($variant->product_media_id)) {
-                        $variantMedia = $productMedia
-                            ->firstWhere(
-                                'id',
-                                $variant->product_media_id
-                            );
-
-                        if ($variantMedia) {
-                            $variantImageUrl =
-                                $this->resolveMediaUrl(
-                                    $variantMedia
+                                ];
+                            })
+                            ->filter(function ($option) {
+                                return (
+                                    ! empty($option['option_name']) &&
+                                    $option['value'] !== null
                                 );
+                            })
+                            ->values();
+
+                        $variantImageUrl = null;
+
+                        if (! empty($variant->product_media_id)) {
+                            $variantMedia = $productMedia
+                                ->firstWhere(
+                                    'id',
+                                    $variant->product_media_id
+                                );
+
+                            if ($variantMedia) {
+                                $variantImageUrl =
+                                    $this->resolveMediaUrl(
+                                        $variantMedia
+                                    );
+                            }
                         }
-                    }
 
-                    if (! $variantImageUrl) {
-                        $variantImageUrl = $imageUrl;
-                    }
+                        if (! $variantImageUrl) {
+                            $variantImageUrl = $imageUrl;
+                        }
 
-                    return [
-                        'id' =>
+                        return [
+                            'id' =>
                             $variant->id,
 
-                        'title' =>
+                            'title' =>
                             $variant->title
-                            ?? $variant->name
-                            ?? null,
+                                ?? $variant->name
+                                ?? null,
 
-                        'name' =>
+                            'name' =>
                             $variant->name
-                            ?? $variant->title
-                            ?? null,
+                                ?? $variant->title
+                                ?? null,
 
-                        'combination_key' =>
+                            'combination_key' =>
                             $variant->combination_key
-                            ?? null,
+                                ?? null,
 
-                        'product_media_id' =>
+                            'product_media_id' =>
                             $variant->product_media_id
-                            ?? null,
+                                ?? null,
 
-                        'sku' =>
+                            'sku' =>
                             $variant->sku
-                            ?? null,
+                                ?? null,
 
-                        'barcode' =>
+                            'barcode' =>
                             $variant->barcode
-                            ?? null,
+                                ?? null,
 
-                        'price' =>
+                            'price' =>
                             $variant->price !== null
                                 ? (float) $variant->price
                                 : 0,
 
-                        'compare_at_price' =>
+                            'compare_at_price' =>
                             $variant->compare_at_price !== null
                                 ? (float) $variant->compare_at_price
                                 : 0,
 
-                        'quantity' =>
+                            'quantity' =>
                             (int) (
                                 $variant->quantity ?? 0
                             ),
 
-                        'is_default' =>
+                            'is_default' =>
                             (bool) (
                                 $variant->is_default ?? false
                             ),
 
-                        'is_active' =>
+                            'is_active' =>
                             (bool) (
                                 $variant->is_active ?? true
                             ),
 
-                        'image_url' =>
+                            'image_url' =>
                             $variantImageUrl,
 
-                        'options' =>
+                            'options' =>
                             $formattedOptions,
-                    ];
-                })
-                ->values();
+                        ];
+                    })
+                    ->values();
 
-            $price = $product->price;
+                $price = $product->price;
 
-            $compareAtPrice =
-                $product->compare_at_price;
+                $compareAtPrice =
+                    $product->compare_at_price;
 
-            $selectedVariant = $formattedVariants
-                ->first(function ($variant) {
-                    return (
-                        $variant['is_active'] &&
-                        $variant['is_default']
-                    );
-                });
-
-            if (! $selectedVariant) {
                 $selectedVariant = $formattedVariants
                     ->first(function ($variant) {
                         return (
                             $variant['is_active'] &&
-                            $variant['quantity'] > 0
+                            $variant['is_default']
                         );
                     });
-            }
 
-            if (! $selectedVariant) {
-                $selectedVariant = $formattedVariants
-                    ->first(function ($variant) {
-                        return $variant['is_active'];
-                    });
-            }
-
-            if (! $selectedVariant) {
-                $selectedVariant = $formattedVariants->first();
-            }
-
-            $saleVariant = $formattedVariants
-                ->first(function ($variant) {
-                    return (
-                        $variant['is_active'] &&
-                        $variant['price'] > 0 &&
-                        $variant['compare_at_price'] >
-                        $variant['price']
-                    );
-                });
-
-            if ($saleVariant) {
-                $price = $saleVariant['price'];
-
-                $compareAtPrice =
-                    $saleVariant['compare_at_price'];
-            } elseif ($price === null) {
-                $validPrices = $formattedVariants
-                    ->where('is_active', true)
-                    ->pluck('price')
-                    ->filter(
-                        fn ($value) => $value > 0
-                    );
-
-                if ($validPrices->isNotEmpty()) {
-                    $price = $validPrices->min();
-                }
-            }
-
-            $uniqueColors = $formattedVariants
-                ->flatMap(function ($variant) {
-                    return collect($variant['options'])
-                        ->filter(function ($option) {
-                            $name = strtolower(
-                                trim(
-                                    $option['option_name']
-                                    ?? ''
-                                )
-                            );
-
-                            return in_array(
-                                $name,
-                                ['color', 'colour'],
-                                true
+                if (! $selectedVariant) {
+                    $selectedVariant = $formattedVariants
+                        ->first(function ($variant) {
+                            return (
+                                $variant['is_active'] &&
+                                $variant['quantity'] > 0
                             );
                         });
-                })
-                ->unique(function ($option) {
-                    return strtolower(
-                        trim(
-                            $option['value'] ?? ''
-                        )
-                    );
-                })
-                ->map(function ($option) {
-                    return [
-                        'id' =>
-                            $option['global_variant_value_id']
-                            ?? $option['id']
-                            ?? null,
+                }
 
-                        'value' =>
+                if (! $selectedVariant) {
+                    $selectedVariant = $formattedVariants
+                        ->first(function ($variant) {
+                            return $variant['is_active'];
+                        });
+                }
+
+                if (! $selectedVariant) {
+                    $selectedVariant = $formattedVariants->first();
+                }
+
+                $saleVariant = $formattedVariants
+                    ->first(function ($variant) {
+                        return (
+                            $variant['is_active'] &&
+                            $variant['price'] > 0 &&
+                            $variant['compare_at_price'] >
+                            $variant['price']
+                        );
+                    });
+
+                if ($saleVariant) {
+                    $price = $saleVariant['price'];
+
+                    $compareAtPrice =
+                        $saleVariant['compare_at_price'];
+                } elseif ($price === null) {
+                    $validPrices = $formattedVariants
+                        ->where('is_active', true)
+                        ->pluck('price')
+                        ->filter(
+                            fn($value) => $value > 0
+                        );
+
+                    if ($validPrices->isNotEmpty()) {
+                        $price = $validPrices->min();
+                    }
+                }
+
+                $uniqueColors = $formattedVariants
+                    ->flatMap(function ($variant) {
+                        return collect($variant['options'])
+                            ->filter(function ($option) {
+                                $name = strtolower(
+                                    trim(
+                                        $option['option_name']
+                                            ?? ''
+                                    )
+                                );
+
+                                return in_array(
+                                    $name,
+                                    ['color', 'colour'],
+                                    true
+                                );
+                            });
+                    })
+                    ->unique(function ($option) {
+                        return strtolower(
+                            trim(
+                                $option['value'] ?? ''
+                            )
+                        );
+                    })
+                    ->map(function ($option) {
+                        return [
+                            'id' =>
+                            $option['global_variant_value_id']
+                                ?? $option['id']
+                                ?? null,
+
+                            'value' =>
                             $option['value'] ?? '',
 
-                        'color_code' =>
+                            'color_code' =>
                             $option['color_code'] ?? null,
-                    ];
-                })
-                ->values();
+                        ];
+                    })
+                    ->values();
 
-            $selectedColor = null;
+                $selectedColor = null;
 
-            if ($selectedVariant) {
-                $selectedColorOption = collect(
-                    $selectedVariant['options']
-                )->first(function ($option) {
-                    $name = strtolower(
-                        trim(
-                            $option['option_name']
-                            ?? ''
-                        )
-                    );
+                if ($selectedVariant) {
+                    $selectedColorOption = collect(
+                        $selectedVariant['options']
+                    )->first(function ($option) {
+                        $name = strtolower(
+                            trim(
+                                $option['option_name']
+                                    ?? ''
+                            )
+                        );
 
-                    return in_array(
-                        $name,
-                        ['color', 'colour'],
-                        true
-                    );
-                });
+                        return in_array(
+                            $name,
+                            ['color', 'colour'],
+                            true
+                        );
+                    });
 
-                if ($selectedColorOption) {
-                    $selectedColor = [
-                        'id' =>
-                            $selectedColorOption[
-                                'global_variant_value_id'
-                            ]
-                            ?? $selectedColorOption['id']
-                            ?? null,
+                    if ($selectedColorOption) {
+                        $selectedColor = [
+                            'id' =>
+                            $selectedColorOption['global_variant_value_id']
+                                ?? $selectedColorOption['id']
+                                ?? null,
 
-                        'value' =>
+                            'value' =>
                             $selectedColorOption['value']
-                            ?? '',
+                                ?? '',
 
-                        'color_code' =>
+                            'color_code' =>
                             $selectedColorOption['color_code']
-                            ?? null,
-                    ];
+                                ?? null,
+                        ];
+                    }
                 }
-            }
 
-            if (! $selectedColor && $uniqueColors->isNotEmpty()) {
-                $selectedColor = $uniqueColors->first();
-            }
+                if (! $selectedColor && $uniqueColors->isNotEmpty()) {
+                    $selectedColor = $uniqueColors->first();
+                }
 
-            $availableQuantity = $formattedVariants
-                ->where('is_active', true)
-                ->sum('quantity');
+                $availableQuantity = $formattedVariants
+                    ->where('is_active', true)
+                    ->sum('quantity');
 
-            if ($formattedVariants->isEmpty()) {
-                $availableQuantity = (int) (
-                    $product->quantity ?? 0
-                );
-            }
+                if ($formattedVariants->isEmpty()) {
+                    $availableQuantity = (int) (
+                        $product->quantity ?? 0
+                    );
+                }
 
-            $approvedReviews = $product
-                ->relationLoaded('reviews')
+                $approvedReviews = $product
+                    ->relationLoaded('reviews')
                     ? $product->reviews
-                        ->filter(function ($review) {
-                            return (
-                                $review->status === 'approved' &&
-                                ! $review->is_on_hold
-                            );
-                        })
-                        ->values()
+                    ->filter(function ($review) {
+                        return (
+                            $review->status === 'approved' &&
+                            ! $review->is_on_hold
+                        );
+                    })
+                    ->values()
                     : collect();
 
-            $averageRating = $approvedReviews->isNotEmpty()
-                ? round(
-                    (float) $approvedReviews->avg('rating'),
-                    1
-                )
-                : 0;
+                $averageRating = $approvedReviews->isNotEmpty()
+                    ? round(
+                        (float) $approvedReviews->avg('rating'),
+                        1
+                    )
+                    : 0;
 
-            $storeName =
-                $product->store?->name
-                ?? $product->store?->store_name
-                ?? $product->brand?->vendor?->store_name
-                ?? $product->brand?->vendor?->name
-                ?? $product->brand?->name
-                ?? 'Storify';
+                $storeName =
+                    $product->store?->name
+                    ?? $product->store?->store_name
+                    ?? $product->brand?->vendor?->store_name
+                    ?? $product->brand?->vendor?->name
+                    ?? $product->brand?->name
+                    ?? 'Storify';
 
-            $category = $product->category
-                ? [
-                    'id' =>
+                $category = $product->category
+                    ? [
+                        'id' =>
                         $product->category->id,
 
-                    'name' =>
+                        'name' =>
                         $product->category->name,
 
-                    'slug' =>
+                        'slug' =>
                         $product->category->slug,
-                ]
-                : null;
+                    ]
+                    : null;
 
-            $brand = $product->brand
-                ? [
-                    'id' =>
+                $brand = $product->brand
+                    ? [
+                        'id' =>
                         $product->brand->id,
 
-                    'name' =>
+                        'name' =>
                         $product->brand->name,
 
-                    'slug' =>
+                        'slug' =>
                         $product->brand->slug,
-                ]
-                : null;
+                    ]
+                    : null;
 
-            $discountPercentage = 0;
+                $discountPercentage = 0;
 
-            if (
-                $price > 0 &&
-                $compareAtPrice > $price
-            ) {
-                $discountPercentage = (int) round(
-                    (
-                        ($compareAtPrice - $price) /
-                        $compareAtPrice
-                    ) * 100
-                );
-            }
+                if (
+                    $price > 0 &&
+                    $compareAtPrice > $price
+                ) {
+                    $discountPercentage = (int) round(
+                        (
+                            ($compareAtPrice - $price) /
+                            $compareAtPrice
+                        ) * 100
+                    );
+                }
 
-            return [
-                'id' =>
+                return [
+                    'id' =>
                     $product->id,
 
-                'title' =>
+                    'title' =>
                     $product->title,
 
-                'slug' =>
+                    'slug' =>
                     $product->slug,
 
-                'summary' =>
+                    'summary' =>
                     $product->summary,
 
-                'description' =>
+                    'description' =>
                     $product->description,
 
-                'type' =>
+                    'type' =>
                     $product->type,
 
-                'price' =>
+                    'price' =>
                     $price !== null
                         ? (float) $price
                         : 0,
 
-                'compare_at_price' =>
+                    'compare_at_price' =>
                     $compareAtPrice !== null
                         ? (float) $compareAtPrice
                         : 0,
 
-                'discount_percentage' =>
+                    'discount_percentage' =>
                     $discountPercentage,
 
-                'is_featured' =>
+                    'is_featured' =>
                     (bool) $product->is_featured,
 
-                'quantity' =>
+                    'quantity' =>
                     (int) (
                         $product->quantity ?? 0
                     ),
 
-                'available_quantity' =>
+                    'available_quantity' =>
                     (int) $availableQuantity,
 
-                'in_stock' =>
+                    'in_stock' =>
                     $availableQuantity > 0,
 
-                'image_url' =>
+                    'image_url' =>
                     $imageUrl,
 
-                'store_name' =>
+                    'store_name' =>
                     $storeName,
 
-                'category' =>
+                    'category' =>
                     $category,
 
-                'category_name' =>
+                    'category_name' =>
                     $category['name'] ?? null,
 
-                'brand' =>
+                    'brand' =>
                     $brand,
 
-                'brand_name' =>
+                    'brand_name' =>
                     $brand['name'] ?? null,
 
-                'rating' =>
+                    'rating' =>
                     $averageRating,
 
-                'review_count' =>
+                    'review_count' =>
                     $approvedReviews->count(),
 
-                'selected_variant' =>
+                    'selected_variant' =>
                     $selectedVariant,
 
-                'selected_variant_name' =>
+                    'selected_variant_name' =>
                     $selectedVariant['title']
-                    ?? null,
+                        ?? null,
 
-                'selected_color' =>
+                    'selected_color' =>
                     $selectedColor,
 
-                'colors' =>
+                    'colors' =>
                     $uniqueColors,
 
-                'color_count' =>
+                    'color_count' =>
                     $uniqueColors->count(),
 
-                'variants' =>
+                    'variants' =>
                     $formattedVariants,
-            ];
-        })
-        ->values();
+                ];
+            })
+            ->values();
 
-    return response()->json([
-        'status' => true,
+        return response()->json([
+            'status' => true,
 
-        'section' => [
-            'title' =>
+            'section' => [
+                'title' =>
                 $section->title
-                ?: 'Products on Sale',
+                    ?: 'Products on Sale',
 
-            'is_active' =>
+                'is_active' =>
                 (bool) $section->is_active,
 
-            'settings' => [
-                'subtitle' =>
+                'settings' => [
+                    'subtitle' =>
                     $settings['subtitle'] ?? '',
 
-                'product_source' =>
+                    'product_source' =>
                     $source,
 
-                'max_products' =>
+                    'max_products' =>
                     $limit,
 
-                'desktop_cards_per_row' =>
+                    'desktop_cards_per_row' =>
                     (int) (
-                        $settings[
-                            'desktop_cards_per_row'
-                        ] ?? 4
+                        $settings['desktop_cards_per_row'] ?? 4
                     ),
+                ],
             ],
-        ],
 
-        'products' =>
+            'products' =>
             $formattedProducts,
-    ]);
-}
+        ]);
+    }
 
 
     // Resolve product image
@@ -826,244 +820,708 @@ class HomeController extends Controller
     }
 
     // Featured products
-    public function featuredProducts(Request $request)
-    {
-        $section = HomeSection::where('section_key', 'featured_products')->first();
+   public function featuredProducts(Request $request)
+{
+    $section = HomeSection::where(
+        'section_key',
+        'featured_products'
+    )->first();
 
-        if (! $section) {
-            return response()->json([
-                'status' => true,
-                'section' => null,
-                'categories' => [],
-                'products' => [],
-            ]);
-        }
+    if (! $section) {
+        return response()->json([
+            'status' => true,
+            'section' => null,
+            'categories' => [],
+            'products' => [],
+        ]);
+    }
 
-        if (! $section->is_active) {
-            return response()->json([
-                'status' => true,
-                'section' => [
-                    'title' => $section->title,
-                    'is_active' => false,
-                    'settings' => $section->settings ?? [],
-                ],
-                'categories' => [],
-                'products' => [],
-            ]);
-        }
+    if (! $section->is_active) {
+        return response()->json([
+            'status' => true,
 
-        $settings = is_array($section->settings)
-            ? $section->settings
-            : [];
+            'section' => [
+                'title' => $section->title,
+                'is_active' => false,
+                'settings' => $section->settings ?? [],
+            ],
 
-        $source = $settings['product_source'] ?? 'all_products';
+            'categories' => [],
+            'products' => [],
+        ]);
+    }
 
-        $productIds = is_array($settings['product_ids'] ?? null)
-            ? $settings['product_ids']
-            : [];
+    $settings = is_array(
+        $section->settings
+    )
+        ? $section->settings
+        : [];
 
-        $query = Product::query()
-            ->where('status', 'active')
-            ->where('online_store', true)
-            ->with([
-                'media',
-                'variants.media',
-                'variants.optionValues.option',
-            ]);
+    $source =
+        $settings['product_source']
+        ?? 'all_products';
 
-        // Product source
-        if ($source === 'featured') {
-            $query->where('is_featured', true);
-        } elseif ($source === 'latest') {
-            $query->latest('created_at');
-        } elseif ($source === 'on_sale') {
-            $query->where(function ($q) {
-                $q->where(function ($base) {
-                    $base
-                        ->whereNotNull('price')
-                        ->whereNotNull('compare_at_price')
-                        ->whereColumn('compare_at_price', '>', 'price');
-                })->orWhereHas('variants', function ($variant) {
-                    $variant
-                        ->whereNotNull('price')
-                        ->whereNotNull('compare_at_price')
-                        ->whereColumn('compare_at_price', '>', 'price');
-                });
-            });
-        } elseif ($source === 'hand_picked') {
-            if (empty($productIds)) {
-                $query->whereRaw('1 = 0');
-            } else {
-                $query->whereIn('id', $productIds);
+    $productIds = is_array(
+        $settings['product_ids'] ?? null
+    )
+        ? $settings['product_ids']
+        : [];
+
+    /*
+    |--------------------------------------------------------------------------
+    | PRODUCT QUERY
+    |--------------------------------------------------------------------------
+    */
+
+    $query = Product::query()
+        ->where(
+            'status',
+            'active'
+        )
+        ->where(
+            'online_store',
+            true
+        )
+        ->with([
+            'media',
+            'variants.media',
+            'variants.optionValues.option',
+        ]);
+
+    /*
+    |--------------------------------------------------------------------------
+    | PRODUCT SOURCE
+    |--------------------------------------------------------------------------
+    */
+
+    if ($source === 'featured') {
+        $query->where(
+            'is_featured',
+            true
+        );
+    } elseif ($source === 'latest') {
+        $query->latest(
+            'created_at'
+        );
+    } elseif ($source === 'on_sale') {
+        $query->where(
+            function ($q) {
+                $q
+                    ->where(
+                        function ($base) {
+                            $base
+                                ->whereNotNull(
+                                    'price'
+                                )
+                                ->whereNotNull(
+                                    'compare_at_price'
+                                )
+                                ->whereColumn(
+                                    'compare_at_price',
+                                    '>',
+                                    'price'
+                                );
+                        }
+                    )
+                    ->orWhereHas(
+                        'variants',
+                        function ($variant) {
+                            $variant
+                                ->whereNotNull(
+                                    'price'
+                                )
+                                ->whereNotNull(
+                                    'compare_at_price'
+                                )
+                                ->whereColumn(
+                                    'compare_at_price',
+                                    '>',
+                                    'price'
+                                );
+                        }
+                    );
             }
-        }
-
-        // Category filter
-        if ($request->filled('category_id')) {
-            $query->where(
-                'category_id',
-                $request->integer('category_id')
+        );
+    } elseif (
+        $source ===
+        'hand_picked'
+    ) {
+        if (empty($productIds)) {
+            $query->whereRaw(
+                '1 = 0'
+            );
+        } else {
+            $query->whereIn(
+                'id',
+                $productIds
             );
         }
+    }
 
-        // Sorting
-        $sort = $request->input('sort', 'default');
+    /*
+    |--------------------------------------------------------------------------
+    | CATEGORY FILTER
+    |--------------------------------------------------------------------------
+    */
 
-        if ($sort === 'latest') {
-            $query->orderByDesc('created_at');
-        } elseif ($sort === 'price_low') {
-            $query->orderByRaw('price IS NULL, price ASC');
-        } elseif ($sort === 'price_high') {
-            $query->orderByRaw('price IS NULL, price DESC');
-        } elseif ($source === 'hand_picked' && ! empty($productIds)) {
-            $ids = implode(
-                ',',
-                array_map('intval', $productIds)
-            );
+    if (
+        $request->filled(
+            'category_id'
+        )
+    ) {
+        $query->where(
+            'category_id',
+            $request->integer(
+                'category_id'
+            )
+        );
+    }
 
-            $query->orderByRaw("FIELD(id, {$ids})");
-        } elseif ($source !== 'latest') {
-            $query->latest('created_at');
-        }
+    /*
+    |--------------------------------------------------------------------------
+    | SORTING
+    |--------------------------------------------------------------------------
+    */
 
-        $products = $query->paginate(12);
+    $sort = $request->input(
+        'sort',
+        'default'
+    );
 
-        // Format products
-        $products->getCollection()->transform(function ($product) {
-            $variants = $product->variants->values();
+    if ($sort === 'latest') {
+        $query->orderByDesc(
+            'created_at'
+        );
+    } elseif (
+        $sort ===
+        'price_low'
+    ) {
+        $query->orderByRaw(
+            'price IS NULL, price ASC'
+        );
+    } elseif (
+        $sort ===
+        'price_high'
+    ) {
+        $query->orderByRaw(
+            'price IS NULL, price DESC'
+        );
+    } elseif (
+        $source ===
+            'hand_picked' &&
+        ! empty($productIds)
+    ) {
+        $ids = implode(
+            ',',
+            array_map(
+                'intval',
+                $productIds
+            )
+        );
 
-            $price = $product->price;
+        $query->orderByRaw(
+            "FIELD(id, {$ids})"
+        );
+    } elseif (
+        $source !== 'latest'
+    ) {
+        $query->latest(
+            'created_at'
+        );
+    }
 
-            if ($price === null && $variants->isNotEmpty()) {
-                $variantPrices = $variants
-                    ->whereNotNull('price')
-                    ->pluck('price')
-                    ->map(fn ($price) => (float) $price);
+    /*
+    |--------------------------------------------------------------------------
+    | PAGINATION
+    |--------------------------------------------------------------------------
+    */
 
-                $price = $variantPrices->isNotEmpty()
-                    ? $variantPrices->min()
-                    : 0;
-            }
+    $products =
+        $query->paginate(12);
 
-            $compareAtPrice = $product->compare_at_price;
+    /*
+    |--------------------------------------------------------------------------
+    | FORMAT PRODUCTS
+    |--------------------------------------------------------------------------
+    */
 
-            if (
-                (
-                    ! $compareAtPrice ||
-                    (float) $compareAtPrice <= (float) $price
-                ) &&
-                $variants->isNotEmpty()
-            ) {
-                $saleVariant = $variants->first(function ($variant) {
-                    return (
-                        $variant->price !== null &&
-                        $variant->compare_at_price !== null &&
-                        (float) $variant->compare_at_price > (float) $variant->price
-                    );
-                });
+    $products
+        ->getCollection()
+        ->transform(
+            function ($product) {
+                $variants =
+                    $product
+                        ->variants
+                        ->values();
 
-                if ($saleVariant) {
-                    $price = $saleVariant->price;
-                    $compareAtPrice = $saleVariant->compare_at_price;
-                }
-            }
+                $activeVariants =
+                    $variants
+                        ->filter(
+                            function ($variant) {
+                                return (bool) (
+                                    $variant
+                                        ->is_active
+                                    ?? true
+                                );
+                            }
+                        )
+                        ->values();
 
-            $formattedVariants = $variants->map(function ($variant) {
-                $variantOptions = $variant->optionValues->map(function ($value) {
-                    $optionName = $value->option?->name ?? '';
+                /*
+                |--------------------------------------------------------------------------
+                | PRICE
+                |--------------------------------------------------------------------------
+                */
 
-                    return [
-                        'option_id' => $value->product_option_id ?? $value->option_id ?? null,
-                        'global_variant_value_id' => $value->global_variant_value_id ?? null,
-                        'global_variant_name' => $optionName,
-                        'option_name' => $optionName,
-                        'name' => $optionName,
-                        'value' => $value->value ?? '',
-                        'color_code' => $value->color_code ?? null,
-                        'image_path' => $value->image_path ?? null,
-                    ];
-                })->filter(function ($option) {
-                    return (
-                        $option['name'] !== '' &&
-                        $option['value'] !== ''
-                    );
-                })->values();
-
-                $variantImage = $variant->media?->file_path ?? null;
+                $price =
+                    $product->price;
 
                 if (
-                    $variantImage &&
-                    ! str_starts_with($variantImage, 'http://') &&
-                    ! str_starts_with($variantImage, 'https://')
+                    $price === null &&
+                    $activeVariants
+                        ->isNotEmpty()
                 ) {
-                    $variantImage = asset($variantImage);
+                    $variantPrices =
+                        $activeVariants
+                            ->whereNotNull(
+                                'price'
+                            )
+                            ->pluck(
+                                'price'
+                            )
+                            ->map(
+                                fn($price) =>
+                                    (float)
+                                    $price
+                            );
+
+                    $price =
+                        $variantPrices
+                            ->isNotEmpty()
+                            ? $variantPrices
+                                ->min()
+                            : 0;
                 }
 
+                $compareAtPrice =
+                    $product
+                        ->compare_at_price;
+
+                if (
+                    (
+                        ! $compareAtPrice ||
+                        (float)
+                            $compareAtPrice
+                        <=
+                        (float)
+                            $price
+                    ) &&
+                    $activeVariants
+                        ->isNotEmpty()
+                ) {
+                    $saleVariant =
+                        $activeVariants
+                            ->first(
+                                function (
+                                    $variant
+                                ) {
+                                    return (
+                                        $variant
+                                            ->price
+                                        !== null &&
+                                        $variant
+                                            ->compare_at_price
+                                        !== null &&
+                                        (float)
+                                            $variant
+                                                ->compare_at_price
+                                        >
+                                        (float)
+                                            $variant
+                                                ->price
+                                    );
+                                }
+                            );
+
+                    if ($saleVariant) {
+                        $price =
+                            $saleVariant
+                                ->price;
+
+                        $compareAtPrice =
+                            $saleVariant
+                                ->compare_at_price;
+                    }
+                }
+
+                /*
+                |--------------------------------------------------------------------------
+                | VARIANTS
+                |--------------------------------------------------------------------------
+                */
+
+                $formattedVariants =
+                    $variants
+                        ->map(
+                            function (
+                                $variant
+                            ) {
+                                $variantOptions =
+                                    $variant
+                                        ->optionValues
+                                        ->map(
+                                            function (
+                                                $value
+                                            ) {
+                                                $optionName =
+                                                    $value
+                                                        ->option
+                                                        ?->name
+                                                    ?? '';
+
+                                                return [
+                                                    'option_id' =>
+                                                        $value
+                                                            ->product_option_id
+                                                        ??
+                                                        $value
+                                                            ->option_id
+                                                        ??
+                                                        null,
+
+                                                    'global_variant_value_id' =>
+                                                        $value
+                                                            ->global_variant_value_id
+                                                        ??
+                                                        null,
+
+                                                    'global_variant_name' =>
+                                                        $optionName,
+
+                                                    'option_name' =>
+                                                        $optionName,
+
+                                                    'name' =>
+                                                        $optionName,
+
+                                                    'value' =>
+                                                        $value
+                                                            ->value
+                                                        ?? '',
+
+                                                    'color_code' =>
+                                                        $value
+                                                            ->color_code
+                                                        ?? null,
+
+                                                    'image_path' =>
+                                                        $value
+                                                            ->image_path
+                                                        ?? null,
+                                                ];
+                                            }
+                                        )
+                                        ->filter(
+                                            function (
+                                                $option
+                                            ) {
+                                                return (
+                                                    $option[
+                                                        'name'
+                                                    ] !==
+                                                        '' &&
+                                                    $option[
+                                                        'value'
+                                                    ] !==
+                                                        ''
+                                                );
+                                            }
+                                        )
+                                        ->values();
+
+                                /*
+                                |--------------------------------------------------------------------------
+                                | VARIANT IMAGE
+                                |--------------------------------------------------------------------------
+                                */
+
+                                $variantImage =
+                                    $variant
+                                        ->media
+                                        ?->file_path
+                                    ?? null;
+
+                                if (
+                                    $variantImage &&
+                                    ! str_starts_with(
+                                        $variantImage,
+                                        'http://'
+                                    ) &&
+                                    ! str_starts_with(
+                                        $variantImage,
+                                        'https://'
+                                    )
+                                ) {
+                                    $variantImage =
+                                        asset(
+                                            $variantImage
+                                        );
+                                }
+
+                                return [
+                                    'id' =>
+                                        $variant
+                                            ->id,
+
+                                    'title' =>
+                                        $variant
+                                            ->title
+                                        ?? '',
+
+                                    'sku' =>
+                                        $variant
+                                            ->sku
+                                        ?? '',
+
+                                    'price' =>
+                                        $variant
+                                            ->price
+                                        !== null
+                                            ? (float)
+                                                $variant
+                                                    ->price
+                                            : 0,
+
+                                    'compare_at_price' =>
+                                        $variant
+                                            ->compare_at_price
+                                        !== null
+                                            ? (float)
+                                                $variant
+                                                    ->compare_at_price
+                                            : 0,
+
+                                    'quantity' =>
+                                        (int) (
+                                            $variant
+                                                ->quantity
+                                            ?? 0
+                                        ),
+
+                                    'is_default' =>
+                                        (bool) (
+                                            $variant
+                                                ->is_default
+                                            ?? false
+                                        ),
+
+                                    'is_active' =>
+                                        (bool) (
+                                            $variant
+                                                ->is_active
+                                            ?? true
+                                        ),
+
+                                    'image_url' =>
+                                        $variantImage,
+
+                                    'options' =>
+                                        $variantOptions,
+                                ];
+                            }
+                        )
+                        ->values();
+
+                /*
+                |--------------------------------------------------------------------------
+                | AVAILABLE INVENTORY
+                |--------------------------------------------------------------------------
+                */
+
+                if (
+                    $formattedVariants
+                        ->isNotEmpty()
+                ) {
+                    $availableQuantity =
+                        $formattedVariants
+                            ->filter(
+                                function (
+                                    $variant
+                                ) {
+                                    return
+                                        $variant[
+                                            'is_active'
+                                        ] ===
+                                        true;
+                                }
+                            )
+                            ->sum(
+                                'quantity'
+                            );
+                } else {
+                    $availableQuantity =
+                        (int) (
+                            $product
+                                ->quantity
+                            ?? 0
+                        );
+                }
+
+                /*
+                |--------------------------------------------------------------------------
+                | PRODUCT RESPONSE
+                |--------------------------------------------------------------------------
+                */
+
                 return [
-                    'id' => $variant->id,
-                    'title' => $variant->title ?? '',
-                    'sku' => $variant->sku ?? '',
-                    'price' => $variant->price !== null
-                        ? (float) $variant->price
-                        : 0,
-                    'compare_at_price' => $variant->compare_at_price !== null
-                        ? (float) $variant->compare_at_price
-                        : 0,
-                    'quantity' => (int) ($variant->quantity ?? 0),
-                    'is_default' => (bool) ($variant->is_default ?? false),
-                    'is_active' => (bool) ($variant->is_active ?? true),
-                    'image_url' => $variantImage,
-                    'options' => $variantOptions,
+                    'id' =>
+                        $product->id,
+
+                    'title' =>
+                        $product->title,
+
+                    'slug' =>
+                        $product->slug,
+
+                    'summary' =>
+                        $product->summary,
+
+                    'type' =>
+                        $product->type,
+
+                    'price' =>
+                        $price !== null
+                            ? (float)
+                                $price
+                            : 0,
+
+                    'compare_at_price' =>
+                        $compareAtPrice
+                            !== null
+                            ? (float)
+                                $compareAtPrice
+                            : 0,
+
+                    'is_featured' =>
+                        (bool)
+                            $product
+                                ->is_featured,
+
+                    'preorder_enabled' =>
+                        (bool)
+                            $product
+                                ->preorder_enabled,
+
+                    /*
+                    |--------------------------------------------------------------------------
+                    | STOCK
+                    |--------------------------------------------------------------------------
+                    */
+
+                    'quantity' =>
+                        (int) (
+                            $product
+                                ->quantity
+                            ?? 0
+                        ),
+
+                    'available_quantity' =>
+                        (int)
+                            $availableQuantity,
+
+                    'in_stock' =>
+                        $availableQuantity
+                        > 0,
+
+                    /*
+                    |--------------------------------------------------------------------------
+                    | MEDIA
+                    |--------------------------------------------------------------------------
+                    */
+
+                    'image_url' =>
+                        $this
+                            ->resolveProductImage(
+                                $product
+                            ),
+
+                    'store_name' =>
+                        'Storify',
+
+                    'variants' =>
+                        $formattedVariants,
                 ];
-            })->values();
+            }
+        );
 
-            return [
-                'id' => $product->id,
-                'title' => $product->title,
-                'slug' => $product->slug,
-                'summary' => $product->summary,
-                'type' => $product->type,
-                'price' => $price !== null
-                    ? (float) $price
-                    : 0,
-                'compare_at_price' => $compareAtPrice !== null
-                    ? (float) $compareAtPrice
-                    : 0,
-                'is_featured' => (bool) $product->is_featured,
-                'preorder_enabled' => (bool) $product->preorder_enabled,
-                'quantity' => (int) $product->quantity,
-                'image_url' => $this->resolveProductImage($product),
-                'store_name' => 'Storify',
-                'variants' => $formattedVariants,
-            ];
-        });
+    /*
+    |--------------------------------------------------------------------------
+    | CATEGORIES
+    |--------------------------------------------------------------------------
+    */
 
-        $categories = Category::query()
-            ->where('status', 'active')
-            ->whereHas('products', function ($query) {
-                $query
-                    ->where('status', 'active')
-                    ->where('online_store', true);
-            })
-            ->orderBy('name')
+    $categories =
+        Category::query()
+            ->where(
+                'status',
+                'active'
+            )
+            ->whereHas(
+                'products',
+                function ($query) {
+                    $query
+                        ->where(
+                            'status',
+                            'active'
+                        )
+                        ->where(
+                            'online_store',
+                            true
+                        );
+                }
+            )
+            ->orderBy(
+                'name'
+            )
             ->get([
                 'id',
                 'name',
                 'slug',
             ]);
 
-        return response()->json([
-            'status' => true,
-            'section' => [
-                'title' => $section->title ?: 'Featured Products',
-                'is_active' => true,
-                'settings' => [
-                    'product_source' => $source,
-                    'product_ids' => $productIds,
-                ],
+    /*
+    |--------------------------------------------------------------------------
+    | RESPONSE
+    |--------------------------------------------------------------------------
+    */
+
+    return response()->json([
+        'status' => true,
+
+        'section' => [
+            'title' =>
+                $section->title
+                ?: 'Featured Products',
+
+            'is_active' =>
+                true,
+
+            'settings' => [
+                'product_source' =>
+                    $source,
+
+                'product_ids' =>
+                    $productIds,
             ],
-            'categories' => $categories,
-            'products' => $products,
-        ]);
-    }
+        ],
+
+        'categories' =>
+            $categories,
+
+        'products' =>
+            $products,
+    ]);
+}
+
+
 }

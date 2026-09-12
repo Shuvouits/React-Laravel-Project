@@ -4178,9 +4178,12 @@ private function resolveMediaUrl($media)
     |
     */
 
-   private function syncInventoryLevelsFromProduct(
+
+
+    private function syncVariantInventoryByLocation(
     Product $product,
-    ?array $inventoryByLocation = null
+    ProductVariant $variant,
+    array $inventoryByLocation
 ): void {
     $isVendorProduct =
         $product->source === 'vendor' &&
@@ -4188,11 +4191,6 @@ private function resolveMediaUrl($media)
             $product->created_by
         );
 
-    /*
-    |--------------------------------------------------------------------------
-    | OWNER LOCATIONS
-    |--------------------------------------------------------------------------
-    */
 
     $locationQuery =
         InventoryLocation::query()
@@ -4200,6 +4198,7 @@ private function resolveMediaUrl($media)
                 'is_active',
                 true
             );
+
 
     if ($isVendorProduct) {
         $locationQuery->where(
@@ -4212,6 +4211,7 @@ private function resolveMediaUrl($media)
         );
     }
 
+
     $locations =
         $locationQuery
             ->orderByDesc(
@@ -4220,47 +4220,27 @@ private function resolveMediaUrl($media)
             ->orderBy(
                 'shipping_priority'
             )
-            ->orderBy(
-                'id'
-            )
+            ->orderBy('id')
             ->get()
             ->keyBy('id');
 
-    /*
-    |--------------------------------------------------------------------------
-    | LOAD VARIANTS
-    |--------------------------------------------------------------------------
-    */
 
-    $product->load(
-        'variants'
-    );
+    if ($locations->isEmpty()) {
+        return;
+    }
 
-    /*
-    |--------------------------------------------------------------------------
-    | LOCATION INVENTORY
-    |--------------------------------------------------------------------------
-    */
 
-    if (
-        $product
-            ->variants
-            ->isEmpty() &&
-        $inventoryByLocation !== null &&
-        $locations->isNotEmpty()
-    ) {
-        $requestedInventory =
-            collect(
-                $inventoryByLocation
-            )
+    $requestedInventory =
+        collect(
+            $inventoryByLocation
+        )
             ->mapWithKeys(
                 function ($item) {
                     $locationId =
                         (int) (
                             $item[
                                 'location_id'
-                            ]
-                            ?? 0
+                            ] ?? 0
                         );
 
                     $quantity =
@@ -4269,8 +4249,7 @@ private function resolveMediaUrl($media)
                             (int) (
                                 $item[
                                     'quantity'
-                                ]
-                                ?? 0
+                                ] ?? 0
                             )
                         );
 
@@ -4281,291 +4260,127 @@ private function resolveMediaUrl($media)
                 }
             );
 
-        $invalidLocationIds =
-            $requestedInventory
+
+    $invalidLocationIds =
+        $requestedInventory
+            ->keys()
+            ->filter(
+                fn($locationId) =>
+                    ! $locations->has(
+                        (int)
+                            $locationId
+                    )
+            )
+            ->values();
+
+
+    if (
+        $invalidLocationIds
+            ->isNotEmpty()
+    ) {
+        throw ValidationException::withMessages([
+            'variants' => [
+                'One or more variant inventory locations are invalid.',
+            ],
+        ]);
+    }
+
+
+    InventoryLevel::query()
+        ->where(
+            'product_id',
+            $product->id
+        )
+        ->where(
+            'variant_id',
+            $variant->id
+        )
+        ->whereNotIn(
+            'location_id',
+            $locations
                 ->keys()
-                ->filter(
-                    fn($locationId) =>
-                        ! $locations
-                            ->has(
-                                (int) $locationId
-                            )
-                )
-                ->values();
+                ->all()
+        )
+        ->delete();
+
+
+    foreach (
+        $locations
+        as $location
+    ) {
+        $quantity =
+            (int)
+                $requestedInventory
+                    ->get(
+                        $location->id,
+                        0
+                    );
+
+
+        $inventoryLevel =
+            InventoryLevel::firstOrNew([
+                'location_id' =>
+                    $location->id,
+
+                'product_id' =>
+                    $product->id,
+
+                'variant_id' =>
+                    $variant->id,
+            ]);
+
 
         if (
-            $invalidLocationIds
-                ->isNotEmpty()
+            ! $inventoryLevel
+                ->exists
         ) {
-            throw ValidationException::withMessages([
-                'inventory_by_location' => [
-                    'One or more inventory locations are invalid or do not belong to this product owner.',
-                ],
-            ]);
+            $inventoryLevel
+                ->committed = 0;
+
+            $inventoryLevel
+                ->unavailable = 0;
+
+            $inventoryLevel
+                ->incoming = 0;
+
+            $inventoryLevel
+                ->low_stock_threshold = 10;
         }
 
-        $ownerLocationQuery =
-            InventoryLocation::query();
 
-        if ($isVendorProduct) {
-            $ownerLocationQuery->where(
-                'vendor_id',
-                $product->created_by
-            );
-        } else {
-            $ownerLocationQuery
-                ->whereNull(
-                    'vendor_id'
-                );
-        }
+        $inventoryLevel->on_hand =
+            $quantity;
 
-        $ownerLocationIds =
-            $ownerLocationQuery
-                ->pluck('id');
+        $inventoryLevel
+            ->track_quantity =
+            (bool)
+                $product
+                    ->track_quantity;
 
-        InventoryLevel::query()
-            ->where(
-                'product_id',
-                $product->id
-            )
-            ->whereNull(
-                'variant_id'
-            )
-            ->whereNotIn(
-                'location_id',
-                $ownerLocationIds
-            )
-            ->delete();
 
-        foreach (
-            $locations
-            as $location
-        ) {
-            $quantity =
-                (int) (
+        $inventoryLevel->save();
+    }
+
+
+    $totalQuantity =
+        $locations->sum(
+            function ($location) use (
+                $requestedInventory
+            ) {
+                return (int)
                     $requestedInventory
                         ->get(
                             $location->id,
                             0
-                        )
-                );
+                        );
+            }
+        );
 
-            InventoryLevel::updateOrCreate(
-                [
-                    'location_id' =>
-                        $location->id,
 
-                    'product_id' =>
-                        $product->id,
-
-                    'variant_id' =>
-                        null,
-                ],
-                [
-                    'on_hand' =>
-                        $quantity,
-
-                    'committed' =>
-                        0,
-
-                    'unavailable' =>
-                        0,
-
-                    'incoming' =>
-                        0,
-
-                    'low_stock_threshold' =>
-                        10,
-
-                    'track_quantity' =>
-                        (bool)
-                        $product
-                            ->track_quantity,
-                ]
-            );
-        }
-
-        $totalQuantity =
-            $locations
-                ->sum(
-                    function ($location) use (
-                        $requestedInventory
-                    ) {
-                        return (int)
-                            $requestedInventory
-                                ->get(
-                                    $location->id,
-                                    0
-                                );
-                    }
-                );
-
-        $product->update([
-            'quantity' =>
-                $totalQuantity,
-        ]);
-
-        return;
-    }
-
-    /*
-    |--------------------------------------------------------------------------
-    | EXISTING DEFAULT LOCATION BEHAVIOR
-    |--------------------------------------------------------------------------
-    */
-
-    $location =
-        $locations
-            ->first();
-
-    if (
-        ! $location &&
-        $isVendorProduct
-    ) {
-        $location =
-            InventoryLocation::query()
-                ->whereNull(
-                    'vendor_id'
-                )
-                ->where(
-                    'is_active',
-                    true
-                )
-                ->orderByDesc(
-                    'is_default'
-                )
-                ->orderBy(
-                    'id'
-                )
-                ->first();
-    }
-
-    if (! $location) {
-        return;
-    }
-
-    if (
-        $isVendorProduct &&
-        $location->vendor_id
-            !== null
-    ) {
-        $allowedLocationIds =
-            InventoryLocation::query()
-                ->where(
-                    'vendor_id',
-                    $product->created_by
-                )
-                ->pluck('id');
-
-        InventoryLevel::query()
-            ->where(
-                'product_id',
-                $product->id
-            )
-            ->whereNotIn(
-                'location_id',
-                $allowedLocationIds
-            )
-            ->delete();
-    }
-
-    if (
-        ! $isVendorProduct
-    ) {
-        $allowedLocationIds =
-            InventoryLocation::query()
-                ->whereNull(
-                    'vendor_id'
-                )
-                ->pluck('id');
-
-        InventoryLevel::query()
-            ->where(
-                'product_id',
-                $product->id
-            )
-            ->whereNotIn(
-                'location_id',
-                $allowedLocationIds
-            )
-            ->delete();
-    }
-
-    if (
-        $product
-            ->variants
-            ->isNotEmpty()
-    ) {
-        InventoryLevel::query()
-            ->where(
-                'product_id',
-                $product->id
-            )
-            ->whereNull(
-                'variant_id'
-            )
-            ->delete();
-
-        foreach (
-            $product->variants
-            as $variant
-        ) {
-            $this->syncSingleInventoryLevel(
-                locationId:
-                    (int)
-                    $location->id,
-
-                productId:
-                    (int)
-                    $product->id,
-
-                variantId:
-                    (int)
-                    $variant->id,
-
-                quantity:
-                    max(
-                        0,
-                        (int)
-                        $variant
-                            ->quantity
-                    ),
-
-                trackQuantity:
-                    (bool)
-                    $product
-                        ->track_quantity
-            );
-        }
-
-        return;
-    }
-
-    $this->syncSingleInventoryLevel(
-        locationId:
-            (int)
-            $location->id,
-
-        productId:
-            (int)
-            $product->id,
-
-        variantId:
-            null,
-
-        quantity:
-            max(
-                0,
-                (int)
-                $product
-                    ->quantity
-            ),
-
-        trackQuantity:
-            (bool)
-            $product
-                ->track_quantity
-    );
+    $variant->update([
+        'quantity' =>
+            $totalQuantity,
+    ]);
 }
 
 

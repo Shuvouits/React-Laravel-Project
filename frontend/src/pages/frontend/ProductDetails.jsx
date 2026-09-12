@@ -824,8 +824,8 @@ const ProductDetails = () => {
                 />
 
                 <RelatedProducts
-    product={product}
-/>
+                    product={product}
+                />
 
             </div>
 
@@ -1393,8 +1393,8 @@ const TabButton = ({
             type="button"
             onClick={onClick}
             className={`border-b-[2px] px-[14px] py-[13px] text-[13px] font-medium ${active
-                    ? "border-[#2065D1] bg-[#f4f7ff] text-[#2065D1]"
-                    : "border-transparent text-[#333]"
+                ? "border-[#2065D1] bg-[#f4f7ff] text-[#2065D1]"
+                : "border-transparent text-[#333]"
                 }`}
         >
             {children}
@@ -2838,8 +2838,8 @@ const EditorToolbarButton = ({
             onMouseDown={(event) => event.preventDefault()}
             onClick={onClick}
             className={`flex h-[31px] min-w-[31px] items-center justify-center rounded-[6px] border px-[7px] transition ${active
-                    ? "border-[#b9cef5] bg-[#eaf2ff] text-[#2065D1]"
-                    : "border-transparent text-[#555] hover:border-[#dedede] hover:bg-white"
+                ? "border-[#b9cef5] bg-[#eaf2ff] text-[#2065D1]"
+                : "border-transparent text-[#555] hover:border-[#dedede] hover:bg-white"
                 } disabled:cursor-not-allowed disabled:opacity-35`}
         >
             {children}

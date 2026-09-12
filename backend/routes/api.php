@@ -95,6 +95,7 @@ use App\Http\Controllers\Api\Admin\ContactPageSettingController;
 use App\Http\Controllers\Api\Admin\ContactMessageController;
 use App\Http\Controllers\Api\Frontend\SalesAiController;
 use App\Http\Controllers\Api\Frontend\BlogController;
+use App\Http\Controllers\Api\SocialAuthController;
 
 use Illuminate\Support\Facades\Route;
 
@@ -433,6 +434,13 @@ Route::prefix('auth')->group(function () {
 
     Route::post('/two-factor/challenge', [AuthController::class, 'twoFactorChallenge'])
         ->middleware('throttle:6,1');
+
+    Route::get('/social/{provider}/redirect', [SocialAuthController::class, 'redirect'])->middleware('throttle:20,1');
+
+    Route::get('/social/{provider}/callback', [SocialAuthController::class, 'callback'])->middleware('throttle:30,1');
+
+    Route::post('/social/exchange', [SocialAuthController::class, 'exchange'])->middleware('throttle:10,1');
+
 });
 
 // Protected Authentication Routes

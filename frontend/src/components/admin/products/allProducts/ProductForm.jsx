@@ -60,33 +60,33 @@ const ProductForm = ({
   const productApi =
     isVendor
       ? {
-          formOptions:
-            "/vendor/products/form-options",
+        formOptions:
+          "/vendor/products/form-options",
 
-          ai:
-            "/vendor/ai/product-content",
+        ai:
+          "/vendor/ai/product-content",
 
-          create:
-            "/vendor/products",
+        create:
+          "/vendor/products",
 
-          update: (id) =>
-            `/vendor/products/${id}/update`,
+        update: (id) =>
+          `/vendor/products/${id}/update`,
 
-          delete: (id) =>
-            `/vendor/products/${id}`,
-        }
+        delete: (id) =>
+          `/vendor/products/${id}`,
+      }
       : PRODUCT_API;
 
 
   const productRoutes =
     isVendor
       ? {
-          index:
-            "/vendor/products",
+        index:
+          "/vendor/products",
 
-          edit: (id) =>
-            `/vendor/products/${id}/edit`,
-        }
+        edit: (id) =>
+          `/vendor/products/${id}/edit`,
+      }
       : PRODUCT_ROUTES;
 
 
@@ -410,8 +410,8 @@ const ProductForm = ({
             .collection_ids
         )
           ? initialData
-              .collection_ids
-              .map(Number)
+            .collection_ids
+            .map(Number)
           : [],
 
       product_format:
@@ -501,7 +501,7 @@ const ProductForm = ({
           .inventory_by_location
       )
         ? initialData
-            .inventory_by_location
+          .inventory_by_location
         : [];
 
     const locationInventory = {};
@@ -529,24 +529,24 @@ const ProductForm = ({
         initialData.options
       )
         ? initialData.options.map(
-            (
-              option,
-              index
-            ) => ({
-              ...option,
+          (
+            option,
+            index
+          ) => ({
+            ...option,
 
-              sort_order:
-                option.sort_order ??
-                index,
+            sort_order:
+              option.sort_order ??
+              index,
 
-              values:
-                Array.isArray(
-                  option.values
-                )
-                  ? option.values
-                  : [],
-            })
-          )
+            values:
+              Array.isArray(
+                option.values
+              )
+                ? option.values
+                : [],
+          })
+        )
         : []
     );
 
@@ -556,38 +556,38 @@ const ProductForm = ({
         initialData.variants
       )
         ? initialData.variants.map(
-            (
-              variant,
-              index
-            ) => ({
-              ...variant,
+          (
+            variant,
+            index
+          ) => ({
+            ...variant,
 
-              global_variant_value_ids:
-                Array.isArray(
-                  variant
-                    .global_variant_value_ids
-                )
-                  ? variant
-                      .global_variant_value_ids
-                      .map(Number)
-                  : [],
+            global_variant_value_ids:
+              Array.isArray(
+                variant
+                  .global_variant_value_ids
+              )
+                ? variant
+                  .global_variant_value_ids
+                  .map(Number)
+                : [],
 
-              is_active:
-                normalizeBoolean(
-                  variant.is_active
-                ),
+            is_active:
+              normalizeBoolean(
+                variant.is_active
+              ),
 
-              quantity:
-                Number(
-                  variant.quantity ||
-                  0
-                ),
+            quantity:
+              Number(
+                variant.quantity ||
+                0
+              ),
 
-              sort_order:
-                variant.sort_order ??
-                index,
-            })
-          )
+            sort_order:
+              variant.sort_order ??
+              index,
+          })
+        )
         : []
     );
 
@@ -672,7 +672,7 @@ const ProductForm = ({
 
     if (
       field ===
-        "seo_title" &&
+      "seo_title" &&
       manual
     ) {
       setSeoTitleEdited(
@@ -683,7 +683,7 @@ const ProductForm = ({
 
     if (
       field ===
-        "seo_description" &&
+      "seo_description" &&
       manual
     ) {
       setSeoDescriptionEdited(
@@ -753,10 +753,132 @@ const ProductForm = ({
   */
 
   const updateLocationQuantity = (
+  locationId,
+  value
+) => {
+  const quantity =
+    Math.max(
+      0,
+      parseInt(
+        value,
+        10
+      ) || 0
+    );
+
+  const nextInventory = {
+    ...inventoryByLocation,
+    [locationId]:
+      quantity,
+  };
+
+  setInventoryByLocation(
+    nextInventory
+  );
+
+  const totalQuantity =
+    Object.values(
+      nextInventory
+    ).reduce(
+      (
+        total,
+        item
+      ) =>
+        total +
+        Number(
+          item || 0
+        ),
+      0
+    );
+
+  updateField(
+    "quantity",
+    totalQuantity
+  );
+};
+
+  const getVariantLocationInventory = (
+    variant
+  ) => {
+    if (!formOptions.locations.length) {
+      return [];
+    }
+
+    const currentInventory =
+      Array.isArray(
+        variant.inventory_by_location
+      )
+        ? variant.inventory_by_location
+        : [];
+
+    const defaultLocation =
+      formOptions.locations.find(
+        (location) =>
+          Boolean(
+            location.is_default
+          )
+      ) ||
+      formOptions.locations[0] ||
+      null;
+
+    return formOptions.locations.map(
+      (location) => {
+        const existing =
+          currentInventory.find(
+            (item) =>
+              Number(
+                item.location_id
+              ) ===
+              Number(
+                location.id
+              )
+          );
+
+        if (existing) {
+          return {
+            location_id:
+              Number(
+                location.id
+              ),
+            quantity:
+              Number(
+                existing.quantity ??
+                existing.on_hand ??
+                0
+              ),
+          };
+        }
+
+        return {
+          location_id:
+            Number(
+              location.id
+            ),
+
+          quantity:
+            currentInventory.length ===
+              0 &&
+              defaultLocation &&
+              Number(
+                defaultLocation.id
+              ) ===
+              Number(
+                location.id
+              )
+              ? Number(
+                variant.quantity ||
+                0
+              )
+              : 0,
+        };
+      }
+    );
+  };
+
+  const updateVariantLocationQuantity = (
+    variantIndex,
     locationId,
     value
   ) => {
-
     const quantity =
       Math.max(
         0,
@@ -766,41 +888,64 @@ const ProductForm = ({
         ) || 0
       );
 
+    setVariants(
+      (currentVariants) =>
+        currentVariants.map(
+          (
+            variant,
+            index
+          ) => {
+            if (
+              index !==
+              variantIndex
+            ) {
+              return variant;
+            }
 
-    const nextInventory = {
-      ...inventoryByLocation,
+            const inventory =
+              getVariantLocationInventory(
+                variant
+              ).map(
+                (item) =>
+                  Number(
+                    item.location_id
+                  ) ===
+                    Number(
+                      locationId
+                    )
+                    ? {
+                      ...item,
+                      quantity,
+                    }
+                    : item
+              );
 
-      [locationId]:
-        quantity,
-    };
+            const totalQuantity =
+              inventory.reduce(
+                (
+                  total,
+                  item
+                ) =>
+                  total +
+                  Number(
+                    item.quantity ||
+                    0
+                  ),
+                0
+              );
 
+            return {
+              ...variant,
 
-    setInventoryByLocation(
-      nextInventory
+              quantity:
+                totalQuantity,
+
+              inventory_by_location:
+                inventory,
+            };
+          }
+        )
     );
-
-
-    const totalQuantity =
-      Object.values(
-        nextInventory
-      ).reduce(
-        (
-          total,
-          item
-        ) =>
-          total +
-          Number(
-            item || 0
-          ),
-        0
-      );
-
-
-    updateField(
-      "quantity",
-      totalQuantity
-    );
-
   };
 
 
@@ -916,53 +1061,53 @@ const ProductForm = ({
             ...previous,
 
             ...(data.summary !==
-            undefined
+              undefined
               ? {
-                  summary:
-                    data.summary,
-                }
+                summary:
+                  data.summary,
+              }
               : {}),
 
             ...(data.description !==
-            undefined
+              undefined
               ? {
-                  description:
-                    data.description,
-                }
+                description:
+                  data.description,
+              }
               : {}),
 
             ...(data.specifications !==
-            undefined
+              undefined
               ? {
-                  specifications:
-                    data.specifications,
-                }
+                specifications:
+                  data.specifications,
+              }
               : {}),
 
             ...(data.seo_title !==
-            undefined
+              undefined
               ? {
-                  seo_title:
-                    data.seo_title,
-                }
+                seo_title:
+                  data.seo_title,
+              }
               : {}),
 
             ...(data.seo_description !==
-            undefined
+              undefined
               ? {
-                  seo_description:
-                    data.seo_description,
-                }
+                seo_description:
+                  data.seo_description,
+              }
               : {}),
 
             ...(data.slug !==
-            undefined
+              undefined
               ? {
-                  slug:
-                    slugify(
-                      data.slug
-                    ),
-                }
+                slug:
+                  slugify(
+                    data.slug
+                  ),
+              }
               : {}),
           })
         );
@@ -1223,7 +1368,7 @@ const ProductForm = ({
                     quantity:
                       Number(
                         inventoryByLocation[
-                          location.id
+                        location.id
                         ] || 0
                       ),
                   })
@@ -1424,19 +1569,19 @@ const ProductForm = ({
 
                 price:
                   variant.price ===
-                  ""
+                    ""
                     ? null
                     : variant.price,
 
                 compare_at_price:
                   variant.compare_at_price ===
-                  ""
+                    ""
                     ? null
                     : variant.compare_at_price,
 
                 cost_per_item:
                   variant.cost_per_item ===
-                  ""
+                    ""
                     ? null
                     : variant.cost_per_item,
 
@@ -1448,16 +1593,21 @@ const ProductForm = ({
                   variant.barcode ||
                   null,
 
-                quantity:
-                  Number(
-                    variant.quantity ||
-                    0
-                  ),
+              quantity:
+  Number(
+    variant.quantity ||
+    0
+  ),
 
-                is_active:
-                  variant.is_active
-                    ? "1"
-                    : "0",
+inventory_by_location:
+  getVariantLocationInventory(
+    variant
+  ),
+
+is_active:
+  variant.is_active
+    ? "1"
+    : "0",
 
                 product_media_id:
                   variant.product_media_id ||
@@ -1470,8 +1620,8 @@ const ProductForm = ({
                       index
                     )
                     ? variantMediaIndexMap[
-                        index
-                      ]
+                    index
+                    ]
                     : null,
 
                 sort_order:
@@ -1755,24 +1905,24 @@ const ProductForm = ({
               saved.options
             )
               ? saved.options.map(
-                  (
-                    option,
-                    index
-                  ) => ({
-                    ...option,
+                (
+                  option,
+                  index
+                ) => ({
+                  ...option,
 
-                    sort_order:
-                      option.sort_order ??
-                      index,
+                  sort_order:
+                    option.sort_order ??
+                    index,
 
-                    values:
-                      Array.isArray(
-                        option.values
-                      )
-                        ? option.values
-                        : [],
-                  })
-                )
+                  values:
+                    Array.isArray(
+                      option.values
+                    )
+                      ? option.values
+                      : [],
+                })
+              )
               : []
           );
 
@@ -1782,44 +1932,44 @@ const ProductForm = ({
               saved.variants
             )
               ? saved.variants.map(
-                  (
-                    variant,
-                    index
-                  ) => ({
-                    ...variant,
+                (
+                  variant,
+                  index
+                ) => ({
+                  ...variant,
 
-                    global_variant_value_ids:
-                      Array.isArray(
-                        variant
-                          .global_variant_value_ids
-                      )
-                        ? variant
-                            .global_variant_value_ids
-                            .map(Number)
-                        : [],
+                  global_variant_value_ids:
+                    Array.isArray(
+                      variant
+                        .global_variant_value_ids
+                    )
+                      ? variant
+                        .global_variant_value_ids
+                        .map(Number)
+                      : [],
 
-                    is_active:
-                      normalizeBoolean(
-                        variant.is_active
-                      ),
+                  is_active:
+                    normalizeBoolean(
+                      variant.is_active
+                    ),
 
-                    quantity:
-                      Number(
-                        variant.quantity ||
-                        0
-                      ),
+                  quantity:
+                    Number(
+                      variant.quantity ||
+                      0
+                    ),
 
-                    pending_image_file:
-                      null,
+                  pending_image_file:
+                    null,
 
-                    pending_image_preview:
-                      null,
+                  pending_image_preview:
+                    null,
 
-                    sort_order:
-                      variant.sort_order ??
-                      index,
-                  })
-                )
+                  sort_order:
+                    variant.sort_order ??
+                    index,
+                })
+              )
               : []
           );
 
@@ -2237,25 +2387,13 @@ const ProductForm = ({
 
             <ProductCommerce
               form={form}
-
-              updateField={
-                updateField
-              }
-
-              variants={
-                variants
-              }
-
-              locations={
-                formOptions.locations
-              }
-
-              inventoryByLocation={
-                inventoryByLocation
-              }
-
-              updateLocationQuantity={
-                updateLocationQuantity
+              updateField={updateField}
+              variants={variants}
+              locations={formOptions.locations}
+              inventoryByLocation={inventoryByLocation}
+              updateLocationQuantity={updateLocationQuantity}
+              updateVariantLocationQuantity={
+                updateVariantLocationQuantity
               }
             />
 
@@ -2597,10 +2735,9 @@ const ToggleRow = ({
 
         rounded-full
 
-        ${
-          active
-            ? "bg-[#2065D1]"
-            : "bg-[#e1e3e6]"
+        ${active
+          ? "bg-[#2065D1]"
+          : "bg-[#e1e3e6]"
         }
       `}
     >
@@ -2617,10 +2754,9 @@ const ToggleRow = ({
 
           bg-white
 
-          ${
-            active
-              ? "left-[18px]"
-              : "left-[3px]"
+          ${active
+            ? "left-[18px]"
+            : "left-[3px]"
           }
         `}
       />
@@ -2646,10 +2782,9 @@ const StatusPill = ({
 
       capitalize
 
-      ${
-        status === "active"
-          ? "bg-[#2065D1] text-white"
-          : status === "draft"
+      ${status === "active"
+        ? "bg-[#2065D1] text-white"
+        : status === "draft"
           ? "bg-[#fff2cc] text-[#9a6d00]"
           : "bg-[#eceef1] text-[#666]"
       }

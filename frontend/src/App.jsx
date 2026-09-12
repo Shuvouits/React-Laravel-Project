@@ -151,6 +151,7 @@ import ContactPage from "./pages/frontend/contact/ContactPage";
 import AdminContactInbox from "./pages/admin/inbox/AdminContactInbox";
 import BlogPage from "./pages/frontend/blog/BlogPage";
 import BlogDetailsPage from "./pages/frontend/blog/BlogDetailsPage";
+import SocialAuthCallback from "./pages/auth/SocialAuthCallback";
 
 
 const Home = () => {
@@ -224,6 +225,7 @@ const App = () => {
 
                     {/* Auth */}
                     <Route path="/login" element={<Login />} />
+                    <Route path="/social-auth/callback" element={<SocialAuthCallback />} />
                     <Route path="/two-factor-challenge" element={<TwoFactorChallenge />} />
                     <Route path="/register" element={<Register />} />
                     <Route path="/become-vendor" element={<BecomeVendor />} />

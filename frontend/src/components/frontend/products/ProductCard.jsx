@@ -81,14 +81,61 @@ const ProductCard = ({
         product?.review_count || 0
     );
 
-    const inStock =
-        product?.in_stock !== undefined
-            ? Boolean(product.in_stock)
-            : Number(
-                  product?.available_quantity ??
-                  product?.quantity ??
-                  0
-              ) > 0;
+   const productVariants =
+    Array.isArray(product?.variants)
+        ? product.variants
+        : [];
+
+const variantQuantity =
+    productVariants
+        .filter(
+            (variant) =>
+                variant?.is_active !==
+                    false &&
+                variant?.is_active !==
+                    0 &&
+                variant?.is_active !==
+                    "0"
+        )
+        .reduce(
+            (
+                total,
+                variant
+            ) =>
+                total +
+                Number(
+                    variant?.quantity ||
+                    0
+                ),
+            0
+        );
+
+const availableQuantity =
+    Number(
+        product?.available_quantity ??
+        (
+            productVariants.length > 0
+                ? variantQuantity
+                : product?.quantity ?? 0
+        )
+    );
+
+const hasExplicitStock =
+    product?.in_stock !==
+        undefined &&
+    product?.in_stock !==
+        null;
+
+const explicitStock =
+    product?.in_stock === true ||
+    product?.in_stock === 1 ||
+    product?.in_stock === "1" ||
+    product?.in_stock === "true";
+
+const inStock =
+    hasExplicitStock
+        ? explicitStock
+        : availableQuantity > 0;
 
     const productUrl = product?.slug
         ? `/products/${product.slug}`
@@ -300,11 +347,10 @@ const FeaturedBadge = ({
 }) => {
     return (
         <span
-            className={`absolute left-[10px] z-20 rounded-full bg-[#2065D1] px-[10px] py-[5px] text-[11px] font-semibold text-white ${
-                hasDiscount
+            className={`absolute left-[10px] z-20 rounded-full bg-[#2065D1] px-[10px] py-[5px] text-[11px] font-semibold text-white ${hasDiscount
                     ? "top-[43px]"
                     : "top-[10px]"
-            }`}
+                }`}
         >
             Featured
         </span>
@@ -437,11 +483,10 @@ const ProductRating = ({
     return (
         <div
             className="flex shrink-0 items-center gap-[4px] text-[13px] font-medium text-[#222]"
-            title={`${reviewCount} review${
-                reviewCount === 1
+            title={`${reviewCount} review${reviewCount === 1
                     ? ""
                     : "s"
-            }`}
+                }`}
         >
             <Star
                 size={15}

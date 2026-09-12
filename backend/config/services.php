@@ -35,38 +35,50 @@ return [
         ],
     ],
 
+    'google' => [
+    'client_id' =>
+        env('GOOGLE_CLIENT_ID'),
 
-  'openrouter' => [
-    'key' => env('OPENROUTER_API_KEY'),
+    'client_secret' =>
+        env('GOOGLE_CLIENT_SECRET'),
 
-    'model' => env(
-        'OPENROUTER_MODEL',
-        'openrouter/free'
-    ),
-
-    'fallback_model' => env(
-        'OPENROUTER_FALLBACK_MODEL'
-    ),
-
-    'url' => env(
-        'OPENROUTER_URL',
-        'https://openrouter.ai/api/v1/chat/completions'
-    ),
-
-    'base_url' => env(
-        'OPENROUTER_BASE_URL',
-        'https://openrouter.ai/api/v1'
-    ),
-
-    'site_url' => env(
-        'FRONTEND_URL',
-        'http://localhost:5173'
-    ),
-
-    'site_name' => env(
-        'APP_NAME',
-        'Storify'
-    ),
+    'redirect' =>
+        env('GOOGLE_REDIRECT_URI'),
 ],
+
+
+    'openrouter' => [
+        'key' => env('OPENROUTER_API_KEY'),
+
+        'model' => env(
+            'OPENROUTER_MODEL',
+            'openrouter/free'
+        ),
+
+        'fallback_model' => env(
+            'OPENROUTER_FALLBACK_MODEL'
+        ),
+
+        'url' => env(
+            'OPENROUTER_URL',
+            'https://openrouter.ai/api/v1/chat/completions'
+        ),
+
+        'base_url' => env(
+            'OPENROUTER_BASE_URL',
+            'https://openrouter.ai/api/v1'
+        ),
+
+        'site_url' => env(
+            'FRONTEND_URL',
+            'http://localhost:5173'
+        ),
+
+        'site_name' => env(
+            'APP_NAME',
+            'Storify'
+        ),
+
+    ],
 
 ];

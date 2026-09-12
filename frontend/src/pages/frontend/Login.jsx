@@ -18,6 +18,8 @@ const Login = () => {
     const [generalError, setGeneralError] = useState("");
     const [loading, setLoading] = useState(false);
 
+    const [socialLoading, setSocialLoading] = useState(false);
+
     const handleChange = (event) => {
         const { name, value } = event.target;
 
@@ -35,6 +37,37 @@ const Login = () => {
 
         setGeneralError("");
     };
+
+    const handleGoogleLogin = () => {
+    try {
+        setSocialLoading(true);
+        setGeneralError("");
+
+        const apiBase = String(
+            api.defaults.baseURL || ""
+        ).replace(/\/+$/, "");
+
+        if (!apiBase) {
+            throw new Error(
+                "API base URL is not configured."
+            );
+        }
+
+        window.location.href =
+            `${apiBase}/auth/social/google/redirect`;
+    } catch (error) {
+        console.error(
+            "Google login error:",
+            error
+        );
+
+        setSocialLoading(false);
+
+        setGeneralError(
+            "Unable to start Google sign in. Please try again."
+        );
+    }
+};
 
     const handleSubmit = async (event) => {
         event.preventDefault();
@@ -167,13 +200,28 @@ const Login = () => {
                             </div>
                         )}
 
-                        <button
-                            type="button"
-                            className="mt-[25px] flex h-[38px] w-full items-center justify-center gap-[9px] rounded-full border border-[#dddddd] bg-white text-[14px] font-medium text-[#222222] transition-all duration-200 hover:border-[#2065D1] hover:text-[#2065D1]"
-                        >
-                            <GoogleIcon />
-                            Continue with Google
-                        </button>
+                       
+
+                       <button
+    type="button"
+    onClick={handleGoogleLogin}
+    disabled={socialLoading || loading}
+    className="mt-[25px] flex h-[38px] w-full items-center justify-center gap-[9px] rounded-full border border-[#dddddd] bg-white text-[14px] font-medium text-[#222222] transition-all duration-200 hover:border-[#2065D1] hover:text-[#2065D1] disabled:cursor-not-allowed disabled:opacity-60"
+>
+    {socialLoading ? (
+        <>
+            <GoogleSpinner />
+            Connecting to Google...
+        </>
+    ) : (
+        <>
+            <GoogleIcon />
+            Continue with Google
+        </>
+    )}
+</button>
+
+
 
                         <div className="my-[21px] flex items-center gap-[10px]">
 
@@ -364,6 +412,13 @@ const getLoginRedirectPath = (role) => {
 const Spinner = () => {
     return (
         <span className="h-[15px] w-[15px] animate-spin rounded-full border-2 border-white/40 border-t-white" />
+    );
+};
+
+
+const GoogleSpinner = () => {
+    return (
+        <span className="h-[15px] w-[15px] animate-spin rounded-full border-2 border-[#2065D1]/25 border-t-[#2065D1]" />
     );
 };
 

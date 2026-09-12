@@ -162,6 +162,13 @@ public function heldPosSales(): HasMany
     );
 }
 
+public function socialAccounts(): HasMany
+{
+    return $this->hasMany(
+        SocialAccount::class
+    );
+}
+
 
 
 
