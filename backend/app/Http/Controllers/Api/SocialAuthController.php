@@ -4,12 +4,13 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\SocialAccount;
+use App\Models\SocialLoginSetting;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
-use Laravel\Socialite\Facades\Socialite;
+use Laravel\Socialite\Two\GoogleProvider;
 
 class SocialAuthController extends Controller
 {
@@ -24,37 +25,27 @@ class SocialAuthController extends Controller
     */
 
     public function redirect(
+        Request $request,
         string $provider
     ) {
-        $this->guardProvider(
-            $provider
-        );
-
-        /*
-         * API routes do not normally use Laravel
-         * session state, so create our own
-         * short-lived OAuth state token.
-         */
         $state = Str::random(64);
 
         Cache::put(
-            $this->stateKey(
-                $state
-            ),
+            $this->stateKey($state),
             true,
             now()->addMinutes(10)
         );
 
-        return Socialite::driver(
-            $provider
-        )
-            ->stateless()
-            ->with([
-                'state' =>
-                    $state,
+        $socialite =
+            $this->makeProvider(
+                $request,
+                $provider
+            );
 
-                'prompt' =>
-                    'select_account',
+        return $socialite
+            ->with([
+                'state' => $state,
+                'prompt' => 'select_account',
             ])
             ->redirect();
     }
@@ -83,11 +74,10 @@ class SocialAuthController extends Controller
         */
 
         $state = trim(
-            (string)
-                $request->query(
-                    'state',
-                    ''
-                )
+            (string) $request->query(
+                'state',
+                ''
+            )
         );
 
         if (
@@ -113,11 +103,10 @@ class SocialAuthController extends Controller
 
         try {
             $oauthUser =
-                Socialite::driver(
+                $this->makeProvider(
+                    $request,
                     $provider
-                )
-                    ->stateless()
-                    ->user();
+                )->user();
         } catch (\Throwable $error) {
             report($error);
 
@@ -127,6 +116,12 @@ class SocialAuthController extends Controller
                 . '?error=provider_auth_failed'
             );
         }
+
+        /*
+        |--------------------------------------------------------------------------
+        | PROVIDER DATA
+        |--------------------------------------------------------------------------
+        */
 
         $providerUserId =
             trim(
@@ -138,8 +133,7 @@ class SocialAuthController extends Controller
             strtolower(
                 trim(
                     (string)
-                        $oauthUser
-                            ->getEmail()
+                        $oauthUser->getEmail()
                 )
             );
 
@@ -152,16 +146,11 @@ class SocialAuthController extends Controller
 
         $emailVerified =
             filter_var(
-                $rawUser[
-                    'email_verified'
-                ]
+                $rawUser['email_verified']
                     ??
-                $rawUser[
-                    'verified_email'
-                ]
+                $rawUser['verified_email']
                     ??
                 false,
-
                 FILTER_VALIDATE_BOOLEAN
             );
 
@@ -192,9 +181,7 @@ class SocialAuthController extends Controller
         $firstName =
             trim(
                 (string) (
-                    $rawUser[
-                        'given_name'
-                    ]
+                    $rawUser['given_name']
                     ?? ''
                 )
             );
@@ -202,9 +189,7 @@ class SocialAuthController extends Controller
         $lastName =
             trim(
                 (string) (
-                    $rawUser[
-                        'family_name'
-                    ]
+                    $rawUser['family_name']
                     ?? ''
                 )
             );
@@ -212,8 +197,7 @@ class SocialAuthController extends Controller
         $name =
             trim(
                 (string)
-                    $oauthUser
-                        ->getName()
+                    $oauthUser->getName()
             );
 
         if (! $name) {
@@ -233,12 +217,11 @@ class SocialAuthController extends Controller
         }
 
         $avatar =
-            $oauthUser
-                ->getAvatar();
+            $oauthUser->getAvatar();
 
         /*
         |--------------------------------------------------------------------------
-        | FIND OR CREATE ACCOUNT
+        | FIND OR CREATE USER
         |--------------------------------------------------------------------------
         */
 
@@ -256,9 +239,10 @@ class SocialAuthController extends Controller
                 $avatar
             ) {
                 /*
-                 * Existing social identity has
-                 * first priority.
+                 * First try matching an
+                 * existing social account.
                  */
+
                 $socialAccount =
                     SocialAccount::query()
                         ->where(
@@ -275,18 +259,16 @@ class SocialAuthController extends Controller
                 if ($socialAccount) {
                     $user =
                         User::findOrFail(
-                            $socialAccount
-                                ->user_id
+                            $socialAccount->user_id
                         );
 
-                    $socialAccount
-                        ->update([
-                            'provider_email' =>
-                                $email,
+                    $socialAccount->update([
+                        'provider_email' =>
+                            $email,
 
-                            'avatar' =>
-                                $avatar,
-                        ]);
+                        'avatar' =>
+                            $avatar,
+                    ]);
 
                     return [
                         $user,
@@ -295,11 +277,10 @@ class SocialAuthController extends Controller
                 }
 
                 /*
-                 * If the email already belongs to
-                 * a Storify account, link Google
-                 * to that account instead of
-                 * creating a duplicate.
+                 * Match an existing Storify
+                 * account using email.
                  */
+
                 $user =
                     User::query()
                         ->whereRaw(
@@ -314,9 +295,10 @@ class SocialAuthController extends Controller
                         ->first();
 
                 /*
-                 * New Google users are always
+                 * New Google users are
                  * customer accounts.
                  */
+
                 if (! $user) {
                     $user =
                         User::create([
@@ -325,22 +307,15 @@ class SocialAuthController extends Controller
 
                             'first_name' =>
                                 $firstName
-                                ?: null,
+                                    ?: null,
 
                             'last_name' =>
                                 $lastName
-                                ?: null,
+                                    ?: null,
 
                             'email' =>
                                 $email,
 
-                            /*
-                             * Password column is
-                             * non-nullable.
-                             *
-                             * The User model hashes
-                             * this automatically.
-                             */
                             'password' =>
                                 Str::random(
                                     64
@@ -360,13 +335,13 @@ class SocialAuthController extends Controller
                         ])
                         ->save();
                 } elseif (
-                    ! $user
-                        ->email_verified_at
+                    ! $user->email_verified_at
                 ) {
                     /*
-                     * Google confirmed ownership
-                     * of this email.
+                     * Google has verified
+                     * ownership of this email.
                      */
+
                     $user
                         ->forceFill([
                             'email_verified_at' =>
@@ -376,9 +351,9 @@ class SocialAuthController extends Controller
                 }
 
                 /*
-                 * Never change an existing
-                 * admin/vendor/customer role.
+                 * Link Google account.
                  */
+
                 $socialAccount =
                     SocialAccount::create([
                         'user_id' =>
@@ -473,28 +448,25 @@ class SocialAuthController extends Controller
             ]);
 
         /*
-         * pull() makes the code one-time use.
+         * pull() makes the code
+         * one-time use.
          */
+
         $payload =
             Cache::pull(
                 $this->exchangeKey(
-                    $validated[
-                        'code'
-                    ]
+                    $validated['code']
                 )
             );
 
         if (
             ! $payload ||
             empty(
-                $payload[
-                    'user_id'
-                ]
+                $payload['user_id']
             )
         ) {
             return response()->json([
-                'status' =>
-                    false,
+                'status' => false,
 
                 'message' =>
                     'This social login session has expired. Please try again.',
@@ -503,15 +475,12 @@ class SocialAuthController extends Controller
 
         $user =
             User::find(
-                $payload[
-                    'user_id'
-                ]
+                $payload['user_id']
             );
 
         if (! $user) {
             return response()->json([
-                'status' =>
-                    false,
+                'status' => false,
 
                 'message' =>
                     'Unable to complete social login.',
@@ -529,15 +498,12 @@ class SocialAuthController extends Controller
             !== 'active'
         ) {
             return response()->json([
-                'status' =>
-                    false,
+                'status' => false,
 
                 'message' =>
-                    $this
-                        ->accountStatusMessage(
-                            $user
-                                ->account_status
-                        ),
+                    $this->accountStatusMessage(
+                        $user->account_status
+                    ),
             ], 403);
         }
 
@@ -549,30 +515,19 @@ class SocialAuthController extends Controller
 
         if (
             ! empty(
-                $user
-                    ->two_factor_secret
+                $user->two_factor_secret
             ) &&
             ! empty(
-                $user
-                    ->two_factor_confirmed_at
+                $user->two_factor_confirmed_at
             )
         ) {
             $challengeToken =
                 Str::random(64);
 
-            /*
-             * Same cache key format used by
-             * your existing AuthController.
-             *
-             * Existing
-             * /auth/two-factor/challenge
-             * can therefore finish login.
-             */
             Cache::put(
-                $this
-                    ->twoFactorChallengeKey(
-                        $challengeToken
-                    ),
+                $this->twoFactorChallengeKey(
+                    $challengeToken
+                ),
                 [
                     'user_id' =>
                         $user->id,
@@ -581,8 +536,7 @@ class SocialAuthController extends Controller
             );
 
             return response()->json([
-                'status' =>
-                    true,
+                'status' => true,
 
                 'requires_two_factor' =>
                     true,
@@ -619,7 +573,7 @@ class SocialAuthController extends Controller
 
         /*
         |--------------------------------------------------------------------------
-        | SANCTUM TOKEN
+        | CREATE SANCTUM TOKEN
         |--------------------------------------------------------------------------
         */
 
@@ -631,8 +585,7 @@ class SocialAuthController extends Controller
                 ->plainTextToken;
 
         return response()->json([
-            'status' =>
-                true,
+            'status' => true,
 
             'requires_two_factor' =>
                 false,
@@ -648,6 +601,46 @@ class SocialAuthController extends Controller
                     $user,
                     $socialAccount
                 ),
+        ]);
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | PUBLIC PROVIDER STATUS
+    |--------------------------------------------------------------------------
+    */
+
+    public function providers()
+    {
+        $google =
+            SocialLoginSetting::where(
+                'provider',
+                'google'
+            )->first();
+
+        $googleEnabled =
+            $google &&
+            $google->is_enabled &&
+            ! empty(
+                $google->client_id
+            ) &&
+            ! empty(
+                $google->client_secret
+            ) &&
+            ! empty(
+                $google->redirect_uri
+            );
+
+        return response()->json([
+            'status' => true,
+
+            'providers' => [
+                'google' => [
+                    'enabled' =>
+                        (bool)
+                            $googleEnabled,
+                ],
+            ],
         ]);
     }
 
@@ -683,12 +676,10 @@ class SocialAuthController extends Controller
                     );
             }
         } elseif (
-            $socialAccount
-                ?->avatar
+            $socialAccount?->avatar
         ) {
             $photo =
-                $socialAccount
-                    ->avatar;
+                $socialAccount->avatar;
         }
 
         return [
@@ -716,6 +707,72 @@ class SocialAuthController extends Controller
             'photo' =>
                 $photo,
         ];
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | CREATE PROVIDER FROM DATABASE SETTINGS
+    |--------------------------------------------------------------------------
+    */
+
+    private function makeProvider(
+        Request $request,
+        string $provider
+    ) {
+        $this->guardProvider(
+            $provider
+        );
+
+        $setting =
+            SocialLoginSetting::where(
+                'provider',
+                $provider
+            )->first();
+
+        abort_if(
+            ! $setting ||
+            ! $setting->is_enabled,
+            404,
+            'Social login provider is not enabled.'
+        );
+
+        abort_if(
+            empty(
+                $setting->client_id
+            ) ||
+            empty(
+                $setting->client_secret
+            ) ||
+            empty(
+                $setting->redirect_uri
+            ),
+            503,
+            'Social login provider is not configured.'
+        );
+
+        if (
+            $provider === 'google'
+        ) {
+            return (
+                new GoogleProvider(
+                    $request,
+
+                    trim(
+                        $setting->client_id
+                    ),
+
+                    trim(
+                        $setting->client_secret
+                    ),
+
+                    trim(
+                        $setting->redirect_uri
+                    )
+                )
+            )->stateless();
+        }
+
+        abort(404);
     }
 
     /*
@@ -765,11 +822,6 @@ class SocialAuthController extends Controller
             );
     }
 
-    /*
-     * IMPORTANT:
-     * Must match AuthController's
-     * existing cache key exactly.
-     */
     private function twoFactorChallengeKey(
         string $token
     ): string {
@@ -815,7 +867,8 @@ class SocialAuthController extends Controller
         }
 
         if (
-            $status === 'suspended'
+            $status ===
+            'suspended'
         ) {
             return
                 'Your account has been suspended.';

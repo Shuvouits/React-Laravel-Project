@@ -96,6 +96,7 @@ use App\Http\Controllers\Api\Admin\ContactMessageController;
 use App\Http\Controllers\Api\Frontend\SalesAiController;
 use App\Http\Controllers\Api\Frontend\BlogController;
 use App\Http\Controllers\Api\SocialAuthController;
+use App\Http\Controllers\Api\Admin\SocialLoginSettingController;
 
 use Illuminate\Support\Facades\Route;
 
@@ -134,25 +135,27 @@ Route::get('/brands', [FrontendBrandController::class, 'index']);
 
 Route::get('/products/{product:slug}/reviews', [ProductReviewController::class, 'index']);
 
- Route::get('/home/top-articles', [TopArticlesController::class, 'index']);
+Route::get('/home/top-articles', [TopArticlesController::class, 'index']);
 
-  Route::get('/home/instagram-gallery', [InstagramGalleryController::class, 'index']);
+Route::get('/home/instagram-gallery', [InstagramGalleryController::class, 'index']);
 
-  Route::get('/footer', [FooterController::class, 'show']);
-  Route::get('/general-settings', [FrontendGeneralSettingController::class, 'show']);
+Route::get('/footer', [FooterController::class, 'show']);
+Route::get('/general-settings', [FrontendGeneralSettingController::class, 'show']);
 
-  Route::get('/products', [ProductCatalogController::class, 'index']);
+Route::get('/products', [ProductCatalogController::class, 'index']);
 
-  Route::get('/products/{slug}', [ProductController::class, 'showBySlug']);
+Route::get('/products/{slug}', [ProductController::class, 'showBySlug']);
 
-  Route::get('/product-catalog/filters', [ProductCatalogController::class, 'filters']);
+Route::get('/product-catalog/filters', [ProductCatalogController::class, 'filters']);
 
-  Route::get('/contact-page', [ContactController::class, 'show']);
+Route::get('/contact-page', [ContactController::class, 'show']);
 
-  Route::post('/contact-messages', [ContactController::class, 'storeMessage'])->middleware('throttle:5,1');
+Route::post('/contact-messages', [ContactController::class, 'storeMessage'])->middleware('throttle:5,1');
+
+Route::get('/social/providers', [SocialAuthController::class, 'providers']);
 
 
-  Route::prefix('sales-ai')->group(function () {
+Route::prefix('sales-ai')->group(function () {
     Route::get('/config', [SalesAiController::class, 'config']);
 
     Route::post('/conversations', [SalesAiController::class, 'startConversation'])
@@ -440,7 +443,6 @@ Route::prefix('auth')->group(function () {
     Route::get('/social/{provider}/callback', [SocialAuthController::class, 'callback'])->middleware('throttle:30,1');
 
     Route::post('/social/exchange', [SocialAuthController::class, 'exchange'])->middleware('throttle:10,1');
-
 });
 
 // Protected Authentication Routes
@@ -585,6 +587,15 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'admin'])->group(function ()
 
     // Product AI
     Route::post('/ai/product-content', [ProductAIController::class, 'generate']);
+
+
+    // OAuth / Social Login Settings
+
+Route::get('/settings/social-login', [SocialLoginSettingController::class, 'index']);
+
+Route::put('/settings/social-login/{provider}', [SocialLoginSettingController::class, 'update']);
+
+Route::post('/settings/social-login/{provider}/test', [SocialLoginSettingController::class, 'test']);
 
     // Admin Vendors
     Route::get('/vendors', [VendorController::class, 'index']);
@@ -820,7 +831,4 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'admin'])->group(function ()
     Route::put('/contact-messages/{contactMessage}/status', [ContactMessageController::class, 'updateStatus']);
 
     Route::delete('/contact-messages/{contactMessage}', [ContactMessageController::class, 'destroy']);
-
-
-
 });

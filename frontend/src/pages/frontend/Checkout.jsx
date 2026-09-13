@@ -1,5 +1,8 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import {
+    Link,
+    useNavigate,
+} from "react-router-dom";
 import {
     LoaderCircle,
     MapPin,
@@ -19,6 +22,10 @@ const Checkout = () => {
         cartItems,
         removeFromCart,
     } = useCart();
+
+    const navigate = useNavigate();
+
+    const user = getStoredUser();
 
     const [shippingAddress, setShippingAddress] = useState(null);
 
@@ -95,6 +102,40 @@ const Checkout = () => {
             active = false;
         };
     }, [cartItems]);
+
+    const handleLogout = async () => {
+    try {
+        await api.post(
+            "/auth/logout"
+        );
+    } catch (error) {
+        console.error(
+            "Checkout logout error:",
+            error.response?.data ||
+                error.message
+        );
+    } finally {
+        localStorage.removeItem(
+            "token"
+        );
+
+        localStorage.removeItem(
+            "user"
+        );
+
+        delete api.defaults.headers
+            .common.Authorization;
+
+        navigate(
+            "/login",
+            {
+                replace: true,
+            }
+        );
+    }
+};
+
+
 
     const handleCompleteOrder = async () => {
         if (submittingOrder) {
@@ -258,10 +299,16 @@ const Checkout = () => {
 
                 <div className="px-5 pb-[55px] pt-[52px] lg:px-[35px] xl:px-[55px]">
 
-                    <ContactDetails
-                        marketingEmails={marketingEmails}
-                        onMarketingChange={setMarketingEmails}
-                    />
+                   
+                   <ContactDetails
+    user={user}
+    marketingEmails={marketingEmails}
+    onMarketingChange={setMarketingEmails}
+    onLogout={handleLogout}
+/>
+
+
+
 
                     <Divider />
 
@@ -345,10 +392,30 @@ const Checkout = () => {
     );
 };
 
+
 const ContactDetails = ({
+    user,
     marketingEmails,
     onMarketingChange,
+    onLogout,
 }) => {
+    const email =
+        user?.email ||
+        "No email available";
+
+    const displayName =
+        user?.name ||
+        user?.first_name ||
+        email;
+
+    const initial =
+        String(
+            displayName || "U"
+        )
+            .trim()
+            .charAt(0)
+            .toUpperCase();
+
     return (
         <section>
 
@@ -358,21 +425,24 @@ const ContactDetails = ({
 
             <div className="mt-[18px] flex items-center justify-between">
 
-                <div className="flex items-center gap-[12px]">
+                <div className="flex min-w-0 items-center gap-[12px]">
 
-                    <div className="flex h-[40px] w-[40px] items-center justify-center rounded-full bg-[#292929] text-[14px] font-semibold text-white">
-                        A
+                    <div className="flex h-[40px] w-[40px] shrink-0 items-center justify-center rounded-full bg-[#292929] text-[14px] font-semibold text-white">
+                        {initial}
                     </div>
 
-                    <span className="text-[14px] text-[#777]">
-                        admin@storify.com
-                    </span>
+                    <div className="min-w-0">
+                        <p className="truncate text-[14px] text-[#777]">
+                            {email}
+                        </p>
+                    </div>
 
                 </div>
 
                 <button
                     type="button"
-                    className="text-[14px] font-medium text-[#2065D1] underline underline-offset-2"
+                    onClick={onLogout}
+                    className="shrink-0 text-[14px] font-medium text-[#2065D1] underline underline-offset-2 hover:text-[#1858bb]"
                 >
                     Logout
                 </button>
@@ -393,7 +463,7 @@ const ContactDetails = ({
                 />
 
                 <span className="text-[14px] text-[#333]">
-                    Email me with news and others
+                    Email me with news and offers
                 </span>
 
             </label>
@@ -1154,6 +1224,32 @@ const EmptyCheckout = () => {
 
         </div>
     );
+};
+
+
+
+const getStoredUser = () => {
+    try {
+        const storedUser =
+            localStorage.getItem(
+                "user"
+            );
+
+        if (!storedUser) {
+            return null;
+        }
+
+        return JSON.parse(
+            storedUser
+        );
+    } catch (error) {
+        console.error(
+            "Stored user parse error:",
+            error
+        );
+
+        return null;
+    }
 };
 
 export default Checkout;
