@@ -153,6 +153,7 @@ import BlogPage from "./pages/frontend/blog/BlogPage";
 import BlogDetailsPage from "./pages/frontend/blog/BlogDetailsPage";
 import SocialAuthCallback from "./pages/auth/SocialAuthCallback";
 import OAuthSettings from "./pages/admin/setting/OAuthSettings";
+import EmailSettings from "./pages/admin/setting/EmailSettings";
 
 
 const Home = () => {
@@ -325,6 +326,8 @@ const App = () => {
 
                         <Route path="/admin/inbox" element={<AdminContactInbox />} />
 
+                       
+
 
 
 
@@ -355,6 +358,7 @@ const App = () => {
                         <Route path="general" element={<GeneralSettings />} />
                         <Route path="social-login" element={<OAuthSettings />} />
                         <Route path="payments" element={<PaymentSettings />} />
+                         <Route path="email" element={<EmailSettings />} />
                     </Route>
 
 

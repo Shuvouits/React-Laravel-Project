@@ -97,8 +97,10 @@ use App\Http\Controllers\Api\Frontend\SalesAiController;
 use App\Http\Controllers\Api\Frontend\BlogController;
 use App\Http\Controllers\Api\SocialAuthController;
 use App\Http\Controllers\Api\Admin\SocialLoginSettingController;
+use App\Http\Controllers\Api\Admin\EmailSettingController;
 
 use Illuminate\Support\Facades\Route;
+
 
 Route::get('/payments/stripe/success', [StripePaymentController::class, 'success']);
 
@@ -591,11 +593,11 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'admin'])->group(function ()
 
     // OAuth / Social Login Settings
 
-Route::get('/settings/social-login', [SocialLoginSettingController::class, 'index']);
+    Route::get('/settings/social-login', [SocialLoginSettingController::class, 'index']);
 
-Route::put('/settings/social-login/{provider}', [SocialLoginSettingController::class, 'update']);
+    Route::put('/settings/social-login/{provider}', [SocialLoginSettingController::class, 'update']);
 
-Route::post('/settings/social-login/{provider}/test', [SocialLoginSettingController::class, 'test']);
+    Route::post('/settings/social-login/{provider}/test', [SocialLoginSettingController::class, 'test']);
 
     // Admin Vendors
     Route::get('/vendors', [VendorController::class, 'index']);
@@ -831,4 +833,13 @@ Route::post('/settings/social-login/{provider}/test', [SocialLoginSettingControl
     Route::put('/contact-messages/{contactMessage}/status', [ContactMessageController::class, 'updateStatus']);
 
     Route::delete('/contact-messages/{contactMessage}', [ContactMessageController::class, 'destroy']);
+
+    // Email / SMTP Settings
+
+Route::get('/settings/email', [EmailSettingController::class, 'show']);
+Route::put('/settings/email', [EmailSettingController::class, 'update']);
+Route::post('/settings/email/test', [EmailSettingController::class, 'test']);
+
+
+
 });
