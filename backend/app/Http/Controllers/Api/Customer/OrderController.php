@@ -9,6 +9,7 @@ use App\Models\Product;
 use App\Models\ProductVariant;
 use App\Services\OrderPreorderService;
 use App\Services\Payments\StripePaymentService;
+use App\Services\Payments\PayPalPaymentService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -86,6 +87,7 @@ class OrderController extends Controller
     public function store(
         Request $request,
         StripePaymentService $stripePaymentService,
+         PayPalPaymentService $paypalPaymentService,
         OrderPreorderService $orderPreorderService
     ): JsonResponse {
         $validated = $request->validate([
@@ -470,12 +472,25 @@ class OrderController extends Controller
             ], 201);
         }
 
-        if ($order->payment_method === 'stripe') {
-            return $this->startStripePayment(
-                $order,
-                $stripePaymentService
-            );
-        }
+       if (
+    $order->payment_method
+    === 'stripe'
+) {
+    return $this->startStripePayment(
+        $order,
+        $stripePaymentService
+    );
+}
+
+if (
+    $order->payment_method
+    === 'paypal'
+) {
+    return $this->startPayPalPayment(
+        $order,
+        $paypalPaymentService
+    );
+}
 
         return response()->json([
             'success' => true,
@@ -557,6 +572,75 @@ class OrderController extends Controller
             ], 500);
         }
     }
+
+    private function startPayPalPayment(
+    Order $order,
+    PayPalPaymentService $paypalPaymentService
+): JsonResponse {
+    try {
+        $order->loadMissing([
+            'preorder',
+        ]);
+
+        $transaction =
+            $paypalPaymentService
+                ->createCheckout(
+                    $order
+                );
+
+        return response()->json([
+            'success' =>
+                true,
+
+            'message' =>
+                $order->preorder &&
+                $order->preorder
+                    ->payment_terms
+                    === 'deposit'
+                    ? 'Pre-order created. Redirecting to PayPal for the deposit payment.'
+                    : 'Order created. Redirecting to PayPal.',
+
+            'order' =>
+                $order,
+
+            'payment' => [
+                'required' =>
+                    true,
+
+                'method' =>
+                    'paypal',
+
+                'status' =>
+                    'pending',
+
+                'transaction_id' =>
+                    $transaction->id,
+
+                'redirect_url' =>
+                    $transaction
+                        ->redirect_url,
+            ],
+        ], 201);
+    } catch (Throwable $error) {
+        report(
+            $error
+        );
+
+        return response()->json([
+            'success' =>
+                false,
+
+            'message' =>
+                'Unable to start PayPal payment.',
+
+            'error' =>
+                $error->getMessage(),
+
+            'order' =>
+                $order,
+        ], 500);
+    }
+}
 
     private function validateStock(
         Product $product,

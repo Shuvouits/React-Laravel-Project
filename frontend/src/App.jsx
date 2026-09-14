@@ -154,6 +154,8 @@ import BlogDetailsPage from "./pages/frontend/blog/BlogDetailsPage";
 import SocialAuthCallback from "./pages/auth/SocialAuthCallback";
 import OAuthSettings from "./pages/admin/setting/OAuthSettings";
 import EmailSettings from "./pages/admin/setting/EmailSettings";
+import ForgotPassword from "./pages/frontend/ForgotPassword";
+import ResetPassword from "./pages/frontend/ResetPassword";
 
 
 const Home = () => {
@@ -227,6 +229,12 @@ const App = () => {
 
                     {/* Auth */}
                     <Route path="/login" element={<Login />} />
+
+                    <Route path="/forgot-password" element={<ForgotPassword />} />
+
+                    <Route path="/reset-password" element={<ResetPassword />} />
+
+
                     <Route path="/social-auth/callback" element={<SocialAuthCallback />} />
                     <Route path="/two-factor-challenge" element={<TwoFactorChallenge />} />
                     <Route path="/register" element={<Register />} />
@@ -326,7 +334,7 @@ const App = () => {
 
                         <Route path="/admin/inbox" element={<AdminContactInbox />} />
 
-                       
+
 
 
 
@@ -358,7 +366,7 @@ const App = () => {
                         <Route path="general" element={<GeneralSettings />} />
                         <Route path="social-login" element={<OAuthSettings />} />
                         <Route path="payments" element={<PaymentSettings />} />
-                         <Route path="email" element={<EmailSettings />} />
+                        <Route path="email" element={<EmailSettings />} />
                     </Route>
 
 

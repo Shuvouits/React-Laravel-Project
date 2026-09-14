@@ -256,6 +256,39 @@ const Checkout = () => {
         }
     };
 
+
+    const getPaymentButtonText = () => {
+    if (submittingOrder) {
+        if (paymentMethod === "paypal") {
+            return "Redirecting to PayPal...";
+        }
+
+        if (paymentMethod === "stripe") {
+            return "Redirecting to Stripe...";
+        }
+
+        if (paymentMethod === "sslcommerz") {
+            return "Redirecting to SSLCommerz...";
+        }
+
+        return "Processing...";
+    }
+
+    if (paymentMethod === "paypal") {
+        return "Continue to PayPal";
+    }
+
+    if (paymentMethod === "stripe") {
+        return "Continue to Stripe";
+    }
+
+    if (paymentMethod === "sslcommerz") {
+        return "Continue to SSLCommerz";
+    }
+
+    return "Complete order";
+};
+
     if (loading) {
         return <CheckoutLoader />;
     }
@@ -347,23 +380,26 @@ const Checkout = () => {
                         </div>
                     )}
 
-                    <button
-                        type="button"
-                        onClick={handleCompleteOrder}
-                        disabled={submittingOrder}
-                        className="mt-[24px] flex h-[50px] w-full items-center justify-center gap-[8px] rounded-[8px] bg-[#2065D1] text-[15px] font-semibold text-white transition hover:bg-[#1858bb] disabled:cursor-not-allowed disabled:opacity-60"
-                    >
-                        {submittingOrder && (
-                            <LoaderCircle
-                                size={18}
-                                className="animate-spin"
-                            />
-                        )}
+                   
+                   <button
+    type="button"
+    onClick={handleCompleteOrder}
+    disabled={submittingOrder}
+    className="mt-[24px] flex h-[50px] w-full items-center justify-center gap-[8px] rounded-[8px] bg-[#2065D1] text-[15px] font-semibold text-white transition hover:bg-[#1858bb] disabled:cursor-not-allowed disabled:opacity-60"
+>
+    {submittingOrder && (
+        <LoaderCircle
+            size={18}
+            className="animate-spin"
+        />
+    )}
 
-                        {submittingOrder
-                            ? "Redirecting to payment..."
-                            : "Complete order"}
-                    </button>
+    {getPaymentButtonText()}
+</button>
+
+
+
+
 
                 </div>
 

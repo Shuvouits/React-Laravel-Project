@@ -1,46 +1,114 @@
 import { useEffect } from "react";
-import { CheckCircle2 } from "lucide-react";
-import { Link, useSearchParams } from "react-router-dom";
 
-import { useCart } from "../../../context/CartContext";
+import {
+    CheckCircle2,
+} from "lucide-react";
+
+import {
+    Link,
+    useSearchParams,
+} from "react-router-dom";
+
+import {
+    useCart,
+} from "../../../context/CartContext";
 
 const PaymentSuccess = () => {
-    const [searchParams] = useSearchParams();
-    const { clearCart } = useCart();
+    const [
+        searchParams,
+    ] = useSearchParams();
 
-    const provider = searchParams.get("provider");
-    const verified = searchParams.get("verified");
-    const sessionId = searchParams.get("session_id");
-    const orderId = searchParams.get("order");
+    const {
+        clearCart,
+    } = useCart();
 
-    useEffect(() => {
-        if (provider !== "stripe") {
-            return;
-        }
-
-        if (verified !== "1") {
-            return;
-        }
-
-        if (!sessionId) {
-            return;
-        }
-
-        const processedSession = localStorage.getItem(
-            "stripe_cart_cleared_session"
+    const provider =
+        searchParams.get(
+            "provider"
         );
 
-        if (processedSession === sessionId) {
+    const verified =
+        searchParams.get(
+            "verified"
+        );
+
+    const sessionId =
+        searchParams.get(
+            "session_id"
+        );
+
+    const paypalOrderId =
+        searchParams.get(
+            "paypal_order_id"
+        );
+
+    const orderId =
+        searchParams.get(
+            "order"
+        );
+
+    useEffect(() => {
+        if (
+            verified !== "1"
+        ) {
+            return;
+        }
+
+        let paymentReference = "";
+
+        if (
+            provider === "stripe"
+        ) {
+            paymentReference =
+                sessionId || "";
+        }
+
+        if (
+            provider === "paypal"
+        ) {
+            paymentReference =
+                paypalOrderId || "";
+        }
+
+        if (
+            !paymentReference
+        ) {
+            return;
+        }
+
+        const storageKey =
+            `payment_cart_cleared_${provider}`;
+
+        const processedPayment =
+            localStorage.getItem(
+                storageKey
+            );
+
+        if (
+            processedPayment ===
+            paymentReference
+        ) {
             return;
         }
 
         clearCart();
 
         localStorage.setItem(
-            "stripe_cart_cleared_session",
-            sessionId
+            storageKey,
+            paymentReference
         );
-    }, [provider, verified, sessionId]);
+    }, [
+        provider,
+        verified,
+        sessionId,
+        paypalOrderId,
+        clearCart,
+    ]);
+
+    const providerName =
+        getProviderName(
+            provider
+        );
 
     return (
         <div className="flex min-h-[70vh] items-center justify-center bg-[#f7f7f8] px-[20px] py-[50px]">
@@ -48,10 +116,12 @@ const PaymentSuccess = () => {
             <div className="w-full max-w-[520px] rounded-[20px] border border-[#e5e5e5] bg-white px-[35px] py-[45px] text-center shadow-sm">
 
                 <div className="mx-auto flex h-[72px] w-[72px] items-center justify-center rounded-full bg-green-50">
+
                     <CheckCircle2
                         size={38}
                         className="text-green-600"
                     />
+
                 </div>
 
                 <h1 className="mt-[24px] text-[28px] font-semibold text-[#171717]">
@@ -61,6 +131,15 @@ const PaymentSuccess = () => {
                 <p className="mt-[10px] text-[14px] leading-[22px] text-[#777]">
                     Your payment has been confirmed and your order has been placed successfully.
                 </p>
+
+                {providerName && (
+                    <p className="mt-[8px] text-[13px] text-[#999]">
+                        Paid securely with{" "}
+                        <span className="font-medium text-[#555]">
+                            {providerName}
+                        </span>
+                    </p>
+                )}
 
                 {orderId && (
                     <div className="mt-[24px] rounded-[12px] bg-[#f7f8fa] px-[16px] py-[14px]">
@@ -98,6 +177,30 @@ const PaymentSuccess = () => {
 
         </div>
     );
+};
+
+const getProviderName = (
+    provider
+) => {
+    if (
+        provider === "stripe"
+    ) {
+        return "Stripe";
+    }
+
+    if (
+        provider === "paypal"
+    ) {
+        return "PayPal";
+    }
+
+    if (
+        provider === "sslcommerz"
+    ) {
+        return "SSLCommerz";
+    }
+
+    return "";
 };
 
 export default PaymentSuccess;

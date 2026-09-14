@@ -98,11 +98,16 @@ use App\Http\Controllers\Api\Frontend\BlogController;
 use App\Http\Controllers\Api\SocialAuthController;
 use App\Http\Controllers\Api\Admin\SocialLoginSettingController;
 use App\Http\Controllers\Api\Admin\EmailSettingController;
-
+use App\Http\Controllers\Api\PasswordResetController;
+use App\Http\Controllers\Api\Customer\PayPalPaymentController;
 use Illuminate\Support\Facades\Route;
 
 
 Route::get('/payments/stripe/success', [StripePaymentController::class, 'success']);
+
+Route::get('/payments/paypal/success', [PayPalPaymentController::class, 'success'])->name('payments.paypal.success');
+
+Route::get('/payments/paypal/cancel', [PaypalPaymentController::class, 'cancel'])->middleware('signed')->name('payments.paypal.cancel');
 
 // Storefront Home
 Route::get('/home/hero-slides', [HeroSlideController::class, 'index']);
@@ -445,7 +450,17 @@ Route::prefix('auth')->group(function () {
     Route::get('/social/{provider}/callback', [SocialAuthController::class, 'callback'])->middleware('throttle:30,1');
 
     Route::post('/social/exchange', [SocialAuthController::class, 'exchange'])->middleware('throttle:10,1');
+
+     /* password reser  */
+
+    Route::post('/forgot-password', [PasswordResetController::class, 'forgotPassword'])->middleware('throttle:5,1');
+
+    Route::post('/reset-password/validate', [PasswordResetController::class, 'validateToken'])->middleware('throttle:10,1');
+
+    Route::post('/reset-password', [PasswordResetController::class, 'resetPassword'])->middleware('throttle:10,1');
 });
+
+
 
 // Protected Authentication Routes
 Route::middleware('auth:sanctum')->prefix('auth')->group(function () {
