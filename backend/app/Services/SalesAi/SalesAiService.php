@@ -36,13 +36,27 @@ class SalesAiService
             );
         }
 
-        $resolved = $this->intentResolver->resolve(
-            $messageText,
-            $pageContext
+        /*
+         * Load persistent shopping context
+         * from conversation metadata.
+         */
+        $shoppingContext = $this->getShoppingContext(
+            $conversation
         );
 
-        $intent =
-            $resolved['intent']
+        /*
+         * Resolve intent using:
+         * - Current user message
+         * - Current page context
+         * - Previous shopping context
+         */
+        $resolved = $this->intentResolver->resolve(
+            $messageText,
+            $pageContext,
+            $shoppingContext
+        );
+
+        $intent = $resolved['intent']
             ?? 'general';
 
         return match ($intent) {
@@ -61,6 +75,7 @@ class SalesAiService
             'search_products' =>
                 $this->handleProductSearch(
                     $conversation,
+                    $settings,
                     $resolved
                 ),
 
@@ -119,8 +134,13 @@ class SalesAiService
 
         $latestMessage = $conversation
             ->messages()
-            ->where('role', 'user')
-            ->whereNotNull('content')
+            ->where(
+                'role',
+                'user'
+            )
+            ->whereNotNull(
+                'content'
+            )
             ->latest('id')
             ->first();
 
@@ -157,34 +177,61 @@ class SalesAiService
         SalesAiConversation $conversation,
         string $messageText
     ): array {
+        /*
+         * Clear only Sales AI shopping state.
+         *
+         * Other metadata such as user agent
+         * remains untouched.
+         */
+        $this->clearShoppingContext(
+            $conversation
+        );
+
         $reply = $this->isBangla(
             $messageText
         )
-            ? 'ঠিক আছে, আগের কথোপকথনের context reset করা হয়েছে। নতুন বিষয়টি লিখুন।'
-            : 'Done. I have reset the previous conversation context. What would you like to discuss now?';
+            ? 'ঠিক আছে, আগের shopping context reset করা হয়েছে। এখন নতুন করে কী খুঁজছেন বলুন।'
+            : 'Done. I cleared the previous shopping context. Tell me what you would like to look for next.';
 
         return $this->storeDirectResponse(
             conversation: $conversation,
             reply: $reply,
             contentType: 'control',
             structuredData: [
-                'action' => 'reset_context',
-                'clear_previous_messages' => true,
+                'action' =>
+                    'reset_context',
+
+                'clear_previous_messages' =>
+                    true,
+
+                'clear_shopping_context' =>
+                    true,
             ]
         );
     }
 
     private function handleProductSearch(
         SalesAiConversation $conversation,
+        SalesAiSetting $settings,
         array $resolved
     ): array {
-        $filters =
-            $resolved['filters']
+        $filters = $resolved['filters']
             ?? [];
 
         unset(
             $filters['product_id'],
             $filters['product_slug']
+        );
+
+        /*
+         * Respect admin configured search limit.
+         */
+        $configuredLimit = max(
+            1,
+            (int) (
+                $settings->product_search_limit
+                ?? 6
+            )
         );
 
         $filters['limit'] = min(
@@ -193,7 +240,7 @@ class SalesAiService
                 1,
                 (int) (
                     $filters['limit']
-                    ?? 6
+                    ?? $configuredLimit
                 )
             )
         );
@@ -207,32 +254,68 @@ class SalesAiService
             Log::error(
                 'Sales AI direct product search failed.',
                 [
-                    'filters' => $filters,
+                    'filters' =>
+                        $filters,
+
                     'message' =>
                         $exception->getMessage(),
                 ]
             );
 
             return $this->storeDirectResponse(
-                conversation: $conversation,
-                reply: $this->failureReply(
-                    $resolved
-                ),
-                contentType: 'error',
-                structuredData: null
+                conversation:
+                    $conversation,
+
+                reply:
+                    $this->failureReply(
+                        $resolved
+                    ),
+
+                contentType:
+                    'error',
+
+                structuredData:
+                    null
+            );
+        }
+
+        /*
+         * Remember this search even if
+         * zero products matched.
+         *
+         * This allows:
+         *
+         * "chairs"
+         * "under $300"
+         * "in stock only"
+         */
+        if (
+            ($result['success'] ?? false)
+            === true
+        ) {
+            $this->rememberSearchContext(
+                $conversation,
+                $resolved,
+                $result
             );
         }
 
         return $this->storeDirectResponse(
-            conversation: $conversation,
-            reply: $this->productSearchReply(
-                $result,
-                $resolved
-            ),
+            conversation:
+                $conversation,
+
+            reply:
+                $this->productSearchReply(
+                    $result,
+                    $resolved
+                ),
+
             contentType:
                 $result['content_type']
                 ?? 'products',
-            structuredData: $result
+
+            structuredData:
+                $result
         );
     }
 
@@ -258,7 +341,14 @@ class SalesAiService
             ?? $filters['product_slug']
             ?? null;
 
-        if ($productId || $productSlug) {
+        /*
+         * Product already resolved from
+         * page context or saved context.
+         */
+        if (
+            $productId
+            || $productSlug
+        ) {
             $detailsResult =
                 $this->safeProductToolExecution(
                     'get_product_details',
@@ -275,20 +365,35 @@ class SalesAiService
                 ($detailsResult['success']
                     ?? false) === true
             ) {
+                $this->rememberSelectedProduct(
+                    $conversation,
+                    $detailsResult['product']
+                    ?? null
+                );
+
                 return $this->storeDirectResponse(
-                    conversation: $conversation,
-                    reply: $this->productDetailsReply(
-                        $detailsResult,
-                        $resolved
-                    ),
+                    conversation:
+                        $conversation,
+
+                    reply:
+                        $this->productDetailsReply(
+                            $detailsResult,
+                            $resolved
+                        ),
+
                     contentType:
                         'product_details',
+
                     structuredData:
                         $detailsResult
                 );
             }
         }
 
+        /*
+         * Product not directly resolved.
+         * Search first.
+         */
         unset(
             $filters['product_id'],
             $filters['product_slug']
@@ -301,6 +406,17 @@ class SalesAiService
                 'search_products',
                 $filters
             );
+
+        if (
+            ($searchResult['success']
+                ?? false) === true
+        ) {
+            $this->rememberSearchContext(
+                $conversation,
+                $resolved,
+                $searchResult
+            );
+        }
 
         $products =
             $searchResult['products']
@@ -327,14 +443,25 @@ class SalesAiService
                 ($detailsResult['success']
                     ?? false) === true
             ) {
+                $this->rememberSelectedProduct(
+                    $conversation,
+                    $detailsResult['product']
+                    ?? null
+                );
+
                 return $this->storeDirectResponse(
-                    conversation: $conversation,
-                    reply: $this->productDetailsReply(
-                        $detailsResult,
-                        $resolved
-                    ),
+                    conversation:
+                        $conversation,
+
+                    reply:
+                        $this->productDetailsReply(
+                            $detailsResult,
+                            $resolved
+                        ),
+
                     contentType:
                         'product_details',
+
                     structuredData:
                         $detailsResult
                 );
@@ -350,20 +477,34 @@ class SalesAiService
                 : 'I found multiple matching products. Choose the specific product you want details about.';
 
             return $this->storeDirectResponse(
-                conversation: $conversation,
-                reply: $reply,
-                contentType: 'products',
-                structuredData: $searchResult
+                conversation:
+                    $conversation,
+
+                reply:
+                    $reply,
+
+                contentType:
+                    'products',
+
+                structuredData:
+                    $searchResult
             );
         }
 
         return $this->storeDirectResponse(
-            conversation: $conversation,
-            reply: $this->noProductReply(
-                $resolved
-            ),
-            contentType: 'products',
-            structuredData: $searchResult
+            conversation:
+                $conversation,
+
+            reply:
+                $this->noProductReply(
+                    $resolved
+                ),
+
+            contentType:
+                'products',
+
+            structuredData:
+                $searchResult
         );
     }
 
@@ -384,10 +525,15 @@ class SalesAiService
                 : 'Please provide at least two specific product names to compare.';
 
             return $this->storeDirectResponse(
-                conversation: $conversation,
-                reply: $reply,
+                conversation:
+                    $conversation,
+
+                reply:
+                    $reply,
+
                 contentType:
                     'clarification',
+
                 structuredData: [
                     'action' =>
                         'request_comparison_products',
@@ -400,13 +546,19 @@ class SalesAiService
         $matchedProducts = [];
         $missingQueries = [];
 
-        foreach ($queries as $query) {
+        foreach (
+            $queries
+            as $query
+        ) {
             $searchResult =
                 $this->safeProductToolExecution(
                     'search_products',
                     [
-                        'search' => $query,
-                        'limit' => 1,
+                        'search' =>
+                            $query,
+
+                        'limit' =>
+                            1,
                     ]
                 );
 
@@ -415,7 +567,9 @@ class SalesAiService
                 ?? null;
 
             if (!$product) {
-                $missingQueries[] = $query;
+                $missingQueries[] =
+                    $query;
+
                 continue;
             }
 
@@ -433,17 +587,23 @@ class SalesAiService
                 $product;
         }
 
-        $productIds = array_values(
-            array_unique($productIds)
-        );
+        $productIds =
+            array_values(
+                array_unique(
+                    $productIds
+                )
+            );
 
-        $productSlugs = array_values(
-            array_unique($productSlugs)
-        );
+        $productSlugs =
+            array_values(
+                array_unique(
+                    $productSlugs
+                )
+            );
 
         if (
-            count($productIds) < 2 &&
-            count($productSlugs) < 2
+            count($productIds) < 2
+            && count($productSlugs) < 2
         ) {
             $reply = $this->isBangla(
                 $resolved['original_message']
@@ -453,10 +613,15 @@ class SalesAiService
                 : 'I could not find enough matching products to compare. Try using more specific product names.';
 
             return $this->storeDirectResponse(
-                conversation: $conversation,
-                reply: $reply,
+                conversation:
+                    $conversation,
+
+                reply:
+                    $reply,
+
                 contentType:
                     'clarification',
+
                 structuredData: [
                     'action' =>
                         'comparison_not_ready',
@@ -504,14 +669,28 @@ class SalesAiService
                 : 'I could not find two different matching products. Check the product names and try again.';
 
             return $this->storeDirectResponse(
-                conversation: $conversation,
-                reply: $reply,
+                conversation:
+                    $conversation,
+
+                reply:
+                    $reply,
+
                 contentType:
                     'clarification',
+
                 structuredData:
                     $comparisonResult
             );
         }
+
+        /*
+         * Save comparison products as
+         * latest visible product set.
+         */
+        $this->rememberComparisonContext(
+            $conversation,
+            $comparisonResult
+        );
 
         $reply = $this->isBangla(
             $resolved['original_message']
@@ -521,10 +700,15 @@ class SalesAiService
             : "Here is a live comparison of {$count} products, including price, stock, ratings, and available variants.";
 
         return $this->storeDirectResponse(
-            conversation: $conversation,
-            reply: $reply,
+            conversation:
+                $conversation,
+
+            reply:
+                $reply,
+
             contentType:
                 'product_comparison',
+
             structuredData:
                 $comparisonResult
         );
@@ -545,13 +729,70 @@ class SalesAiService
                 : 'Opening your cart.';
 
             return $this->storeDirectResponse(
-                conversation: $conversation,
-                reply: $reply,
+                conversation:
+                    $conversation,
+
+                reply:
+                    $reply,
+
                 contentType:
                     'client_action',
+
                 structuredData: [
                     'action' =>
                         'open_cart',
+                ]
+            );
+        }
+
+        /*
+         * Phase 2 will resolve:
+         * "add it"
+         * "add the second one"
+         * selected variants
+         *
+         * For now we preserve the existing
+         * safe behavior.
+         */
+        $shoppingContext =
+            $this->getShoppingContext(
+                $conversation
+            );
+
+        $selectedProduct =
+            $shoppingContext[
+                'selected_product'
+            ]
+            ?? null;
+
+        if (
+            is_array($selectedProduct)
+            && !empty(
+                $selectedProduct['cart_payload']
+            )
+        ) {
+            $reply = $isBangla
+                ? 'নির্বাচিত প্রোডাক্টটি cart-এ যোগ করা হচ্ছে।'
+                : 'Adding the selected product to your cart.';
+
+            return $this->storeDirectResponse(
+                conversation:
+                    $conversation,
+
+                reply:
+                    $reply,
+
+                contentType:
+                    'client_action',
+
+                structuredData: [
+                    'action' =>
+                        'add_to_cart',
+
+                    'cart_payload' =>
+                        $selectedProduct[
+                            'cart_payload'
+                        ],
                 ]
             );
         }
@@ -561,10 +802,15 @@ class SalesAiService
             : 'Select the product or variant you want to add to your cart.';
 
         return $this->storeDirectResponse(
-            conversation: $conversation,
-            reply: $reply,
+            conversation:
+                $conversation,
+
+            reply:
+                $reply,
+
             contentType:
                 'client_action',
+
             structuredData: [
                 'action' =>
                     'select_product_for_cart',
@@ -583,10 +829,15 @@ class SalesAiService
             : 'Please provide your order number to check its status. Example: ST-10025.';
 
         return $this->storeDirectResponse(
-            conversation: $conversation,
-            reply: $reply,
+            conversation:
+                $conversation,
+
+            reply:
+                $reply,
+
             contentType:
                 'clarification',
+
             structuredData: [
                 'action' =>
                     'request_order_number',
@@ -619,14 +870,392 @@ class SalesAiService
             );
 
             return [
-                'success' => false,
+                'success' =>
+                    false,
+
                 'message' =>
                     'Store information could not be retrieved.',
+
                 'tool' =>
                     $toolName,
             ];
         }
     }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Shopping Context
+    |--------------------------------------------------------------------------
+    */
+
+    private function getShoppingContext(
+        SalesAiConversation $conversation
+    ): array {
+        $metadata = $conversation->metadata
+            ?? [];
+
+        if (!is_array($metadata)) {
+            return [];
+        }
+
+        $shoppingContext =
+            $metadata['shopping_context']
+            ?? [];
+
+        return is_array($shoppingContext)
+            ? $shoppingContext
+            : [];
+    }
+
+    private function rememberSearchContext(
+        SalesAiConversation $conversation,
+        array $resolved,
+        array $result
+    ): void {
+        $metadata = $conversation->metadata
+            ?? [];
+
+        if (!is_array($metadata)) {
+            $metadata = [];
+        }
+
+        $existingContext =
+            $metadata['shopping_context']
+            ?? [];
+
+        if (!is_array($existingContext)) {
+            $existingContext = [];
+        }
+
+        $filters =
+            $result['filters']
+            ?? $resolved['filters']
+            ?? [];
+
+        $filters =
+            $this->sanitizeContextFilters(
+                is_array($filters)
+                    ? $filters
+                    : []
+            );
+
+        $products = collect(
+            $result['products']
+            ?? []
+        )
+            ->map(
+                fn ($product) =>
+                    $this->compactProductContext(
+                        $product
+                    )
+            )
+            ->filter()
+            ->take(12)
+            ->values()
+            ->all();
+
+        $shoppingContext =
+            array_merge(
+                $existingContext,
+                [
+                    'filters' =>
+                        $filters,
+
+                    'last_products' =>
+                        $products,
+
+                    /*
+                     * A new search invalidates
+                     * the previous selected item.
+                     */
+                    'selected_product' =>
+                        null,
+
+                    'last_query' =>
+                        $resolved[
+                            'original_message'
+                        ]
+                        ?? null,
+
+                    'last_result_count' =>
+                        (int) (
+                            $result['count']
+                            ?? count($products)
+                        ),
+
+                    'context_mode' =>
+                        $resolved[
+                            'context_mode'
+                        ]
+                        ?? 'new',
+
+                    'updated_at' =>
+                        now()
+                            ->toIso8601String(),
+                ]
+            );
+
+        $metadata['shopping_context'] =
+            $shoppingContext;
+
+        $conversation->update([
+            'metadata' =>
+                $metadata,
+        ]);
+
+        /*
+         * Keep current model instance synced.
+         */
+        $conversation->metadata =
+            $metadata;
+    }
+
+    private function rememberSelectedProduct(
+        SalesAiConversation $conversation,
+        mixed $product
+    ): void {
+        if (!is_array($product)) {
+            return;
+        }
+
+        $metadata = $conversation->metadata
+            ?? [];
+
+        if (!is_array($metadata)) {
+            $metadata = [];
+        }
+
+        $shoppingContext =
+            $metadata['shopping_context']
+            ?? [];
+
+        if (!is_array($shoppingContext)) {
+            $shoppingContext = [];
+        }
+
+        $compactProduct =
+            $this->compactProductContext(
+                $product,
+                true
+            );
+
+        if (!$compactProduct) {
+            return;
+        }
+
+        $shoppingContext[
+            'selected_product'
+        ] = $compactProduct;
+
+        $shoppingContext[
+            'updated_at'
+        ] = now()->toIso8601String();
+
+        $metadata['shopping_context'] =
+            $shoppingContext;
+
+        $conversation->update([
+            'metadata' =>
+                $metadata,
+        ]);
+
+        $conversation->metadata =
+            $metadata;
+    }
+
+    private function rememberComparisonContext(
+        SalesAiConversation $conversation,
+        array $result
+    ): void {
+        $metadata = $conversation->metadata
+            ?? [];
+
+        if (!is_array($metadata)) {
+            $metadata = [];
+        }
+
+        $shoppingContext =
+            $metadata['shopping_context']
+            ?? [];
+
+        if (!is_array($shoppingContext)) {
+            $shoppingContext = [];
+        }
+
+        $products = collect(
+            $result['products']
+            ?? []
+        )
+            ->map(
+                fn ($product) =>
+                    $this->compactProductContext(
+                        $product
+                    )
+            )
+            ->filter()
+            ->take(4)
+            ->values()
+            ->all();
+
+        $shoppingContext[
+            'last_products'
+        ] = $products;
+
+        $shoppingContext[
+            'selected_product'
+        ] = null;
+
+        $shoppingContext[
+            'last_result_count'
+        ] = count($products);
+
+        $shoppingContext[
+            'context_mode'
+        ] = 'comparison';
+
+        $shoppingContext[
+            'updated_at'
+        ] = now()->toIso8601String();
+
+        $metadata['shopping_context'] =
+            $shoppingContext;
+
+        $conversation->update([
+            'metadata' =>
+                $metadata,
+        ]);
+
+        $conversation->metadata =
+            $metadata;
+    }
+
+    private function clearShoppingContext(
+        SalesAiConversation $conversation
+    ): void {
+        $metadata = $conversation->metadata
+            ?? [];
+
+        if (!is_array($metadata)) {
+            $metadata = [];
+        }
+
+        unset(
+            $metadata['shopping_context']
+        );
+
+        $conversation->update([
+            'metadata' =>
+                $metadata,
+        ]);
+
+        $conversation->metadata =
+            $metadata;
+    }
+
+    private function sanitizeContextFilters(
+        array $filters
+    ): array {
+        $allowed = [
+            'search',
+            'brand',
+            'category',
+            'collection',
+            'min_price',
+            'max_price',
+            'in_stock',
+            'on_sale',
+            'featured',
+            'preorder',
+            'sort',
+        ];
+
+        return collect(
+            $filters
+        )
+            ->only(
+                $allowed
+            )
+            ->reject(
+                fn ($value) =>
+                    $value === null
+                    || $value === ''
+                    || $value === false
+            )
+            ->all();
+    }
+
+    private function compactProductContext(
+        mixed $product,
+        bool $includeCartPayload = false
+    ): ?array {
+        if (!is_array($product)) {
+            return null;
+        }
+
+        if (
+            empty($product['id'])
+            && empty($product['slug'])
+        ) {
+            return null;
+        }
+
+        $context = [
+            'id' =>
+                isset($product['id'])
+                    ? (int) $product['id']
+                    : null,
+
+            'title' =>
+                $product['title']
+                ?? null,
+
+            'slug' =>
+                $product['slug']
+                ?? null,
+
+            'price' =>
+                isset($product['price'])
+                    ? (float) $product['price']
+                    : null,
+
+            'image_url' =>
+                $product['image_url']
+                ?? null,
+
+            'has_variants' =>
+                (bool) (
+                    $product['has_variants']
+                    ?? !empty(
+                        $product['variants']
+                    )
+                ),
+        ];
+
+        if (
+            $includeCartPayload
+            && !empty(
+                $product['cart_payload']
+            )
+            && is_array(
+                $product['cart_payload']
+            )
+        ) {
+            $context['cart_payload'] =
+                $product['cart_payload'];
+        }
+
+        return array_filter(
+            $context,
+            fn ($value) =>
+                $value !== null
+        );
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | AI Response
+    |--------------------------------------------------------------------------
+    */
 
     private function generateAiResponse(
         SalesAiConversation $conversation,
@@ -662,27 +1291,44 @@ class SalesAiService
         );
 
         $totalUsage = [
-            'prompt_tokens' => 0,
-            'completion_tokens' => 0,
-            'total_tokens' => 0,
-            'cost' => 0,
+            'prompt_tokens' =>
+                0,
+
+            'completion_tokens' =>
+                0,
+
+            'total_tokens' =>
+                0,
+
+            'cost' =>
+                0,
         ];
 
         $responseData =
             $this->requestWithFallback(
-                messages: $messages,
-                settings: $settings,
-                primaryModel: $primaryModel,
-                fallbackModel: $fallbackModel
+                messages:
+                    $messages,
+
+                settings:
+                    $settings,
+
+                primaryModel:
+                    $primaryModel,
+
+                fallbackModel:
+                    $fallbackModel
             );
 
         $this->mergeUsage(
             $totalUsage,
-            $responseData['usage'] ?? []
+            $responseData['usage']
+            ?? []
         );
 
         $assistantMessage =
-            $responseData['choices'][0]['message']
+            $responseData[
+                'choices'
+            ][0]['message']
             ?? null;
 
         if (!$assistantMessage) {
@@ -747,7 +1393,8 @@ class SalesAiService
             ]);
 
         $conversation->update([
-            'last_message_at' => now(),
+            'last_message_at' =>
+                now(),
         ]);
 
         return [
@@ -788,6 +1435,30 @@ class SalesAiService
             ],
         ];
 
+        /*
+         * Add lightweight shopping context
+         * for general AI responses.
+         */
+        $shoppingContext =
+            $this->getShoppingContext(
+                $conversation
+            );
+
+        $contextPrompt =
+            $this->buildShoppingContextPrompt(
+                $shoppingContext
+            );
+
+        if ($contextPrompt) {
+            $messages[] = [
+                'role' =>
+                    'system',
+
+                'content' =>
+                    $contextPrompt,
+            ];
+        }
+
         $resetMessageId = $conversation
             ->messages()
             ->where(
@@ -807,27 +1478,33 @@ class SalesAiService
 
         $historyQuery = $conversation
             ->messages()
-            ->whereNotNull('content')
-            ->where(function ($query) {
-                $query
-                    ->where(
-                        'role',
-                        'user'
-                    )
-                    ->orWhere(function (
-                        $assistantQuery
-                    ) {
-                        $assistantQuery
-                            ->where(
-                                'role',
-                                'assistant'
-                            )
-                            ->where(
-                                'content_type',
-                                'text'
-                            );
-                    });
-            });
+            ->whereNotNull(
+                'content'
+            )
+            ->where(
+                function ($query) {
+                    $query
+                        ->where(
+                            'role',
+                            'user'
+                        )
+                        ->orWhere(
+                            function (
+                                $assistantQuery
+                            ) {
+                                $assistantQuery
+                                    ->where(
+                                        'role',
+                                        'assistant'
+                                    )
+                                    ->where(
+                                        'content_type',
+                                        'text'
+                                    );
+                            }
+                        );
+                }
+            );
 
         if ($resetMessageId) {
             $historyQuery->where(
@@ -844,19 +1521,131 @@ class SalesAiService
             ->reverse()
             ->values();
 
-        foreach ($history as $message) {
+        foreach (
+            $history
+            as $message
+        ) {
             $messages[] = [
                 'role' =>
                     $message->role,
 
                 'content' =>
                     trim(
-                        (string) $message->content
+                        (string)
+                        $message->content
                     ),
             ];
         }
 
         return $messages;
+    }
+
+    private function buildShoppingContextPrompt(
+        array $shoppingContext
+    ): ?string {
+        if (!$shoppingContext) {
+            return null;
+        }
+
+        $parts = [];
+
+        $filters =
+            $shoppingContext['filters']
+            ?? [];
+
+        if (
+            is_array($filters)
+            && !empty($filters)
+        ) {
+            $filterParts = [];
+
+            foreach (
+                $filters
+                as $key => $value
+            ) {
+                if (
+                    is_scalar($value)
+                ) {
+                    $filterParts[] =
+                        "{$key}: {$value}";
+                }
+            }
+
+            if ($filterParts) {
+                $parts[] =
+                    'Current shopping filters: '
+                    . implode(
+                        ', ',
+                        $filterParts
+                    )
+                    . '.';
+            }
+        }
+
+        $lastProducts =
+            $shoppingContext[
+                'last_products'
+            ]
+            ?? [];
+
+        if (
+            is_array($lastProducts)
+            && $lastProducts
+        ) {
+            $titles = collect(
+                $lastProducts
+            )
+                ->pluck('title')
+                ->filter()
+                ->take(6)
+                ->values()
+                ->all();
+
+            if ($titles) {
+                $parts[] =
+                    'Most recently shown products: '
+                    . implode(
+                        ', ',
+                        $titles
+                    )
+                    . '.';
+            }
+        }
+
+        $selected =
+            $shoppingContext[
+                'selected_product'
+            ]
+            ?? null;
+
+        if (
+            is_array($selected)
+            && !empty(
+                $selected['title']
+            )
+        ) {
+            $parts[] =
+                'Currently selected product: '
+                . $selected['title']
+                . '.';
+        }
+
+        if (!$parts) {
+            return null;
+        }
+
+        return implode(
+            "\n",
+            [
+                'Internal shopping context for this conversation.',
+                'Use it only when the shopper clearly refers to their ongoing shopping request.',
+                'Never invent facts that are not present in this context.',
+                implode(
+                    "\n",
+                    $parts
+                ),
+            ]
+        );
     }
 
     private function systemPrompt(
@@ -873,13 +1662,13 @@ class SalesAiService
 You are Storify Sales AI, a concise ecommerce assistant.
 
 Rules:
-1. Answer only the shopper's latest message.
-2. Do not continue an older topic unless the latest message clearly refers to it.
+1. Answer the shopper's latest request while respecting clear follow-up context.
+2. Do not bring back an unrelated older topic.
 3. Do not repeat your introduction or welcome message.
-4. Product search, product details, comparison, cart commands, order commands, stop, and reset are handled by the website before reaching you.
+4. Live product search, product details, comparison, cart commands, order commands, stop, and reset are handled by the website.
 5. Never invent product names, prices, stock, variants, ratings, discounts, order data, policies, or URLs.
-6. If the user asks for live catalog information that you do not have, ask them to provide a clearer product-related query.
-7. Keep the response concise and useful.
+6. If live store information is unavailable, say so rather than guessing.
+7. Keep responses concise, natural, and useful.
 8. Respond in the same language as the shopper.
 9. Stay focused on Storify shopping, store support, and ecommerce-related help.
 10. If the question is unrelated to Storify or shopping, politely explain that you can help with products, orders, cart, store policies, and shopping support.
@@ -904,15 +1693,20 @@ PROMPT;
     ): array {
         try {
             return $this->sendRequest(
-                messages: $messages,
-                settings: $settings,
-                model: $primaryModel
+                messages:
+                    $messages,
+
+                settings:
+                    $settings,
+
+                model:
+                    $primaryModel
             );
         } catch (Throwable $exception) {
             if (
-                !$fallbackModel ||
-                $fallbackModel ===
-                    $primaryModel
+                !$fallbackModel
+                || $fallbackModel
+                    === $primaryModel
             ) {
                 throw $exception;
             }
@@ -932,9 +1726,14 @@ PROMPT;
             );
 
             return $this->sendRequest(
-                messages: $messages,
-                settings: $settings,
-                model: $fallbackModel
+                messages:
+                    $messages,
+
+                settings:
+                    $settings,
+
+                model:
+                    $fallbackModel
             );
         }
     }
@@ -960,7 +1759,9 @@ PROMPT;
                 'HTTP-Referer' =>
                     config(
                         'services.openrouter.site_url',
-                        config('app.url')
+                        config(
+                            'app.url'
+                        )
                     ),
 
                 'X-Title' =>
@@ -1103,7 +1904,8 @@ PROMPT;
             ]);
 
         $conversation->update([
-            'last_message_at' => now(),
+            'last_message_at' =>
+                now(),
         ]);
 
         return [
@@ -1125,13 +1927,26 @@ PROMPT;
                 'storify-expert-system',
 
             'usage' => [
-                'prompt_tokens' => 0,
-                'completion_tokens' => 0,
-                'total_tokens' => 0,
-                'cost' => 0,
+                'prompt_tokens' =>
+                    0,
+
+                'completion_tokens' =>
+                    0,
+
+                'total_tokens' =>
+                    0,
+
+                'cost' =>
+                    0,
             ],
         ];
     }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Replies
+    |--------------------------------------------------------------------------
+    */
 
     private function productSearchReply(
         array $result,
@@ -1187,12 +2002,40 @@ PROMPT;
     private function noProductReply(
         array $resolved
     ): string {
-        return $this->isBangla(
+        $hasPreviousFilters =
+            !empty(
+                $resolved[
+                    'previous_filters'
+                ]
+                ?? []
+            );
+
+        $isRefinement =
+            ($resolved['context_mode']
+                ?? null) === 'refine';
+
+        if ($this->isBangla(
             $resolved['original_message']
             ?? ''
-        )
-            ? 'আপনার অনুসন্ধানের সঙ্গে মিলে এমন কোনো প্রোডাক্ট পাওয়া যায়নি। Brand, category, budget অথবা product name পরিবর্তন করে চেষ্টা করুন।'
-            : 'I could not find a matching product. Try changing the brand, category, budget, or product name.';
+        )) {
+            if (
+                $hasPreviousFilters
+                && $isRefinement
+            ) {
+                return 'এই নতুন শর্তগুলো যোগ করার পর matching কোনো প্রোডাক্ট পাওয়া যায়নি। Budget, brand, category বা অন্য filter একটু পরিবর্তন করে চেষ্টা করুন।';
+            }
+
+            return 'আপনার অনুসন্ধানের সঙ্গে মিলে এমন কোনো প্রোডাক্ট পাওয়া যায়নি। Brand, category, budget অথবা product name পরিবর্তন করে চেষ্টা করুন।';
+        }
+
+        if (
+            $hasPreviousFilters
+            && $isRefinement
+        ) {
+            return 'I could not find any products after applying the new requirement. Try relaxing the budget, brand, category, or another filter.';
+        }
+
+        return 'I could not find a matching product. Try changing the brand, category, budget, or product name.';
     }
 
     private function failureReply(
@@ -1205,6 +2048,12 @@ PROMPT;
             ? 'Store catalog এখন load করা যাচ্ছে না। কিছুক্ষণ পর আবার চেষ্টা করুন।'
             : 'The store catalog could not be loaded right now. Please try again shortly.';
     }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Utilities
+    |--------------------------------------------------------------------------
+    */
 
     private function isBangla(
         string $message
@@ -1219,7 +2068,9 @@ PROMPT;
         mixed $content
     ): ?string {
         if (is_string($content)) {
-            $content = trim($content);
+            $content = trim(
+                $content
+            );
 
             return $content !== ''
                 ? $content
@@ -1230,11 +2081,13 @@ PROMPT;
             return null;
         }
 
-        $text = collect($content)
+        $text = collect(
+            $content
+        )
             ->filter(
                 fn ($item) =>
-                    is_array($item) &&
-                    (
+                    is_array($item)
+                    && (
                         $item['type']
                         ?? null
                     ) === 'text'
@@ -1243,7 +2096,9 @@ PROMPT;
             ->filter()
             ->implode("\n");
 
-        $text = trim($text);
+        $text = trim(
+            $text
+        );
 
         return $text !== ''
             ? $text
@@ -1269,8 +2124,8 @@ PROMPT;
         $totalTokens = (int) (
             $usage['total_tokens']
             ?? (
-                $promptTokens +
-                $completionTokens
+                $promptTokens
+                + $completionTokens
             )
         );
 
@@ -1279,16 +2134,20 @@ PROMPT;
             ?? 0
         );
 
-        $totalUsage['prompt_tokens'] +=
-            $promptTokens;
+        $totalUsage[
+            'prompt_tokens'
+        ] += $promptTokens;
 
-        $totalUsage['completion_tokens'] +=
-            $completionTokens;
+        $totalUsage[
+            'completion_tokens'
+        ] += $completionTokens;
 
-        $totalUsage['total_tokens'] +=
-            $totalTokens;
+        $totalUsage[
+            'total_tokens'
+        ] += $totalTokens;
 
-        $totalUsage['cost'] +=
-            $cost;
+        $totalUsage[
+            'cost'
+        ] += $cost;
     }
 }

@@ -1,2013 +1,671 @@
-<style>
-/* =========================================================
-   POOL PILOTS PREMIUM MEGA MENU
-   One-Widget Version
-========================================================= */
+<div class="pp-location-grid">
 
-#poolPilotsNav {
-    --pp-purple: #6750a4;
-    --pp-purple-dark: #503b88;
-    --pp-purple-light: #f5f2fb;
-    --pp-orange: #ffa000;
-    --pp-orange-dark: #e89000;
-    --pp-orange-light: #fff6e6;
-    --pp-white: #ffffff;
-    --pp-text: #201a2d;
-    --pp-text-light: #6d6679;
-    --pp-border: #ebe6f2;
+  <!-- Scottsdale Card -->
+  <div class="pp-location-card">
+    <div class="pp-map-box">
 
-    position: relative;
-    width: 100%;
-    z-index: 999999;
-    font-family: inherit;
-}
+      <a
+        class="pp-open-map"
+        href="https://www.google.com/maps/search/?api=1&query=3260+Hayden+Road+Suite+210+Scottsdale+AZ+85251"
+        target="_blank"
+        rel="noopener"
+      >
+        Open in Maps ↗
+      </a>
 
-#poolPilotsNav,
-#poolPilotsNav * {
-    box-sizing: border-box;
-}
+      <img
+        src="https://callpoolpilots.com/wp-content/uploads/2026/09/Scottsdale-1.webp"
+        alt="Pool Pilots Scottsdale location"
+          onclick="window.location.href='/scottsdale/';"
+        style="cursor:pointer;"
+        loading="lazy"
+      >
 
-#poolPilotsNav ul,
-#poolPilotsNav li {
-    margin: 0;
-    padding: 0;
-    list-style: none;
-}
+    </div>
 
-#poolPilotsNav a {
-    text-decoration: none !important;
-}
+    <div class="pp-card-content">
 
-#poolPilotsNav button {
-    font-family: inherit;
-}
+      <span class="pp-location-area">SCOTTSDALE</span>
 
-/* =========================================================
-   MAIN NAVIGATION
-========================================================= */
+      <h3>Pool Pilots Scottsdale</h3>
 
-#poolPilotsNav .pp-nav {
-    position: relative;
-    width: 100%;
-    overflow: visible;
-}
+      <div class="pp-rating">
+        <span class="pp-stars">★★★★★</span>
+        <span>5.0 Google reviews</span>
+      </div>
 
-#poolPilotsNav .pp-menu {
-    display: flex !important;
-    align-items: center;
-    justify-content: flex-end;
-    gap: 3px;
-    width: 100%;
-    margin: 0;
-    padding: 0;
-}
+      <div class="pp-info-row">
 
-#poolPilotsNav .pp-menu-item {
-    position: static;
-}
+        <span class="pp-icon pp-map-icon">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M12 21s7-6.08 7-12a7 7 0 0 0-14 0c0 5.92 7 12 7 12Z"></path>
+            <circle cx="12" cy="9" r="2.5"></circle>
+          </svg>
+        </span>
 
-#poolPilotsNav .pp-menu-head {
-    position: relative;
-    display: flex;
-    align-items: center;
-    min-height: 52px;
-    border-radius: 10px;
-}
+        <p>
+          3260 Hayden Rd #210, Scottsdale, AZ 85251, United States
+        </p>
 
-#poolPilotsNav .pp-main-link {
-    display: flex;
-    align-items: center;
-    min-height: 52px;
-    padding: 0 13px;
+      </div>
 
-    color: var(--pp-text) !important;
 
-    font-size: 15px;
-    font-weight: 700;
-    line-height: 1;
+      <div class="pp-info-row">
 
-    white-space: nowrap;
+        <span class="pp-icon pp-phone-icon">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M22 16.92v3a2 2 0 0 1-2.18 2A19.86 19.86 0 0 1 11.19 19a19.5 19.5 0 0 1-6-6A19.86 19.86 0 0 1 2.08 4.18 2 2 0 0 1 4.06 2h3a2 2 0 0 1 2 1.72c.12.91.33 1.8.62 2.65a2 2 0 0 1-.45 2.11L8 9.72a16 16 0 0 0 6.28 6.28l1.24-1.23a2 2 0 0 1 2.11-.45c.85.29 1.74.5 2.65.62A2 2 0 0 1 22 16.92Z"></path>
+          </svg>
+        </span>
 
-    transition:
-        color 0.2s ease,
-        background 0.2s ease;
-}
+        <p>
+          <a href="tel:6028427178">
+            602-842-7178
+          </a>
+        </p>
 
-#poolPilotsNav .pp-main-link:hover,
-#poolPilotsNav .pp-menu-item:hover > .pp-menu-head .pp-main-link {
-    color: var(--pp-purple) !important;
-}
+      </div>
 
-/* =========================================================
-   DROPDOWN ARROW
-========================================================= */
 
-#poolPilotsNav .pp-arrow-button {
-    display: flex;
-    align-items: center;
-    justify-content: center;
+      <div class="pp-info-row">
 
-    width: 30px;
-    height: 52px;
+        <span class="pp-icon pp-clock-icon">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <circle cx="12" cy="12" r="8"></circle>
+            <path d="M12 7.5v5l3.4 2"></path>
+          </svg>
+        </span>
 
-    margin-left: -9px;
-    padding: 0;
+        <p>
+          Mon–Fri 8:00 AM – 5:30 PM
+        </p>
 
-    border: 0;
-    outline: 0;
+      </div>
 
-    background: transparent;
-    color: var(--pp-text);
 
-    cursor: pointer;
-}
+      <div class="pp-button-row">
 
-#poolPilotsNav .pp-arrow-button svg {
-    width: 15px;
-    height: 15px;
-
-    transition: transform 0.25s ease;
-}
-
-#poolPilotsNav .pp-menu-item:hover .pp-arrow-button,
-#poolPilotsNav .pp-menu-item.pp-open .pp-arrow-button {
-    color: var(--pp-purple);
-}
-
-#poolPilotsNav .pp-menu-item:hover .pp-arrow-button svg,
-#poolPilotsNav .pp-menu-item.pp-open .pp-arrow-button svg {
-    transform: rotate(180deg);
-}
-
-/* =========================================================
-   ORANGE ACTIVE INDICATOR
-========================================================= */
-
-#poolPilotsNav .pp-has-dropdown > .pp-menu-head::after {
-    content: "";
-
-    position: absolute;
-    left: 13px;
-    right: 28px;
-    bottom: 1px;
-
-    height: 2px;
-
-    border-radius: 20px;
-    background: var(--pp-orange);
-
-    transform: scaleX(0);
-    transform-origin: center;
-
-    transition: transform 0.22s ease;
-}
-
-#poolPilotsNav .pp-has-dropdown:hover > .pp-menu-head::after,
-#poolPilotsNav .pp-has-dropdown.pp-open > .pp-menu-head::after {
-    transform: scaleX(1);
-}
-
-/* =========================================================
-   DROPDOWN BASE
-========================================================= */
-
-#poolPilotsNav .pp-dropdown {
-    display: block !important;
-
-    position: absolute;
-
-    top: calc(100% + 11px);
-    left: 50%;
-
-    z-index: 9999999;
-
-    background: var(--pp-white);
-
-    border: 1px solid rgba(103, 80, 164, 0.12);
-    border-radius: 18px;
-
-    box-shadow:
-        0 28px 70px rgba(41, 27, 75, 0.15),
-        0 7px 20px rgba(41, 27, 75, 0.06);
-
-    opacity: 0;
-    visibility: hidden;
-    pointer-events: none;
-
-    transform: translate(-50%, 10px);
-
-    transition:
-        opacity 0.2s ease,
-        visibility 0.2s ease,
-        transform 0.2s ease;
-}
-
-/* Hover bridge */
-
-#poolPilotsNav .pp-dropdown::before {
-    content: "";
-
-    position: absolute;
-
-    top: -17px;
-    left: 0;
-    right: 0;
-
-    height: 20px;
-}
-
-/* Open desktop dropdown */
-
-#poolPilotsNav .pp-menu-item:hover > .pp-dropdown,
-#poolPilotsNav .pp-menu-item.pp-open > .pp-dropdown,
-#poolPilotsNav .pp-dropdown:hover {
-    opacity: 1;
-    visibility: visible;
-    pointer-events: auto;
-
-    transform: translate(-50%, 0);
-}
-
-/* =========================================================
-   POOL SERVICES MEGA MENU
-========================================================= */
-
-#poolPilotsNav .pp-services-mega {
-    width: min(970px, calc(100vw - 40px));
-    padding: 29px 29px 0;
-}
-
-#poolPilotsNav .pp-mega-label {
-    margin: 0 0 23px;
-
-    color: var(--pp-orange-dark);
-
-    font-size: 11px;
-    font-weight: 900;
-    line-height: 1;
-
-    letter-spacing: 1.8px;
-    text-transform: uppercase;
-}
-
-#poolPilotsNav .pp-services-grid {
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 28px;
-}
-
-#poolPilotsNav .pp-service-column {
-    min-width: 0;
-}
-
-/* =========================================================
-   CATEGORY HEADER
-========================================================= */
-
-#poolPilotsNav .pp-category-head {
-    display: flex;
-    align-items: center;
-
-    gap: 11px;
-
-    margin-bottom: 13px;
-}
-
-#poolPilotsNav .pp-category-icon {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-
-    width: 43px;
-    height: 43px;
-    flex: 0 0 43px;
-
-    border-radius: 11px;
-
-    background: var(--pp-purple-light);
-    color: var(--pp-purple);
-
-    transition:
-        background 0.2s ease,
-        color 0.2s ease,
-        transform 0.2s ease;
-}
-
-#poolPilotsNav .pp-category-icon svg {
-    width: 21px;
-    height: 21px;
-}
-
-#poolPilotsNav .pp-category-head:hover .pp-category-icon {
-    background: var(--pp-purple);
-    color: #ffffff;
-
-    transform: translateY(-1px);
-}
-
-#poolPilotsNav .pp-category-title {
-    margin: 0;
-
-    font-size: 16px;
-    font-weight: 800;
-    line-height: 1.3;
-}
-
-#poolPilotsNav .pp-category-title a {
-    color: var(--pp-text) !important;
-
-    transition: color 0.2s ease;
-}
-
-#poolPilotsNav .pp-category-head:hover .pp-category-title a {
-    color: var(--pp-purple) !important;
-}
-
-/* =========================================================
-   SERVICE LINKS
-========================================================= */
-
-#poolPilotsNav .pp-service-link {
-    position: relative;
-
-    display: flex;
-    align-items: center;
-
-    min-height: 39px;
-
-    padding: 9px 28px 9px 12px;
-
-    border-radius: 8px;
-
-    color: #514a5c !important;
-
-    font-size: 13.5px;
-    font-weight: 600;
-    line-height: 1.35;
-
-    transition:
-        background 0.18s ease,
-        color 0.18s ease,
-        padding-left 0.18s ease;
-}
-
-#poolPilotsNav .pp-service-link::after {
-    content: "→";
-
-    position: absolute;
-    right: 11px;
-
-    color: var(--pp-orange);
-
-    font-size: 16px;
-    font-weight: 700;
-
-    opacity: 0;
-
-    transform: translateX(-4px);
-
-    transition:
-        opacity 0.18s ease,
-        transform 0.18s ease;
-}
-
-#poolPilotsNav .pp-service-link:hover {
-    padding-left: 15px;
-
-    background: var(--pp-purple-light);
-    color: var(--pp-purple) !important;
-}
-
-#poolPilotsNav .pp-service-link:hover::after {
-    opacity: 1;
-
-    transform: translateX(0);
-}
-
-/* =========================================================
-   RESIDENTIAL / COMMERCIAL CARDS
-========================================================= */
-
-#poolPilotsNav .pp-type-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-
-    gap: 12px;
-
-    margin-top: 24px;
-    padding-top: 22px;
-
-    border-top: 1px solid var(--pp-border);
-}
-
-#poolPilotsNav .pp-type-card {
-    display: flex;
-    align-items: center;
-
-    gap: 12px;
-
-    padding: 13px 15px;
-
-    border: 1px solid var(--pp-border);
-    border-radius: 12px;
-
-    background: #ffffff;
-
-    transition:
-        border-color 0.2s ease,
-        background 0.2s ease,
-        transform 0.2s ease,
-        box-shadow 0.2s ease;
-}
-
-#poolPilotsNav .pp-type-card:hover {
-    border-color: rgba(103, 80, 164, 0.3);
-
-    background: var(--pp-purple-light);
-
-    transform: translateY(-1px);
-
-    box-shadow: 0 8px 20px rgba(62, 42, 105, 0.08);
-}
-
-#poolPilotsNav .pp-type-icon {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-
-    width: 40px;
-    height: 40px;
-    flex: 0 0 40px;
-
-    border-radius: 10px;
-
-    background: var(--pp-orange-light);
-    color: var(--pp-orange-dark);
-}
-
-#poolPilotsNav .pp-type-icon svg {
-    width: 20px;
-    height: 20px;
-}
-
-#poolPilotsNav .pp-type-content {
-    min-width: 0;
-}
-
-#poolPilotsNav .pp-type-title {
-    display: block;
-
-    margin-bottom: 2px;
-
-    color: var(--pp-text);
-
-    font-size: 13.5px;
-    font-weight: 800;
-    line-height: 1.3;
-}
-
-#poolPilotsNav .pp-type-description {
-    display: block;
-
-    color: var(--pp-text-light);
-
-    font-size: 11.5px;
-    font-weight: 500;
-    line-height: 1.4;
-}
-
-/* =========================================================
-   MEGA MENU FOOTER
-========================================================= */
-
-#poolPilotsNav .pp-mega-footer {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-
-    gap: 20px;
-
-    margin: 22px -29px 0;
-    padding: 17px 29px;
-
-    border-top: 1px solid var(--pp-border);
-    border-radius: 0 0 18px 18px;
-
-    background: #faf8fd;
-}
-
-#poolPilotsNav .pp-all-services {
-    display: inline-flex;
-    align-items: center;
-
-    gap: 7px;
-
-    color: var(--pp-purple) !important;
-
-    font-size: 13.5px;
-    font-weight: 800;
-
-    transition:
-        color 0.2s ease,
-        gap 0.2s ease;
-}
-
-#poolPilotsNav .pp-all-services:hover {
-    gap: 10px;
-
-    color: var(--pp-orange-dark) !important;
-}
-
-#poolPilotsNav .pp-quote {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-
-    gap: 7px;
-
-    min-height: 40px;
-
-    padding: 0 18px;
-
-    border-radius: 9px;
-
-    background: var(--pp-purple);
-    color: #ffffff !important;
-
-    font-size: 13px;
-    font-weight: 800;
-
-    transition:
-        background 0.2s ease,
-        transform 0.2s ease;
-}
-
-#poolPilotsNav .pp-quote:hover {
-    background: var(--pp-purple-dark);
-    color: #ffffff !important;
-
-    transform: translateY(-1px);
-}
-
-/* =========================================================
-   SERVICE AREAS / BRANDS
-========================================================= */
-
-#poolPilotsNav .pp-small-dropdown {
-    width: min(500px, calc(100vw - 40px));
-    padding: 25px;
-}
-
-#poolPilotsNav .pp-brand-dropdown {
-    width: min(390px, calc(100vw - 40px));
-}
-
-#poolPilotsNav .pp-small-head {
-    display: flex;
-    align-items: flex-start;
-
-    gap: 11px;
-
-    margin-bottom: 18px;
-}
-
-#poolPilotsNav .pp-small-icon {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-
-    width: 40px;
-    height: 40px;
-    flex: 0 0 40px;
-
-    border-radius: 10px;
-
-    background: var(--pp-purple-light);
-    color: var(--pp-purple);
-}
-
-#poolPilotsNav .pp-small-icon svg {
-    width: 20px;
-    height: 20px;
-}
-
-#poolPilotsNav .pp-small-title {
-    margin: 0 0 3px;
-
-    color: var(--pp-text);
-
-    font-size: 15px;
-    font-weight: 800;
-    line-height: 1.3;
-}
-
-#poolPilotsNav .pp-small-text {
-    margin: 0;
-
-    color: var(--pp-text-light);
-
-    font-size: 11.5px;
-    line-height: 1.45;
-}
-
-#poolPilotsNav .pp-location-grid {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-
-    gap: 6px;
-}
-
-#poolPilotsNav .pp-brand-grid {
-    display: grid;
-    grid-template-columns: 1fr;
-
-    gap: 6px;
-}
-
-#poolPilotsNav .pp-small-link {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-
-    min-height: 42px;
-
-    gap: 10px;
-
-    padding: 0 12px;
-
-    border-radius: 8px;
-
-    color: #514a5c !important;
-
-    font-size: 13.5px;
-    font-weight: 700;
-
-    transition:
-        color 0.18s ease,
-        background 0.18s ease;
-}
-
-#poolPilotsNav .pp-small-link .pp-small-arrow {
-    color: var(--pp-orange);
-
-    opacity: 0;
-
-    transform: translateX(-4px);
-
-    transition:
-        opacity 0.18s ease,
-        transform 0.18s ease;
-}
-
-#poolPilotsNav .pp-small-link:hover {
-    background: var(--pp-purple-light);
-    color: var(--pp-purple) !important;
-}
-
-#poolPilotsNav .pp-small-link:hover .pp-small-arrow {
-    opacity: 1;
-
-    transform: translateX(0);
-}
-
-#poolPilotsNav .pp-small-footer {
-    margin-top: 15px;
-    padding-top: 15px;
-
-    border-top: 1px solid var(--pp-border);
-}
-
-#poolPilotsNav .pp-small-footer a {
-    color: var(--pp-purple) !important;
-
-    font-size: 13px;
-    font-weight: 800;
-}
-
-#poolPilotsNav .pp-small-footer a:hover {
-    color: var(--pp-orange-dark) !important;
-}
-
-/* =========================================================
-   PHONE CTA
-========================================================= */
-
-#poolPilotsNav .pp-call {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-
-    gap: 8px;
-
-    min-height: 46px;
-
-    margin-left: 8px;
-    padding: 0 18px;
-
-    border-radius: 10px;
-
-    background: var(--pp-orange);
-    color: #ffffff !important;
-
-    font-size: 14px;
-    font-weight: 800;
-    line-height: 1;
-
-    white-space: nowrap;
-
-    box-shadow: 0 8px 20px rgba(255, 160, 0, 0.2);
-
-    transition:
-        background 0.2s ease,
-        transform 0.2s ease,
-        box-shadow 0.2s ease;
-}
-
-#poolPilotsNav .pp-call:hover {
-    background: var(--pp-orange-dark);
-    color: #ffffff !important;
-
-    transform: translateY(-1px);
-
-    box-shadow: 0 10px 24px rgba(255, 160, 0, 0.28);
-}
-
-#poolPilotsNav .pp-call svg {
-    width: 16px;
-    height: 16px;
-}
-
-/* =========================================================
-   MOBILE BUTTON
-========================================================= */
-
-#poolPilotsNav .pp-mobile-button {
-    display: none !important;
-
-    align-items: center;
-    justify-content: center;
-
-    width: 46px;
-    height: 46px;
-
-    margin-left: auto;
-    padding: 0;
-
-    border: 1px solid var(--pp-border);
-    border-radius: 10px;
-
-    background: #ffffff;
-    color: var(--pp-purple);
-
-    cursor: pointer;
-}
-
-#poolPilotsNav .pp-mobile-button svg {
-    width: 24px;
-    height: 24px;
-}
-
-/* =========================================================
-   TABLET / MOBILE
-========================================================= */
-
-@media (max-width: 1024px) {
-
-    #poolPilotsNav .pp-nav {
-        display: flex;
-        justify-content: flex-end;
-    }
-
-    #poolPilotsNav .pp-mobile-button {
-        display: flex !important;
-    }
-
-    #poolPilotsNav .pp-menu {
-        position: absolute;
-
-        top: calc(100% + 10px);
-        right: 0;
-
-        display: none !important;
-        flex-direction: column;
-        align-items: stretch;
-
-        gap: 0;
-
-        width: min(440px, calc(100vw - 26px));
-        max-height: calc(100vh - 110px);
-
-        padding: 9px;
-
-        overflow-x: hidden;
-        overflow-y: auto;
-
-        border: 1px solid var(--pp-border);
-        border-radius: 16px;
-
-        background: #ffffff;
-
-        box-shadow:
-            0 25px 60px rgba(44, 30, 79, 0.18);
-    }
-
-    #poolPilotsNav.pp-mobile-open .pp-menu {
-        display: flex !important;
-    }
-
-    #poolPilotsNav .pp-menu-item {
-        width: 100%;
-
-        border-bottom: 1px solid #f0edf5;
-    }
-
-    #poolPilotsNav .pp-menu-item:last-child {
-        border-bottom: 0;
-    }
-
-    #poolPilotsNav .pp-menu-head {
-        width: 100%;
-    }
-
-    #poolPilotsNav .pp-main-link {
-        flex: 1;
-
-        min-height: 50px;
-
-        padding: 0 12px;
-    }
-
-    #poolPilotsNav .pp-arrow-button {
-        width: 48px;
-        height: 50px;
-
-        margin: 0;
-    }
-
-    #poolPilotsNav .pp-has-dropdown > .pp-menu-head::after {
-        display: none;
-    }
-
-    /* Disable desktop hover opening */
-
-    #poolPilotsNav .pp-dropdown,
-    #poolPilotsNav .pp-menu-item:hover > .pp-dropdown {
-        position: static;
-
-        display: none !important;
-
-        width: 100%;
-
-        margin: 0;
-        padding: 0 9px 13px;
-
-        border: 0;
-        border-radius: 0;
-
-        background: #ffffff;
-
-        box-shadow: none;
-
-        opacity: 1;
-        visibility: visible;
-        pointer-events: auto;
-
-        transform: none;
-    }
-
-    #poolPilotsNav .pp-menu-item.pp-open > .pp-dropdown {
-        display: block !important;
-    }
-
-    #poolPilotsNav .pp-dropdown::before {
-        display: none;
-    }
-
-    #poolPilotsNav .pp-services-mega {
-        width: 100%;
-
-        padding: 3px 9px 13px;
-    }
-
-    #poolPilotsNav .pp-mega-label {
-        margin: 10px 3px 16px;
-    }
-
-    #poolPilotsNav .pp-services-grid {
-        grid-template-columns: 1fr;
-
-        gap: 13px;
-    }
-
-    #poolPilotsNav .pp-service-column {
-        padding: 13px;
-
-        border: 1px solid var(--pp-border);
-        border-radius: 12px;
-    }
-
-    #poolPilotsNav .pp-category-head {
-        margin-bottom: 7px;
-    }
-
-    #poolPilotsNav .pp-type-grid {
-        grid-template-columns: 1fr;
-
-        margin-top: 14px;
-        padding-top: 14px;
-    }
-
-    #poolPilotsNav .pp-mega-footer {
-        flex-direction: column;
-        align-items: stretch;
-
-        margin: 15px 0 0;
-
-        padding: 14px;
-
-        border: 1px solid var(--pp-border);
-        border-radius: 11px;
-    }
-
-    #poolPilotsNav .pp-all-services {
-        justify-content: center;
-    }
-
-    #poolPilotsNav .pp-quote {
-        width: 100%;
-    }
-
-    #poolPilotsNav .pp-small-dropdown,
-    #poolPilotsNav .pp-brand-dropdown {
-        width: 100%;
-
-        padding: 6px 9px 13px;
-    }
-
-    #poolPilotsNav .pp-call {
-        width: 100%;
-
-        margin: 10px 0 2px;
-    }
-}
-
-/* =========================================================
-   SMALL MOBILE
-========================================================= */
-
-@media (max-width: 520px) {
-
-    #poolPilotsNav .pp-menu {
-        right: 0;
-
-        width: calc(100vw - 20px);
-    }
-
-    #poolPilotsNav .pp-location-grid {
-        grid-template-columns: 1fr;
-    }
-
-    #poolPilotsNav .pp-type-description {
-        display: none;
-    }
-}
-
-/* =========================================================
-   ELEMENTOR OVERFLOW SUPPORT
-========================================================= */
-
-.elementor-widget-html:has(#poolPilotsNav),
-.elementor-widget-html:has(#poolPilotsNav) > .elementor-widget-container {
-    overflow: visible !important;
-}
-</style>
-
-
-<div
-    id="poolPilotsNav"
-    style="position:relative;width:100%;z-index:999999;"
->
-
-    <nav
-        class="pp-nav"
-        aria-label="Pool Pilots Main Navigation"
-        style="position:relative;width:100%;"
-    >
-
-        <!-- MOBILE BUTTON -->
-        <button
-            class="pp-mobile-button"
-            type="button"
-            aria-label="Open navigation"
-            aria-expanded="false"
-            style="display:none;"
+        <a
+          href="/scottsdale/"
+          class="pp-primary-btn"
         >
-            <svg
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-            >
-                <path d="M4 6h16"></path>
-                <path d="M4 12h16"></path>
-                <path d="M4 18h16"></path>
-            </svg>
-        </button>
+          Scottsdale Location
+        </a>
 
-
-        <ul
-            class="pp-menu"
-            style="display:flex;align-items:center;justify-content:flex-end;gap:3px;list-style:none;margin:0;padding:0;"
+        <a
+          href="https://maps.app.goo.gl/17gjYN16aDXutuM68"
+          target="_blank"
+          rel="noopener"
+          class="pp-secondary-btn"
         >
+          Directions
+        </a>
 
-            <!-- ABOUT US -->
-            <li class="pp-menu-item">
+      </div>
 
-                <div class="pp-menu-head">
+    </div>
+  </div>
 
-                    <a
-                        class="pp-main-link"
-                        href="/about-us/"
-                    >
-                        About Us
-                    </a>
 
-                </div>
+  <!-- Mesa Card -->
+  <div class="pp-location-card">
 
-            </li>
+    <div class="pp-map-box">
 
+      <a
+        class="pp-open-map"
+        href="https://www.google.com/maps/search/?api=1&query=1855+E+Southern+Ave+Suite+209+Mesa+AZ+85204"
+        target="_blank"
+        rel="noopener"
+      >
+        Open in Maps ↗
+      </a>
 
-            <!-- =====================================================
-                 POOL SERVICES
-            ====================================================== -->
+      <img
+        src="https://callpoolpilots.com/wp-content/uploads/2026/09/Mesa.webp"
+        alt="Pool Pilots Mesa location"
+        loading="lazy"
+        onclick="window.location.href='/mesa/';"
+        style="cursor:pointer;"
+      >
 
-            <li class="pp-menu-item pp-has-dropdown">
+    </div>
 
-                <div class="pp-menu-head">
 
-                    <a
-                        class="pp-main-link"
-                        href="/services/"
-                    >
-                        Pool Services
-                    </a>
+    <div class="pp-card-content">
 
-                    <button
-                        class="pp-arrow-button"
-                        type="button"
-                        aria-label="Open Pool Services menu"
-                        aria-expanded="false"
-                    >
-                        <svg
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            stroke-width="2.2"
-                            stroke-linecap="round"
-                            stroke-linejoin="round"
-                        >
-                            <path d="m6 9 6 6 6-6"></path>
-                        </svg>
-                    </button>
+      <span class="pp-location-area">MESA</span>
 
-                </div>
+      <h3>Pool Pilots Mesa</h3>
 
+      <div class="pp-rating">
+        <span class="pp-stars">★★★★★</span>
+        <span>5.0 Google reviews</span>
+      </div>
 
-                <div
-                    class="pp-dropdown pp-services-mega"
-                    style="display:none;"
-                >
 
-                    <p class="pp-mega-label">
-                        Pool Services
-                    </p>
+      <div class="pp-info-row">
 
+        <span class="pp-icon pp-map-icon">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M12 21s7-6.08 7-12a7 7 0 0 0-14 0c0 5.92 7 12 7 12Z"></path>
+            <circle cx="12" cy="9" r="2.5"></circle>
+          </svg>
+        </span>
 
-                    <div class="pp-services-grid">
+        <p>
+          1855 E Southern Ave Suite #209, Mesa, AZ 85204, United States
+        </p>
 
-                        <!-- POOL CLEANING -->
-                        <div class="pp-service-column">
+      </div>
 
-                            <div class="pp-category-head">
 
-                                <span class="pp-category-icon">
+      <div class="pp-info-row">
 
-                                    <svg
-                                        viewBox="0 0 24 24"
-                                        fill="none"
-                                        stroke="currentColor"
-                                        stroke-width="1.8"
-                                        stroke-linecap="round"
-                                        stroke-linejoin="round"
-                                    >
-                                        <path d="M3 15c1.5 0 1.5 1 3 1s1.5-1 3-1 1.5 1 3 1 1.5-1 3-1 1.5 1 3 1 1.5-1 3-1"></path>
-                                        <path d="M3 19c1.5 0 1.5 1 3 1s1.5-1 3-1 1.5 1 3 1 1.5-1 3-1 1.5 1 3 1 1.5-1 3-1"></path>
-                                        <path d="M7 12V7a3 3 0 0 1 6 0"></path>
-                                        <path d="M7 9h6"></path>
-                                    </svg>
+        <span class="pp-icon pp-phone-icon">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M22 16.92v3a2 2 0 0 1-2.18 2A19.86 19.86 0 0 1 11.19 19a19.5 19.5 0 0 1-6-6A19.86 19.86 0 0 1 2.08 4.18 2 2 0 0 1 4.06 2h3a2 2 0 0 1 2 1.72c.12.91.33 1.8.62 2.65a2 2 0 0 1-.45 2.11L8 9.72a16 16 0 0 0 6.28 6.28l1.24-1.23a2 2 0 0 1 2.11-.45c.85.29 1.74.5 2.65.62A2 2 0 0 1 22 16.92Z"></path>
+          </svg>
+        </span>
 
-                                </span>
+        <p>
+          <a href="tel:+14805427946">
+            480-542-7946
+          </a>
+        </p>
 
+      </div>
 
-                                <h3 class="pp-category-title">
 
-                                    <a href="/pool-cleaning/">
-                                        Pool Cleaning
-                                    </a>
+      <div class="pp-info-row">
 
-                                </h3>
+        <span class="pp-icon pp-clock-icon">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <circle cx="12" cy="12" r="8"></circle>
+            <path d="M12 7.5v5l3.4 2"></path>
+          </svg>
+        </span>
 
-                            </div>
+        <p>
+          Mon–Fri 8:00 AM – 5:30 PM
+        </p>
 
+      </div>
 
-                            <ul>
-
-                                <li>
-                                    <a
-                                        class="pp-service-link"
-                                        href="/weekly-pool-cleaning/"
-                                    >
-                                        Weekly Pool Cleaning
-                                    </a>
-                                </li>
-
-                                <li>
-                                    <a
-                                        class="pp-service-link"
-                                        href="/green-pool-cleaning/"
-                                    >
-                                        Green Pool Cleaning
-                                    </a>
-                                </li>
-
-                                <li>
-                                    <a
-                                        class="pp-service-link"
-                                        href="/filter-cleaning/"
-                                    >
-                                        Filter Cleaning
-                                    </a>
-                                </li>
-
-                                <li>
-                                    <a
-                                        class="pp-service-link"
-                                        href="/chemical-balancing/"
-                                    >
-                                        Chemical Balancing
-                                    </a>
-                                </li>
-
-                            </ul>
-
-                        </div>
-
-
-                        <!-- POOL REPAIR -->
-                        <div class="pp-service-column">
-
-                            <div class="pp-category-head">
-
-                                <span class="pp-category-icon">
-
-                                    <svg
-                                        viewBox="0 0 24 24"
-                                        fill="none"
-                                        stroke="currentColor"
-                                        stroke-width="1.8"
-                                        stroke-linecap="round"
-                                        stroke-linejoin="round"
-                                    >
-                                        <path d="M14.7 6.3a4 4 0 0 0-5 5L3 18v3h3l6.7-6.7a4 4 0 0 0 5-5l-2.4 2.4-3-3z"></path>
-                                    </svg>
-
-                                </span>
-
-
-                                <h3 class="pp-category-title">
-
-                                    <a href="/pool-repair/">
-                                        Pool Repair
-                                    </a>
-
-                                </h3>
-
-                            </div>
-
-
-                            <ul>
-
-                                <li>
-                                    <a
-                                        class="pp-service-link"
-                                        href="/pool-pump-repair/"
-                                    >
-                                        Pool Pump Repair
-                                    </a>
-                                </li>
-
-                                <li>
-                                    <a
-                                        class="pp-service-link"
-                                        href="/pool-filter-repair/"
-                                    >
-                                        Pool Filter Repair
-                                    </a>
-                                </li>
-
-                                <li>
-                                    <a
-                                        class="pp-service-link"
-                                        href="/pool-heater-repair/"
-                                    >
-                                        Pool Heater Repair
-                                    </a>
-                                </li>
-
-                                <li>
-                                    <a
-                                        class="pp-service-link"
-                                        href="/pool-leak-repair/"
-                                    >
-                                        Pool Leak Repair
-                                    </a>
-                                </li>
-
-                                <li>
-                                    <a
-                                        class="pp-service-link"
-                                        href="/pool-automation-repair/"
-                                    >
-                                        Pool Automation Repair
-                                    </a>
-                                </li>
-
-                                <li>
-                                    <a
-                                        class="pp-service-link"
-                                        href="/equipment-repair-and-replacement/"
-                                    >
-                                        Equipment Repair & Replacement
-                                    </a>
-                                </li>
-
-                            </ul>
-
-                        </div>
-
-
-                        <!-- POOL MAINTENANCE -->
-                        <div class="pp-service-column">
-
-                            <div class="pp-category-head">
-
-                                <span class="pp-category-icon">
-
-                                    <svg
-                                        viewBox="0 0 24 24"
-                                        fill="none"
-                                        stroke="currentColor"
-                                        stroke-width="1.8"
-                                        stroke-linecap="round"
-                                        stroke-linejoin="round"
-                                    >
-                                        <circle cx="12" cy="12" r="3"></circle>
-
-                                        <path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1-2.8 2.8-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.6v.2h-4V21a1.7 1.7 0 0 0-1-1.6 1.7 1.7 0 0 0-1.9.3l-.1.1L4.2 17l.1-.1a1.7 1.7 0 0 0 .3-1.9A1.7 1.7 0 0 0 3 14H2.8v-4H3a1.7 1.7 0 0 0 1.6-1 1.7 1.7 0 0 0-.3-1.9L4.2 7 7 4.2l.1.1a1.7 1.7 0 0 0 1.9.3A1.7 1.7 0 0 0 10 3v-.2h4V3a1.7 1.7 0 0 0 1 1.6 1.7 1.7 0 0 0 1.9-.3l.1-.1L19.8 7l-.1.1a1.7 1.7 0 0 0-.3 1.9 1.7 1.7 0 0 0 1.6 1h.2v4H21a1.7 1.7 0 0 0-1.6 1z"></path>
-                                    </svg>
-
-                                </span>
-
-
-                                <h3 class="pp-category-title">
-
-                                    <a href="/pool-maintenance/">
-                                        Pool Maintenance
-                                    </a>
-
-                                </h3>
-
-                            </div>
-
-
-                            <ul>
-
-                                <li>
-                                    <a
-                                        class="pp-service-link"
-                                        href="/preventative-maintenance-for-pool/"
-                                    >
-                                        Preventative Maintenance
-                                    </a>
-                                </li>
-
-                                <li>
-                                    <a
-                                        class="pp-service-link"
-                                        href="/seasonal-pool-maintenance/"
-                                    >
-                                        Seasonal Pool Maintenance
-                                    </a>
-                                </li>
-
-                                <li>
-                                    <a
-                                        class="pp-service-link"
-                                        href="/pool-inspections/"
-                                    >
-                                        Pool Inspections
-                                    </a>
-                                </li>
-
-                                <li>
-                                    <a
-                                        class="pp-service-link"
-                                        href="/pool-equipment-maintenance/"
-                                    >
-                                        Pool Equipment Maintenance
-                                    </a>
-                                </li>
-
-                                <li>
-                                    <a
-                                        class="pp-service-link"
-                                        href="/pool-draining-and-washing/"
-                                    >
-                                        Pool Draining & Washing
-                                    </a>
-                                </li>
-
-                            </ul>
-
-                        </div>
-
-                    </div>
-
-
-                    <!-- RESIDENTIAL / COMMERCIAL -->
-                    <div class="pp-type-grid">
-
-                        <a
-                            class="pp-type-card"
-                            href="/residential-pool-cleaning-and-repair/"
-                        >
-
-                            <span class="pp-type-icon">
-
-                                <svg
-                                    viewBox="0 0 24 24"
-                                    fill="none"
-                                    stroke="currentColor"
-                                    stroke-width="1.8"
-                                    stroke-linecap="round"
-                                    stroke-linejoin="round"
-                                >
-                                    <path d="m3 11 9-7 9 7"></path>
-                                    <path d="M5 10v10h14V10"></path>
-                                    <path d="M9 20v-6h6v6"></path>
-                                </svg>
 
-                            </span>
-
-
-                            <span class="pp-type-content">
+      <div class="pp-button-row">
 
-                                <span class="pp-type-title">
-                                    Residential Pool Cleaning & Repair
-                                </span>
-
-                                <span class="pp-type-description">
-                                    Professional pool care for Greater Phoenix homeowners.
-                                </span>
-
-                            </span>
-
-                        </a>
-
-
-                        <a
-                            class="pp-type-card"
-                            href="/commercial-pool-cleaning-and-repair/"
-                        >
-
-                            <span class="pp-type-icon">
-
-                                <svg
-                                    viewBox="0 0 24 24"
-                                    fill="none"
-                                    stroke="currentColor"
-                                    stroke-width="1.8"
-                                    stroke-linecap="round"
-                                    stroke-linejoin="round"
-                                >
-                                    <path d="M4 21V5h10v16"></path>
-                                    <path d="M14 9h6v12"></path>
-                                    <path d="M7 8h4"></path>
-                                    <path d="M7 12h4"></path>
-                                    <path d="M7 16h4"></path>
-                                    <path d="M17 13h1"></path>
-                                    <path d="M17 17h1"></path>
-                                </svg>
-
-                            </span>
-
-
-                            <span class="pp-type-content">
-
-                                <span class="pp-type-title">
-                                    Commercial Pool Cleaning & Repair
-                                </span>
-
-                                <span class="pp-type-description">
-                                    Reliable service for commercial pool properties.
-                                </span>
-
-                            </span>
-
-                        </a>
-
-                    </div>
-
-
-                    <!-- MEGA FOOTER -->
-                    <div class="pp-mega-footer">
-
-                        <a
-                            class="pp-all-services"
-                            href="/services/"
-                        >
-                            View all pool services
-                            <span>→</span>
-                        </a>
-
-
-                        <a
-                            class="pp-quote"
-                            href="/get-a-quote/"
-                        >
-                            Get a Fast Quote
-                            <span>→</span>
-                        </a>
-
-                    </div>
-
-                </div>
-
-            </li>
-
-
-            <!-- =====================================================
-                 SERVICE AREAS
-            ====================================================== -->
-
-            <li class="pp-menu-item pp-has-dropdown">
-
-                <div class="pp-menu-head">
-
-                    <a
-                        class="pp-main-link"
-                        href="/service-areas/"
-                    >
-                        Service Areas
-                    </a>
-
-
-                    <button
-                        class="pp-arrow-button"
-                        type="button"
-                        aria-label="Open Service Areas menu"
-                        aria-expanded="false"
-                    >
-                        <svg
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            stroke-width="2.2"
-                            stroke-linecap="round"
-                            stroke-linejoin="round"
-                        >
-                            <path d="m6 9 6 6 6-6"></path>
-                        </svg>
-                    </button>
-
-                </div>
-
-
-                <div
-                    class="pp-dropdown pp-small-dropdown"
-                    style="display:none;"
-                >
-
-                    <div class="pp-small-head">
-
-                        <span class="pp-small-icon">
-
-                            <svg
-                                viewBox="0 0 24 24"
-                                fill="none"
-                                stroke="currentColor"
-                                stroke-width="1.8"
-                                stroke-linecap="round"
-                                stroke-linejoin="round"
-                            >
-                                <path d="M20 10c0 5-8 11-8 11S4 15 4 10a8 8 0 1 1 16 0z"></path>
-                                <circle cx="12" cy="10" r="2.5"></circle>
-                            </svg>
-
-                        </span>
-
-
-                        <div>
-
-                            <h3 class="pp-small-title">
-                                Areas We Serve
-                            </h3>
-
-                            <p class="pp-small-text">
-                                Professional pool service throughout Greater Phoenix.
-                            </p>
-
-                        </div>
-
-                    </div>
-
-
-                    <div class="pp-location-grid">
-
-                        <a
-                            class="pp-small-link"
-                            href="/scottsdale/"
-                        >
-                            <span>Scottsdale</span>
-                            <span class="pp-small-arrow">→</span>
-                        </a>
-
-
-                        <a
-                            class="pp-small-link"
-                            href="/mesa/"
-                        >
-                            <span>Mesa</span>
-                            <span class="pp-small-arrow">→</span>
-                        </a>
-
-
-                        <a
-                            class="pp-small-link"
-                            href="/phoenix/"
-                        >
-                            <span>Phoenix</span>
-                            <span class="pp-small-arrow">→</span>
-                        </a>
-
-
-                        <a
-                            class="pp-small-link"
-                            href="/chandler/"
-                        >
-                            <span>Chandler</span>
-                            <span class="pp-small-arrow">→</span>
-                        </a>
-
-
-                        <a
-                            class="pp-small-link"
-                            href="/gilbert/"
-                        >
-                            <span>Gilbert</span>
-                            <span class="pp-small-arrow">→</span>
-                        </a>
-
-
-                        <a
-                            class="pp-small-link"
-                            href="/glendale/"
-                        >
-                            <span>Glendale</span>
-                            <span class="pp-small-arrow">→</span>
-                        </a>
-
-
-                        <a
-                            class="pp-small-link"
-                            href="/tempe/"
-                        >
-                            <span>Tempe</span>
-                            <span class="pp-small-arrow">→</span>
-                        </a>
-
-                    </div>
-
-
-                    <div class="pp-small-footer">
-
-                        <a href="/service-areas/">
-                            View all service areas →
-                        </a>
-
-                    </div>
-
-                </div>
-
-            </li>
-
-
-            <!-- =====================================================
-                 BRANDS
-            ====================================================== -->
-
-            <li class="pp-menu-item pp-has-dropdown">
-
-                <div class="pp-menu-head">
-
-                    <a
-                        class="pp-main-link"
-                        href="/pool-equipment-brands/"
-                    >
-                        Brands
-                    </a>
-
-
-                    <button
-                        class="pp-arrow-button"
-                        type="button"
-                        aria-label="Open Brands menu"
-                        aria-expanded="false"
-                    >
-                        <svg
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            stroke-width="2.2"
-                            stroke-linecap="round"
-                            stroke-linejoin="round"
-                        >
-                            <path d="m6 9 6 6 6-6"></path>
-                        </svg>
-                    </button>
-
-                </div>
-
-
-                <div
-                    class="pp-dropdown pp-small-dropdown pp-brand-dropdown"
-                    style="display:none;"
-                >
-
-                    <div class="pp-small-head">
-
-                        <span class="pp-small-icon">
-
-                            <svg
-                                viewBox="0 0 24 24"
-                                fill="none"
-                                stroke="currentColor"
-                                stroke-width="1.8"
-                                stroke-linecap="round"
-                                stroke-linejoin="round"
-                            >
-                                <path d="M20.6 13.6 11 4H4v7l9.6 9.6a2 2 0 0 0 2.8 0l4.2-4.2a2 2 0 0 0 0-2.8z"></path>
-                                <circle cx="7.5" cy="7.5" r="1"></circle>
-                            </svg>
-
-                        </span>
-
-
-                        <div>
-
-                            <h3 class="pp-small-title">
-                                Pool Equipment Brands
-                            </h3>
-
-                            <p class="pp-small-text">
-                                Service and repair for leading pool equipment manufacturers.
-                            </p>
-
-                        </div>
-
-                    </div>
-
-
-                    <div class="pp-brand-grid">
-
-                        <a
-                            class="pp-small-link"
-                            href="/hayward-pool-equipment-repair-and-service/"
-                        >
-                            <span>Hayward</span>
-                            <span class="pp-small-arrow">→</span>
-                        </a>
-
-
-                        <a
-                            class="pp-small-link"
-                            href="/pentair-pool-equipment-repair-and-service/"
-                        >
-                            <span>Pentair</span>
-                            <span class="pp-small-arrow">→</span>
-                        </a>
-
-
-                        <a
-                            class="pp-small-link"
-                            href="/jandy-pool-equipment-repair-and-service/"
-                        >
-                            <span>Jandy</span>
-                            <span class="pp-small-arrow">→</span>
-                        </a>
-
-                    </div>
-
-
-                    <div class="pp-small-footer">
-
-                        <a href="/pool-equipment-brands/">
-                            View all brands →
-                        </a>
-
-                    </div>
-
-                </div>
-
-            </li>
-
-
-            <!-- =====================================================
-                 CALL BUTTON
-            ====================================================== -->
-
-            <!-----
-
-            <li class="pp-menu-item">
-
-                <a
-                    class="pp-call"
-                    href="tel:+16028427178"
-                >
-
-                    <svg
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        stroke-width="2"
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                    >
-                        <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.8 19.8 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.12 4.18 2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.12.9.33 1.78.62 2.63a2 2 0 0 1-.45 2.11L8 9.73a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.85.29 1.73.5 2.63.62A2 2 0 0 1 22 16.92z"></path>
-                    </svg>
-
-                    <span>
-                        602-842-7178
-                    </span>
-
-                </a>
-
-            </li>   ----->
-
-        </ul>
-
-    </nav>
+        <a
+          href="/mesa/"
+          class="pp-primary-btn"
+        >
+          Mesa Location
+        </a>
+
+        <a
+          href="https://maps.app.goo.gl/3uQPC7ThXnii4TDu8"
+          target="_blank"
+          rel="noopener"
+          class="pp-secondary-btn"
+        >
+          Directions
+        </a>
+
+      </div>
+
+    </div>
+  </div>
 
 </div>
 
 
-<script>
-(function () {
+<style>
 
-    function initPoolPilotsNav() {
+@import url('https://fonts.googleapis.com/css2?family=Bungee&family=Roboto:wght@400;500;700;800;900&display=swap');
 
-        const navWidget = document.getElementById("poolPilotsNav");
 
-        if (!navWidget) {
-            return;
-        }
+.pp-location-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 28px;
+}
 
-        if (navWidget.dataset.ppInitialized === "true") {
-            return;
-        }
 
-        navWidget.dataset.ppInitialized = "true";
+/* ==============================
+   LOCATION CARD
+============================== */
 
+.pp-location-card {
+  background: #ffffff;
+  border: 1px solid rgba(16, 35, 63, 0.10);
+  border-radius: 18px;
+  overflow: hidden;
+  text-align: left;
+  box-shadow: 0 18px 45px rgba(16, 35, 63, 0.10);
+  transition:
+    transform 0.25s ease,
+    box-shadow 0.25s ease;
+}
 
-        const mobileButton =
-            navWidget.querySelector(".pp-mobile-button");
 
-        const dropdownItems =
-            navWidget.querySelectorAll(".pp-has-dropdown");
+.pp-location-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 24px 60px rgba(16, 35, 63, 0.14);
+}
 
-        const dropdownButtons =
-            navWidget.querySelectorAll(".pp-arrow-button");
 
+/* ==============================
+   LOCATION IMAGE
+============================== */
 
-        function isMobile() {
-            return window.innerWidth <= 1024;
-        }
+.pp-map-box {
+  position: relative;
+  width: 100%;
+  height: 310px;
+  overflow: hidden;
+  background: #eef1f5;
+}
 
 
-        function closeDropdowns(exceptItem) {
+.pp-map-box img {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: cover;
+  object-position: center center;
+  border: 0;
+  max-width: none;
+  transition: transform 0.45s ease;
+}
 
-            dropdownItems.forEach(function (item) {
 
-                if (item !== exceptItem) {
+/* subtle professional zoom */
 
-                    item.classList.remove("pp-open");
+.pp-location-card:hover .pp-map-box img {
+  transform: scale(1.025);
+}
 
-                    const button =
-                        item.querySelector(".pp-arrow-button");
 
-                    if (button) {
-                        button.setAttribute(
-                            "aria-expanded",
-                            "false"
-                        );
-                    }
+/* ==============================
+   OPEN MAP BUTTON
+============================== */
 
-                }
+.pp-open-map {
+  position: absolute;
+  top: 16px;
+  left: 16px;
+  z-index: 5;
 
-            });
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 
-        }
+  background: #ffffff;
+  color: #6750a4;
 
+  font-family: 'Roboto', sans-serif;
+  font-size: 12px;
+  font-weight: 800;
 
-        /* MOBILE BUTTON */
+  text-decoration: none !important;
 
-        if (mobileButton) {
+  padding: 10px 14px;
 
-            mobileButton.addEventListener(
-                "click",
-                function (event) {
+  border-radius: 9px;
 
-                    event.preventDefault();
-                    event.stopPropagation();
+  box-shadow: 0 8px 20px rgba(16, 35, 63, 0.16);
 
-                    const willOpen =
-                        !navWidget.classList.contains(
-                            "pp-mobile-open"
-                        );
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
+}
 
-                    navWidget.classList.toggle(
-                        "pp-mobile-open",
-                        willOpen
-                    );
 
-                    mobileButton.setAttribute(
-                        "aria-expanded",
-                        willOpen ? "true" : "false"
-                    );
+.pp-open-map:hover {
+  color: #6750a4;
+  transform: translateY(-2px);
+  box-shadow: 0 10px 25px rgba(16, 35, 63, 0.22);
+}
 
-                    if (!willOpen) {
-                        closeDropdowns();
-                    }
 
-                }
-            );
+/* ==============================
+   CARD CONTENT
+============================== */
 
-        }
+.pp-card-content {
+  padding: 28px;
+}
 
 
-        /* DROPDOWN BUTTONS */
+.pp-location-area {
+  display: block;
 
-        dropdownButtons.forEach(function (button) {
+  color: #ff8a00;
 
-            button.addEventListener(
-                "click",
-                function (event) {
+  font-family: 'Roboto', sans-serif;
+  font-size: 12px;
+  line-height: 1;
+  font-weight: 900;
 
-                    event.preventDefault();
-                    event.stopPropagation();
+  letter-spacing: 1.6px;
+  text-transform: uppercase;
 
-                    const currentItem =
-                        button.closest(".pp-has-dropdown");
+  margin-bottom: 12px;
+}
 
-                    if (!currentItem) {
-                        return;
-                    }
 
-                    const willOpen =
-                        !currentItem.classList.contains(
-                            "pp-open"
-                        );
+.pp-card-content h3 {
+  margin: 0 0 12px;
 
-                    closeDropdowns(currentItem);
+  color: #000000 !important;
 
-                    currentItem.classList.toggle(
-                        "pp-open",
-                        willOpen
-                    );
+  font-family: 'DDC', 'Roboto', sans-serif;
 
-                    button.setAttribute(
-                        "aria-expanded",
-                        willOpen ? "true" : "false"
-                    );
+  font-size: 28px;
+  line-height: 1.2;
+  font-weight: 700;
 
-                }
-            );
+  letter-spacing: 0.3px;
+  text-transform: uppercase;
+}
 
-        });
 
+/* ==============================
+   RATING
+============================== */
 
-        /* CLICK OUTSIDE */
+.pp-rating {
+  display: flex;
+  align-items: center;
 
-        document.addEventListener(
-            "click",
-            function (event) {
+  gap: 9px;
 
-                if (!navWidget.contains(event.target)) {
+  margin-bottom: 18px;
 
-                    closeDropdowns();
+  color: #31415a;
 
-                    navWidget.classList.remove(
-                        "pp-mobile-open"
-                    );
+  font-family: 'Roboto', sans-serif;
+  font-size: 14px;
+  font-weight: 700;
+}
 
-                    if (mobileButton) {
 
-                        mobileButton.setAttribute(
-                            "aria-expanded",
-                            "false"
-                        );
+.pp-stars {
+  color: #ff8a00;
 
-                    }
+  letter-spacing: 1px;
 
-                }
+  font-size: 15px;
 
-            }
-        );
+  white-space: nowrap;
+}
 
 
-        /* ESCAPE KEY */
+/* ==============================
+   INFO ROWS
+============================== */
 
-        document.addEventListener(
-            "keydown",
-            function (event) {
+.pp-info-row {
+  display: flex;
+  gap: 12px;
 
-                if (event.key !== "Escape") {
-                    return;
-                }
+  align-items: flex-start;
 
-                closeDropdowns();
+  margin-bottom: 12px;
+}
 
-                navWidget.classList.remove(
-                    "pp-mobile-open"
-                );
 
-                if (mobileButton) {
+.pp-info-row p {
+  margin: 0;
 
-                    mobileButton.setAttribute(
-                        "aria-expanded",
-                        "false"
-                    );
+  color: #526079;
 
-                }
+  font-family: 'Roboto', sans-serif;
 
-            }
-        );
+  font-size: 15px;
+  line-height: 1.55;
 
+  font-weight: 600;
+}
 
-        /* WINDOW RESIZE */
 
-        window.addEventListener(
-            "resize",
-            function () {
+.pp-info-row p a {
+  color: #526079 !important;
+  text-decoration: none !important;
+  font-weight: 700;
+}
 
-                if (!isMobile()) {
 
-                    navWidget.classList.remove(
-                        "pp-mobile-open"
-                    );
+.pp-info-row p a:hover {
+  color: #6750a4 !important;
+  text-decoration: underline !important;
+}
 
-                    closeDropdowns();
 
-                    if (mobileButton) {
+/* ==============================
+   ICONS
+============================== */
 
-                        mobileButton.setAttribute(
-                            "aria-expanded",
-                            "false"
-                        );
+.pp-icon {
+  width: 24px;
+  height: 24px;
+  min-width: 24px;
 
-                    }
+  display: inline-flex;
 
-                }
+  align-items: center;
+  justify-content: center;
 
-            }
-        );
+  background: rgba(248, 93, 154, 0.10);
 
-    }
+  border-radius: 50%;
+}
 
 
-    if (document.readyState === "loading") {
+.pp-icon svg {
+  width: 14px;
+  height: 14px;
 
-        document.addEventListener(
-            "DOMContentLoaded",
-            initPoolPilotsNav
-        );
+  display: block;
+}
 
-    } else {
 
-        initPoolPilotsNav();
+/* map icon */
 
-    }
+.pp-map-icon path,
+.pp-map-icon circle {
+  fill: none;
 
-})();
-</script>
+  stroke: #f85d9a;
+
+  stroke-width: 2.2;
+
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+
+/* phone icon */
+
+.pp-phone-icon {
+  background: rgba(103, 80, 164, 0.10);
+}
+
+
+.pp-phone-icon path {
+  fill: none;
+
+  stroke: #6750a4;
+
+  stroke-width: 2.1;
+
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+
+/* clock icon */
+
+.pp-clock-icon {
+  background: rgba(103, 80, 164, 0.10);
+}
+
+
+.pp-clock-icon circle,
+.pp-clock-icon path {
+  fill: none;
+
+  stroke: #9ca3af;
+
+  stroke-width: 2.2;
+
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+
+/* ==============================
+   BUTTONS
+============================== */
+
+.pp-button-row {
+  display: flex;
+
+  align-items: center;
+
+  gap: 12px;
+
+  margin-top: 22px;
+}
+
+
+.pp-primary-btn,
+.pp-secondary-btn {
+  display: inline-flex;
+
+  align-items: center;
+  justify-content: center;
+
+  min-height: 44px;
+
+  padding: 12px 18px;
+
+  border-radius: 10px;
+
+  font-family: 'Roboto', sans-serif;
+
+  font-size: 14px;
+  line-height: 1;
+
+  font-weight: 800;
+
+  text-decoration: none !important;
+
+  transition: all 0.22s ease;
+}
+
+
+/* primary */
+
+.pp-primary-btn {
+  background: #6750a4;
+
+  color: #ffffff !important;
+}
+
+
+.pp-primary-btn:hover {
+  background: #543f91;
+
+  color: #ffffff !important;
+
+  transform: translateY(-2px);
+}
+
+
+/* secondary */
+
+.pp-secondary-btn {
+  background: #ff9f00;
+
+  color: #101828 !important;
+}
+
+
+.pp-secondary-btn:hover {
+  background: #f08f00;
+
+  color: #101828 !important;
+
+  transform: translateY(-2px);
+}
+
+
+/* ==============================
+   TABLET
+============================== */
+
+@media (max-width: 900px) {
+
+  .pp-location-grid {
+    grid-template-columns: 1fr;
+
+    max-width: 620px;
+
+    margin: 0 auto;
+  }
+
+
+  .pp-map-box {
+    height: 280px;
+  }
+
+}
+
+
+/* ==============================
+   MOBILE
+============================== */
+
+@media (max-width: 520px) {
+
+  .pp-card-content {
+    padding: 22px;
+  }
+
+
+  .pp-card-content h3 {
+    font-size: 24px;
+  }
+
+
+  .pp-map-box {
+    height: 230px;
+  }
+
+
+  .pp-open-map {
+    top: 12px;
+    left: 12px;
+
+    padding: 9px 12px;
+
+    font-size: 11px;
+  }
+
+
+  .pp-button-row {
+    flex-direction: column;
+
+    align-items: stretch;
+  }
+
+
+  .pp-primary-btn,
+  .pp-secondary-btn {
+    width: 100%;
+  }
+
+}
+
+</style>

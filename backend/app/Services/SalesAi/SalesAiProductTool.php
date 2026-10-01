@@ -475,8 +475,9 @@ class SalesAiProductTool
             ]);
     }
 
-    
-   private function applySearchFilter(
+
+
+    private function applySearchFilter(
     Builder $query,
     mixed $search
 ): void {
@@ -487,6 +488,12 @@ class SalesAiProductTool
     if ($search === '') {
         return;
     }
+
+    /*
+    |--------------------------------------------------------------------------
+    | NORMALIZE SEARCH TEXT
+    |--------------------------------------------------------------------------
+    */
 
     $search = str_replace(
         [
@@ -517,6 +524,12 @@ class SalesAiProductTool
         $search
     );
 
+    /*
+    |--------------------------------------------------------------------------
+    | SPLIT SEARCH INTO TOKENS
+    |--------------------------------------------------------------------------
+    */
+
     $rawTokens = preg_split(
         '/\s+/u',
         trim($search)
@@ -528,6 +541,7 @@ class SalesAiProductTool
         'the',
         'any',
         'some',
+
         'of',
         'for',
         'to',
@@ -537,25 +551,31 @@ class SalesAiProductTool
         'with',
         'and',
         'or',
+
         'is',
         'are',
         'do',
         'does',
         'have',
         'has',
+
         'show',
         'find',
         'need',
         'want',
         'please',
+
         'current',
         'website',
         'store',
+
         'available',
+
         'product',
         'products',
         'item',
         'items',
+
         'একটা',
         'কিছু',
         'আমাকে',
@@ -567,16 +587,22 @@ class SalesAiProductTool
         'প্রোডাক্ট',
     ];
 
-    $tokens = collect($rawTokens)
+    $tokens = collect(
+        $rawTokens
+    )
         ->map(
             fn ($token) =>
-                trim((string) $token)
+                trim(
+                    (string) $token
+                )
         )
         ->filter(
             fn ($token) =>
-                $token !== '' &&
-                mb_strlen($token) > 1 &&
-                !in_array(
+                $token !== ''
+                && mb_strlen(
+                    $token
+                ) > 1
+                && !in_array(
                     $token,
                     $stopWords,
                     true
@@ -591,11 +617,26 @@ class SalesAiProductTool
     }
 
     /*
-     * Specific model keyword থাকলে generic
-     * device words search থেকে বাদ যাবে।
-     *
-     * "galaxy mobile phone" => "galaxy"
-     */
+    |--------------------------------------------------------------------------
+    | REMOVE GENERIC DEVICE WORDS WHEN A SPECIFIC MODEL EXISTS
+    |--------------------------------------------------------------------------
+    |
+    | Example:
+    |
+    | "galaxy mobile phone"
+    |
+    | becomes:
+    |
+    | "galaxy"
+    |
+    | But:
+    |
+    | "watch"
+    |
+    | remains "watch".
+    |
+    */
+
     $genericProductWords = [
         'mobile',
         'phone',
@@ -614,45 +655,172 @@ class SalesAiProductTool
         )
         ->values();
 
-    if ($specificTokens->isNotEmpty()) {
+    if (
+        $specificTokens->isNotEmpty()
+    ) {
         $tokens = $specificTokens;
     }
 
-    foreach ($tokens as $token) {
+    /*
+    |--------------------------------------------------------------------------
+    | BROAD SEARCH
+    |--------------------------------------------------------------------------
+    |
+    | Every search token must match somewhere.
+    |
+    | Search may match:
+    | - title
+    | - summary
+    | - description
+    | - type
+    | - SKU
+    | - tags
+    | - category
+    | - brand
+    | - collections
+    | - variants
+    | - option values
+    |
+    | Synonyms are OR conditions within
+    | the same token.
+    |
+    */
+
+    foreach (
+        $tokens
+        as $token
+    ) {
         $alternatives =
             $this->getSearchAlternatives(
                 $token
             );
 
-        /*
-         * প্রতিটি token অবশ্যই match করবে।
-         * তবে token-এর synonyms-এর মধ্যে
-         * যেকোনো একটি match করলেই হবে।
-         */
-        $query->where(function (
-            Builder $tokenQuery
-        ) use ($alternatives) {
-            foreach (
-                $alternatives as $index => $term
+        $query->where(
+            function (
+                Builder $tokenQuery
+            ) use (
+                $alternatives
             ) {
-                $method = $index === 0
-                    ? 'where'
-                    : 'orWhere';
+                foreach (
+                    $alternatives
+                    as $index => $term
+                ) {
+                    $method =
+                        $index === 0
+                            ? 'where'
+                            : 'orWhere';
 
-                $tokenQuery->{$method}(
-                    function (
-                        Builder $termQuery
-                    ) use ($term) {
-                        $this->applySearchTerm(
-                            $termQuery,
+                    $tokenQuery->{$method}(
+                        function (
+                            Builder $termQuery
+                        ) use (
                             $term
-                        );
-                    }
-                );
+                        ) {
+                            $this->applySearchTerm(
+                                $termQuery,
+                                $term
+                            );
+                        }
+                    );
+                }
             }
-        });
+        );
     }
+
+    /*
+    |--------------------------------------------------------------------------
+    | PRODUCT IDENTITY CHECK
+    |--------------------------------------------------------------------------
+    |
+    | Broad search alone can create
+    | false-positive results.
+    |
+    | Example:
+    |
+    | Search:
+    |     watch
+    |
+    | iPhone description:
+    |     "Works with Apple Watch"
+    |
+    | Without this section the iPhone
+    | could appear in watch results.
+    |
+    | Therefore at least one search token
+    | must also describe the PRODUCT ITSELF.
+    |
+    | Identity fields:
+    | - product title
+    | - product type
+    | - product SKU
+    | - category
+    | - variant title
+    | - variant SKU
+    |
+    */
+
+    $query->where(
+        function (
+            Builder $identityQuery
+        ) use (
+            $tokens
+        ) {
+            $firstCondition = true;
+
+            foreach (
+                $tokens
+                as $token
+            ) {
+                $alternatives =
+                    $this
+                        ->getSearchAlternatives(
+                            $token
+                        );
+
+                foreach (
+                    $alternatives
+                    as $term
+                ) {
+                    if ($firstCondition) {
+                        $identityQuery->where(
+                            function (
+                                Builder $termQuery
+                            ) use (
+                                $term
+                            ) {
+                                $this->applyIdentitySearchTerm(
+                                    $termQuery,
+                                    $term
+                                );
+                            }
+                        );
+
+                        $firstCondition = false;
+
+                        continue;
+                    }
+
+                    $identityQuery->orWhere(
+                        function (
+                            Builder $termQuery
+                        ) use (
+                            $term
+                        ) {
+                            $this->applyIdentitySearchTerm(
+                                $termQuery,
+                                $term
+                            );
+                        }
+                    );
+                }
+            }
+        }
+    );
 }
+
+
+
+
 
 private function applySearchTerm(
     Builder $query,
@@ -782,6 +950,85 @@ private function applySearchTerm(
             }
         );
 }
+
+
+
+private function applyIdentitySearchTerm(
+    Builder $query,
+    string $term
+): void {
+    $term = trim(
+        $term
+    );
+
+    if ($term === '') {
+        return;
+    }
+
+    $likeTerm =
+        '%' . $term . '%';
+
+    $query
+        ->where(
+            'title',
+            'like',
+            $likeTerm
+        )
+        ->orWhere(
+            'type',
+            'like',
+            $likeTerm
+        )
+        ->orWhere(
+            'sku',
+            'like',
+            $likeTerm
+        )
+        ->orWhereHas(
+            'category',
+            function (
+                Builder $categoryQuery
+            ) use (
+                $likeTerm
+            ) {
+                $categoryQuery
+                    ->where(
+                        'name',
+                        'like',
+                        $likeTerm
+                    )
+                    ->orWhere(
+                        'slug',
+                        'like',
+                        $likeTerm
+                    );
+            }
+        )
+        ->orWhereHas(
+            'variants',
+            function (
+                Builder $variantQuery
+            ) use (
+                $likeTerm
+            ) {
+                $variantQuery
+                    ->where(
+                        'title',
+                        'like',
+                        $likeTerm
+                    )
+                    ->orWhere(
+                        'sku',
+                        'like',
+                        $likeTerm
+                    );
+            }
+        );
+}
+
+
+
+
 
 private function getSearchAlternatives(
     string $token
